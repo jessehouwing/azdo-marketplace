@@ -212,6 +212,13 @@ export class MockPlatformAdapter implements IPlatformAdapter {
   }
 
   /**
+   * Set tool location for testing
+   */
+  setToolLocation(tool: string, path: string): void {
+    this.tools.set(tool, path);
+  }
+
+  /**
    * Set multiple inputs at once
    */
   setInputs(inputs: Record<string, string>): void {
