@@ -27,3 +27,4 @@ vsixsigntool.exe
 # Debug and temporary directories
 .tmp/
 .cache/
+.work/
