@@ -42,7 +42,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Create test summary
-        if: always()
+        if: success()
         shell: bash
         run: |
           echo "## Test Results - ${{ matrix.os }} - Node ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY

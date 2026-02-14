@@ -32,7 +32,7 @@ jobs:
         run: npm run lint:tasks
 
       - name: Create summary
-        if: always()
+        if: success()
         run: |
           echo "## Lint Results" >> $GITHUB_STEP_SUMMARY
           echo "✅ All tasks passed ESLint checks" >> $GITHUB_STEP_SUMMARY

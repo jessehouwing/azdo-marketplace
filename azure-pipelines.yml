@@ -238,14 +238,6 @@ stages:
         Get-ChildItem -Path "$(Pipeline.Workspace)/vsix/*.vsix" | Format-Table Name, Length
       displayName: 'Verify VSIX packages'
       condition: succeededOrFailed()
-    
-    - task: PublishTestResults@2
-      displayName: 'Publish integration test results'
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFormat: 'JUnit'
-        testResultsFiles: '**/integration-test-results.xml'
-        failTaskOnFailedTests: false
 
 - stage: PublishDev
   displayName: 'Publish privately'
