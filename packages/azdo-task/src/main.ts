@@ -28,7 +28,7 @@ async function run(): Promise<void> {
 
     // Create TfxManager
     const tfxVersion = platform.getInput('tfxVersion') || 'embedded';
-    const tfxManager = new TfxManager({ version: tfxVersion, platform });
+    const tfxManager = new TfxManager({ tfxVersion: tfxVersion, platform });
 
     // Get authentication if needed (not required for package)
     let auth;
