@@ -162,10 +162,105 @@ export async function publishExtension(
       throw new Error(`VSIX file not found: ${options.vsixFile}`);
     }
 
-    // TODO: If overrides are specified (publisher, extensionId, etc.),
-    // we need to use VsixEditor to modify the VSIX before publishing
-    // For now, just publish the VSIX as-is
-    args.option('--vsix', options.vsixFile);
+    // Check if we need to modify the VSIX before publishing
+    const needsModification =
+      options.publisherId ||
+      options.extensionId ||
+      options.extensionVersion ||
+      options.extensionName ||
+      options.extensionVisibility ||
+      options.updateTasksVersion ||
+      options.updateTasksId;
+
+    if (needsModification) {
+      platform.info('Modifying VSIX before publishing...');
+      
+      // Import VSIX editor modules dynamically to avoid circular dependencies
+      const { VsixReader } = await import('../vsix-reader.js');
+      const { VsixEditor } = await import('../vsix-editor.js');
+      
+      // Open the VSIX and create an editor
+      const reader = await VsixReader.open(options.vsixFile);
+      let editor = VsixEditor.fromReader(reader);
+      
+      // Apply manifest overrides
+      if (options.publisherId) {
+        platform.debug(`Setting publisher: ${options.publisherId}`);
+        editor = editor.setPublisher(options.publisherId);
+      }
+      
+      let extensionId = options.extensionId;
+      if (extensionId && options.extensionTag) {
+        extensionId = extensionId + options.extensionTag;
+        platform.debug(`Extension ID with tag: ${extensionId}`);
+      }
+      
+      if (extensionId) {
+        platform.debug(`Setting extension ID: ${extensionId}`);
+        editor = editor.setExtensionId(extensionId);
+      }
+      
+      if (options.extensionVersion) {
+        platform.debug(`Setting version: ${options.extensionVersion}`);
+        editor = editor.setVersion(options.extensionVersion);
+      }
+      
+      if (options.extensionName) {
+        platform.debug(`Setting name: ${options.extensionName}`);
+        editor = editor.setName(options.extensionName);
+      }
+      
+      if (options.extensionVisibility) {
+        platform.debug(`Setting visibility: ${options.extensionVisibility}`);
+        // Map extended visibility values to simple public/private for VsixEditor
+        const simpleVisibility = options.extensionVisibility.includes('public') ? 'public' : 'private';
+        editor = editor.setVisibility(simpleVisibility);
+      }
+      
+      // Apply task modifications
+      if (options.updateTasksVersion && options.extensionVersion) {
+        platform.info('Updating task versions...');
+        const tasks = await reader.getTasksInfo();
+        for (const task of tasks) {
+          platform.debug(`Updating task ${task.name} to version ${options.extensionVersion}`);
+          editor = editor.updateTaskVersion(task.name, options.extensionVersion);
+        }
+      }
+      
+      if (options.updateTasksId) {
+        platform.info('Updating task IDs...');
+        // Generate new UUIDs for tasks
+        const { v5: uuidv5 } = await import('uuid');
+        const tasks = await reader.getTasksInfo();
+        const extensionManifest = await reader.readExtensionManifest();
+        
+        for (const task of tasks) {
+          // Generate deterministic UUID based on namespace and task name
+          const namespace = `${extensionManifest.publisher}.${extensionManifest.id}.${task.name}`;
+          const newId = uuidv5(namespace, uuidv5.URL);
+          platform.debug(`Updating task ${task.name} ID to ${newId}`);
+          editor = editor.updateTaskId(task.name, newId);
+        }
+      }
+      
+      // Write modified VSIX to a temporary file
+      const writer = await editor.toWriter();
+      const tempDir = platform.getTempDir();
+      const tempVsixPath = `${tempDir}/temp-${Date.now()}.vsix`;
+      
+      platform.debug(`Writing modified VSIX to: ${tempVsixPath}`);
+      await writer.writeToFile(tempVsixPath);
+      await writer.close();
+      await reader.close();
+      
+      // Use the modified VSIX for publishing
+      args.option('--vsix', tempVsixPath);
+      
+      platform.info('VSIX modifications applied successfully');
+    } else {
+      // No modifications needed - publish as-is
+      args.option('--vsix', options.vsixFile);
+    }
   }
 
   // Sharing

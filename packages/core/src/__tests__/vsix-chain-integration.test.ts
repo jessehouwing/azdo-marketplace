@@ -298,7 +298,7 @@ describe('VSIX Chain Integration Tests', () => {
     const files = await outputReader.listFiles();
     
     // Should have all original files
-    expect(files.length).toBeGreaterThanOrEqual(8); // manifest + tasks + large files + icon + readme
+    expect(files.length).toBeGreaterThanOrEqual(7); // manifest + 2 tasks + 2 large files + icon + readme
     
     // Verify large files are present
     expect(await outputReader.fileExists('PublishExtension/index.js')).toBe(true);

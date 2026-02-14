@@ -202,11 +202,12 @@ export class VsixWriter {
       const taskManifests = await reader.readTaskManifests();
       
       for (const taskManifest of taskManifests) {
-        const mods = taskManifestMods.get(taskManifest.name);
+        const mods = taskManifestMods.get(taskManifest.manifest.name);
         if (mods) {
-          Object.assign(taskManifest, mods);
-          const taskJson = JSON.stringify(taskManifest, null, 2);
-          const taskPath = `${taskManifest.name}/task.json`;
+          // Apply modifications to the manifest object
+          Object.assign(taskManifest.manifest, mods);
+          const taskJson = JSON.stringify(taskManifest.manifest, null, 2);
+          const taskPath = `${taskManifest.path}/task.json`;
           this.zipFile!.addBuffer(Buffer.from(taskJson, 'utf-8'), taskPath);
           addedFiles.add(taskPath);
         }

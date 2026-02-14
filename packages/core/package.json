@@ -18,7 +18,9 @@
     "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage"
   },
   "dependencies": {
-    "azure-devops-node-api": "^14.1.0"
+    "@types/uuid": "^3.4.13",
+    "azure-devops-node-api": "^14.1.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.24"
