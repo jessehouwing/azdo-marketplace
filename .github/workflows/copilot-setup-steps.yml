@@ -2,7 +2,9 @@ name: Copilot setup steps
 
 on:
   workflow_dispatch:
-  workflow_call:
+  push:
+    branches:
+      - refactor/v6
 
 permissions:
   contents: read
