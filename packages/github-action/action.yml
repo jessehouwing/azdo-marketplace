@@ -15,15 +15,30 @@ inputs:
   auth-type:
     description: |
       Authentication type: 'pat' or 'oidc'
-      - pat: Use Personal Access Token (recommended, works out of the box)
-      - oidc: Use GitHub OIDC (requires id-token: write permission and marketplace configuration)
+      - pat: Use Personal Access Token (recommended for simplicity)
+      - oidc: Use Azure OIDC via azure/login action (requires setup, see below)
+      
+      OIDC Setup:
+      Run azure/login action BEFORE this action:
+      
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      Then use auth-type: oidc (no token needed)
+      
+      See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
+      
       Default: pat
     required: false
     default: 'pat'
   token:
     description: |
-      Personal Access Token for marketplace authentication (required when auth-type is 'pat')
-      For OIDC, the token is automatically obtained from GitHub Actions.
+      Personal Access Token for marketplace authentication
+      Required when auth-type is 'pat'
+      Not needed when auth-type is 'oidc' (token obtained via Azure CLI)
     required: false
   
   # TFX Configuration

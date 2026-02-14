@@ -1,48 +1,97 @@
 import * as core from '@actions/core';
+import * as exec from '@actions/exec';
 import { AuthCredentials } from '@extension-tasks/core';
 
 /**
- * Get GitHub OIDC token for marketplace authentication
+ * Get Azure AD token via Azure CLI for marketplace authentication
  * 
- * Uses GitHub Actions OIDC functionality to get an ID token.
- * Similar to Azure Pipelines OIDC approach, this gets a token from the platform
- * and attempts to use it for marketplace operations.
+ * This approach requires the azure/login action to be run first with OIDC federation.
+ * The azure/login action handles:
+ * 1. GitHub OIDC → Azure AD federation
+ * 2. Azure CLI authentication
  * 
- * Note: This is a best-effort implementation. The Visual Studio Marketplace
- * may require additional configuration to accept GitHub OIDC tokens directly.
- * A token exchange service might be needed for full production support.
+ * Then this function retrieves an Azure AD access token using the Azure CLI.
+ * This token is accepted by the Visual Studio Marketplace.
+ * 
+ * This mirrors the Azure Pipelines approach where Azure RM service connections
+ * provide Azure AD tokens for marketplace operations.
  * 
  * Requirements:
- * - GitHub Actions workflow must have id-token: write permission
- * - Marketplace may need to be configured to accept GitHub as OIDC provider
+ * 1. Run azure/login action first:
+ *    ```yaml
+ *    - uses: azure/login@v2
+ *      with:
+ *        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+ *        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+ *        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+ *    ```
  * 
- * @param audience - Optional audience claim for the OIDC token (defaults to marketplace URL)
+ * 2. Azure App Registration with:
+ *    - Federated credentials for GitHub Actions
+ *    - Appropriate permissions (if needed for marketplace)
+ * 
+ * See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
+ * 
+ * @param resource - The Azure resource to get token for (defaults to marketplace)
  */
-export async function getOidcAuth(audience?: string): Promise<AuthCredentials> {
+export async function getOidcAuth(resource?: string): Promise<AuthCredentials> {
+  const tokenResource = resource || 'https://marketplace.visualstudio.com';
+  const marketplaceUrl = 'https://marketplace.visualstudio.com';
+  
+  core.info('Getting Azure AD token via Azure CLI (requires azure/login action)...');
+  
   try {
-    // Use marketplace URL as the default audience
-    const marketplaceUrl = 'https://marketplace.visualstudio.com';
-    const aud = audience || marketplaceUrl;
+    // Execute Azure CLI to get access token
+    let output = '';
+    let errorOutput = '';
     
-    // Get GitHub OIDC token
-    // Requires: permissions.id-token: write in the workflow
-    const token = await core.getIDToken(aud);
+    const exitCode = await exec.exec(
+      'az',
+      ['account', 'get-access-token', '--resource', tokenResource, '--output', 'json'],
+      {
+        silent: true,
+        listeners: {
+          stdout: (data: Buffer) => {
+            output += data.toString();
+          },
+          stderr: (data: Buffer) => {
+            errorOutput += data.toString();
+          },
+        },
+      }
+    );
     
-    if (!token) {
-      throw new Error('Failed to get OIDC token from GitHub Actions');
+    if (exitCode !== 0) {
+      throw new Error(`Azure CLI exited with code ${exitCode}: ${errorOutput}`);
     }
     
-    // Return credentials in the same format as other auth providers
-    // The marketplace may need additional configuration to accept this token
+    // Parse JSON output
+    const result = JSON.parse(output);
+    const token = result.accessToken;
+    
+    if (!token) {
+      throw new Error('No accessToken in Azure CLI response');
+    }
+    
+    core.info('Successfully obtained Azure AD token via Azure CLI');
+    core.setSecret(token);
+    
     return {
       authType: 'pat', // Use 'pat' type as the token format is similar
       serviceUrl: marketplaceUrl,
       token: token,
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Failed to get GitHub OIDC authentication: ${error instanceof Error ? error.message : String(error)}. ` +
-      'Ensure your workflow has "id-token: write" permission and that the marketplace is configured to accept GitHub OIDC tokens.'
+      `Failed to get Azure AD token via Azure CLI: ${message}\n\n` +
+      'Make sure you have run the azure/login action before this action:\n' +
+      '  - uses: azure/login@v2\n' +
+      '    with:\n' +
+      '      client-id: ${{ secrets.AZURE_CLIENT_ID }}\n' +
+      '      tenant-id: ${{ secrets.AZURE_TENANT_ID }}\n' +
+      '      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}\n\n' +
+      'See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/'
     );
   }
 }
