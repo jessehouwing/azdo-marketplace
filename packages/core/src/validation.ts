@@ -170,7 +170,7 @@ async function getBinaryVersion(
       'node': ['--version'],
       'npm': ['--version'],
       'az': ['--version'],
-      'tfx': [] // tfx outputs version info when called without args
+      'tfx': ['version', '--no-prompt', '--no-color'] // tfx version command with clean output
     };
 
     const args = versionArgs[binary] || ['--version'];
