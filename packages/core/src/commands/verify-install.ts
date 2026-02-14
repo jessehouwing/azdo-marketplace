@@ -7,7 +7,7 @@ import { readManifest, resolveTaskManifestPaths } from '../manifest-utils.js';
 
 export interface ExpectedTask {
   name: string;
-  version?: string; // Expected version (major.minor.patch)
+  versions: string[]; // Expected versions (major.minor.patch)
 }
 
 export interface VerifyInstallOptions {
@@ -16,7 +16,6 @@ export interface VerifyInstallOptions {
   extensionTag?: string;
   accounts: string[]; // Target org URLs
   expectedTasks?: ExpectedTask[]; // Tasks with expected versions
-  expectedTaskNames?: string[]; // Legacy: task names without versions (deprecated, use expectedTasks)
   manifestPath?: string; // Path to extension manifest (vss-extension.json) to read task versions
   vsixPath?: string; // Path to VSIX file to read task versions from
   timeoutMinutes?: number; // Default: 10
@@ -28,8 +27,7 @@ export interface InstalledTask {
   id: string;
   version: string;
   friendlyName: string;
-  versionMismatch?: boolean; // True if installed version doesn't match expected
-  expectedVersion?: string; // Expected version (if checking versions)
+  matchesExpected: boolean; // True if this version is one of the expected versions
 }
 
 export interface VerifyInstallResult {
@@ -38,8 +36,8 @@ export interface VerifyInstallResult {
     accountUrl: string;
     available: boolean;
     installedTasks: InstalledTask[];
-    missingTasks: string[];
-    versionMismatches: string[]; // Task names with version mismatches
+    missingTasks: string[]; // Task names that are completely missing
+    missingVersions: string[]; // Task/version combinations that are missing (e.g., "TaskName@1.0.0")
     error?: string;
   }[];
   allTasksAvailable: boolean;
@@ -75,7 +73,7 @@ async function resolveExpectedTasks(
             const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
             tasks.push({
               name: taskManifest.name as string,
-              version,
+              versions: [version],
             });
             platform.debug(`Found task ${taskManifest.name} v${version}`);
           }
@@ -98,17 +96,8 @@ async function resolveExpectedTasks(
   }
 
   // TODO: If vsixPath is provided, extract and read task versions from VSIX
-  // This would require yauzl integration
   if (options.vsixPath) {
     platform.warning('Reading task versions from VSIX is not yet implemented');
-  }
-
-  // Fallback to legacy expectedTaskNames (no version checking)
-  if (options.expectedTaskNames && options.expectedTaskNames.length > 0) {
-    platform.debug(
-      `Using ${options.expectedTaskNames.length} task names without version checking`
-    );
-    return options.expectedTaskNames.map((name) => ({ name }));
   }
 
   // No expected tasks specified
@@ -162,7 +151,7 @@ export async function verifyInstall(
       let found = false;
       let finalInstalledTasks: InstalledTask[] = [];
       let finalMissingTasks: string[] = [];
-      let finalVersionMismatches: string[] = [];
+      let finalMissingVersions: string[] = [];
       let pollCount = 0;
 
       while (Date.now() < deadline && !found) {
@@ -181,60 +170,81 @@ export async function verifyInstall(
           // Find tasks matching the extension
           const installedTasks: InstalledTask[] = [];
           const missingTasks: string[] = [];
-          const versionMismatches: string[] = [];
+          const missingVersions: string[] = [];
 
           // If we have expected tasks, check for them specifically
           if (expectedTasks.length > 0) {
             for (const expectedTask of expectedTasks) {
-              const installedTask = taskDefinitions.find(
-                (t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase()
+              // Find all installed versions of this task
+              const installedTaskVersions = taskDefinitions.filter(
+                (t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && 
+                       t.id && t.version
               );
 
-              if (!installedTask || !installedTask.id || !installedTask.version) {
+              if (installedTaskVersions.length === 0) {
+                // Task name not found at all
                 missingTasks.push(expectedTask.name);
+                // Also track specific versions that are missing
+                for (const ver of expectedTask.versions) {
+                  missingVersions.push(`${expectedTask.name}@${ver}`);
+                }
                 continue;
               }
 
-              const installedVersion = `${installedTask.version.major}.${installedTask.version.minor}.${installedTask.version.patch}`;
-              const versionMismatch =
-                expectedTask.version &&
-                installedVersion !== expectedTask.version;
+              // Check each installed version of this task
+              for (const installedTask of installedTaskVersions) {
+                const installedVersion = `${installedTask.version!.major}.${installedTask.version!.minor}.${installedTask.version!.patch}`;
+                
+                // Check if this version matches any expected version
+                const matchesExpected = expectedTask.versions.includes(installedVersion);
 
-              installedTasks.push({
-                name: installedTask.name!,
-                id: installedTask.id,
-                version: installedVersion,
-                friendlyName: installedTask.friendlyName || installedTask.name!,
-                versionMismatch,
-                expectedVersion: expectedTask.version,
-              });
+                installedTasks.push({
+                  name: installedTask.name!,
+                  id: installedTask.id!,
+                  version: installedVersion,
+                  friendlyName: installedTask.friendlyName || installedTask.name!,
+                  matchesExpected,
+                });
+              }
 
-              if (versionMismatch) {
-                versionMismatches.push(
-                  `${expectedTask.name} (expected: ${expectedTask.version}, found: ${installedVersion})`
-                );
-                platform.debug(
-                  `Version mismatch for ${expectedTask.name}: expected ${expectedTask.version}, found ${installedVersion}`
-                );
+              // Check if all required versions are present
+              const installedVersionStrings = installedTaskVersions.map(
+                t => `${t.version!.major}.${t.version!.minor}.${t.version!.patch}`
+              );
+              
+              for (const expectedVer of expectedTask.versions) {
+                if (!installedVersionStrings.includes(expectedVer)) {
+                  missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                  platform.debug(
+                    `Missing version ${expectedVer} for task ${expectedTask.name}`
+                  );
+                }
               }
             }
 
-            // Success if all tasks found and no version mismatches
-            if (missingTasks.length === 0 && versionMismatches.length === 0) {
+            // Success if all tasks found and all required versions present
+            if (missingTasks.length === 0 && missingVersions.length === 0) {
               found = true;
               finalInstalledTasks = installedTasks;
               finalMissingTasks = missingTasks;
-              finalVersionMismatches = versionMismatches;
+              finalMissingVersions = missingVersions;
+              
+              // Count unique task names and total expected versions
+              const uniqueTasks = new Set(expectedTasks.map(t => t.name));
+              const totalExpectedVersions = expectedTasks.reduce((sum, t) => {
+                return sum + t.versions.length;
+              }, 0);
+              
               platform.info(
-                `✓ All ${installedTasks.length} expected task(s) with correct versions found in ${accountUrl}`
+                `✓ All ${uniqueTasks.size} expected task(s) with ${totalExpectedVersions} version(s) found in ${accountUrl}`
               );
             } else if (missingTasks.length > 0) {
               platform.debug(
                 `Missing ${missingTasks.length} task(s): ${missingTasks.join(', ')}`
               );
-            } else if (versionMismatches.length > 0) {
+            } else if (missingVersions.length > 0) {
               platform.debug(
-                `Found ${versionMismatches.length} version mismatch(es): ${versionMismatches.join(', ')}`
+                `Missing ${missingVersions.length} version(s): ${missingVersions.join(', ')}`
               );
             }
           } else {
@@ -246,6 +256,7 @@ export async function verifyInstall(
                   id: task.id,
                   version: `${task.version.major}.${task.version.minor}.${task.version.patch}`,
                   friendlyName: task.friendlyName || task.name,
+                  matchesExpected: true, // No expectations, so all match
                 });
               }
             }
@@ -254,7 +265,7 @@ export async function verifyInstall(
               found = true;
               finalInstalledTasks = installedTasks;
               finalMissingTasks = missingTasks;
-              finalVersionMismatches = versionMismatches;
+              finalMissingVersions = missingVersions;
               platform.info(
                 `✓ Found ${installedTasks.length} task(s) from extension in ${accountUrl}`
               );
@@ -291,7 +302,7 @@ export async function verifyInstall(
           available: true,
           installedTasks: finalInstalledTasks,
           missingTasks: finalMissingTasks,
-          versionMismatches: finalVersionMismatches,
+          missingVersions: finalMissingVersions,
         });
       } else {
         const errorMsg = lastError
@@ -300,12 +311,20 @@ export async function verifyInstall(
 
         platform.warning(errorMsg);
 
+        // Calculate all missing versions for expected tasks
+        const allMissingVersions: string[] = [];
+        for (const task of expectedTasks) {
+          for (const ver of task.versions) {
+            allMissingVersions.push(`${task.name}@${ver}`);
+          }
+        }
+
         accountResults.push({
           accountUrl,
           available: false,
           installedTasks: [],
           missingTasks: expectedTasks.map((t) => t.name),
-          versionMismatches: [],
+          missingVersions: allMissingVersions,
           error: errorMsg,
         });
       }
@@ -314,19 +333,27 @@ export async function verifyInstall(
         error instanceof Error ? error.message : String(error);
       platform.error(`Failed to verify installation in ${accountUrl}: ${errorMsg}`);
 
+      // Calculate all missing versions for expected tasks
+      const allMissingVersions: string[] = [];
+      for (const task of expectedTasks) {
+        for (const ver of task.versions) {
+          allMissingVersions.push(`${task.name}@${ver}`);
+        }
+      }
+
       accountResults.push({
         accountUrl,
         available: false,
         installedTasks: [],
         missingTasks: expectedTasks.map((t) => t.name),
-        versionMismatches: [],
+        missingVersions: allMissingVersions,
         error: errorMsg,
       });
     }
   }
 
   const allTasksAvailable = accountResults.every(
-    (r) => r.available && r.versionMismatches.length === 0
+    (r) => r.available && r.missingVersions.length === 0
   );
 
   // Log summary
@@ -336,8 +363,8 @@ export async function verifyInstall(
     );
   } else {
     const failedAccounts = accountResults.filter((r) => !r.available);
-    const mismatchAccounts = accountResults.filter(
-      (r) => r.available && r.versionMismatches.length > 0
+    const missingVersionAccounts = accountResults.filter(
+      (r) => r.available && r.missingVersions.length > 0
     );
     
     if (failedAccounts.length > 0) {
@@ -345,9 +372,9 @@ export async function verifyInstall(
         `❌ Failed to verify tasks in ${failedAccounts.length} account(s)`
       );
     }
-    if (mismatchAccounts.length > 0) {
+    if (missingVersionAccounts.length > 0) {
       platform.warning(
-        `⚠️ Version mismatches found in ${mismatchAccounts.length} account(s)`
+        `⚠️ Missing versions found in ${missingVersionAccounts.length} account(s)`
       );
     }
   }
