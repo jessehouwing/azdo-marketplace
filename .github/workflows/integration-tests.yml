@@ -35,7 +35,7 @@ jobs:
         run: npm install -g tfx-cli
 
       - name: Verify tfx-cli installation
-        run: tfx --version || echo "tfx installed but no version flag available"
+        run: tfx --version || echo "tfx-cli installed successfully (version command not supported)"
 
       - name: Install dependencies
         run: npm run initdev

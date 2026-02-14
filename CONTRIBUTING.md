@@ -143,6 +143,8 @@ The CI/CD workflows automatically test on:
 
 You can run the workflows locally using tools like [act](https://github.com/nektos/act) for GitHub Actions.
 
+**Note**: `act` requires Docker and may have limitations with certain GitHub Actions features. Some workflows may need adjustments to run locally.
+
 ## Release Process
 
 ### Manual Release (Recommended)
