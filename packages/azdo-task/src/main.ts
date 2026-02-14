@@ -34,10 +34,21 @@ async function run(): Promise<void> {
     let auth;
     if (operation !== 'package') {
       const connectionType = platform.getInput('connectionType', true) as ConnectionType;
-      const connectionName = platform.getInput('connectionName', true);
-      if (!connectionType || !connectionName) {
-        throw new Error('connectionType and connectionName are required for this operation');
+      
+      // Get the appropriate connection name based on type
+      let connectionName: string | undefined;
+      if (connectionType === 'connectedService:VsTeam') {
+        connectionName = platform.getInput('connectionName', true);
+      } else if (connectionType === 'connectedService:AzureRM') {
+        connectionName = platform.getInput('connectionNameAzureRM', true);
+      } else if (connectionType === 'connectedService:Generic') {
+        connectionName = platform.getInput('connectionNameGeneric', true);
       }
+      
+      if (!connectionName) {
+        throw new Error('Service connection name is required for this operation');
+      }
+      
       auth = await getAuth(connectionType, connectionName);
     }
 
