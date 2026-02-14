@@ -10,6 +10,7 @@ export * from './version-utils.js';
 export * from './json-output-stream.js';
 export * from './manifest-utils.js';
 export * from './tfx-manager.js';
+export * from './vsix-reader.js';
 
 // Commands
 export * from './commands/index.js';

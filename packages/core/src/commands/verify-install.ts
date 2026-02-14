@@ -4,6 +4,7 @@ import type { TaskDefinition } from 'azure-devops-node-api/interfaces/TaskAgentI
 import type { IPlatformAdapter } from '../platform.js';
 import type { AuthCredentials } from '../auth.js';
 import { readManifest, resolveTaskManifestPaths } from '../manifest-utils.js';
+import { VsixReader } from '../vsix-reader.js';
 
 export interface ExpectedTask {
   name: string;
@@ -95,9 +96,29 @@ async function resolveExpectedTasks(
     }
   }
 
-  // TODO: If vsixPath is provided, extract and read task versions from VSIX
+  // If vsixPath is provided, read task versions from VSIX
   if (options.vsixPath) {
-    platform.warning('Reading task versions from VSIX is not yet implemented');
+    try {
+      platform.debug(`Reading task versions from VSIX: ${options.vsixPath}`);
+      const reader = await VsixReader.open(options.vsixPath);
+      
+      try {
+        const tasksInfo = await reader.getTasksInfo();
+        const tasks: ExpectedTask[] = tasksInfo.map(task => ({
+          name: task.name,
+          versions: [task.version],
+        }));
+        
+        platform.debug(`Resolved ${tasks.length} tasks from VSIX`);
+        return tasks;
+      } finally {
+        await reader.close();
+      }
+    } catch (error) {
+      platform.warning(
+        `Failed to read VSIX ${options.vsixPath}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   // No expected tasks specified
