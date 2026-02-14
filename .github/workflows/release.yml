@@ -61,11 +61,11 @@ jobs:
 
       - name: Verify VSIX created
         run: |
-          ls -lh dist/*.vsix
-          if [ ! -f dist/*.vsix ]; then
+          if ! ls dist/*.vsix 1> /dev/null 2>&1; then
             echo "Error: VSIX file not created"
             exit 1
           fi
+          ls -lh dist/*.vsix
 
       - name: Upload VSIX artifacts
         uses: actions/upload-artifact@v4

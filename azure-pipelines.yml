@@ -13,19 +13,6 @@ pr:
 pool:
   vmImage: 'windows-2022'
 
-# Cross-platform testing support
-strategy:
-  matrix:
-    Windows_Node20:
-      vmImage: 'windows-2022'
-      nodeVersion: '20.x'
-    Linux_Node20:
-      vmImage: 'ubuntu-latest'
-      nodeVersion: '20.x'
-    macOS_Node20:
-      vmImage: 'macos-latest'
-      nodeVersion: '20.x'
-
 variables:
 - name: 'marketplaceServiceConnection'
   value: '84645cfd-95a8-4fcc-bb6a-d8e35e3d699d'
@@ -36,6 +23,18 @@ stages:
   jobs:
   - job: Build
     displayName: 'Build on $(vmImage) with Node $(nodeVersion)'
+    # Cross-platform testing matrix
+    strategy:
+      matrix:
+        Windows_Node20:
+          vmImage: 'windows-2022'
+          nodeVersion: '20.x'
+        Linux_Node20:
+          vmImage: 'ubuntu-latest'
+          nodeVersion: '20.x'
+        macOS_Node20:
+          vmImage: 'macos-latest'
+          nodeVersion: '20.x'
     pool:
       vmImage: $(vmImage)
     steps:
@@ -203,6 +202,8 @@ stages:
   jobs:
   - job: IntegrationTest
     displayName: 'Integration Test on $(vmImage)'
+    # Cross-platform testing matrix (matches Build stage)
+    # Note: Could be extracted to YAML template if more stages need this matrix
     strategy:
       matrix:
         Windows_Node20:
