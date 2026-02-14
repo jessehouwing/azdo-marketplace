@@ -138,7 +138,7 @@ Before submitting a PR, ensure:
 ### Cross-Platform Testing
 The CI/CD workflows automatically test on:
 - **Ubuntu Latest** (Linux)
-- **Windows Latest** 
+- **Windows 2022** 
 - **macOS Latest**
 
 You can run the workflows locally using tools like [act](https://github.com/nektos/act) for GitHub Actions.
@@ -185,7 +185,7 @@ Marketplace publishing is currently a placeholder. To enable:
 
 ## Additional Resources
 
-- [Azure DevOps Extension Documentation](https://docs.microsoft.com/en-us/azure/devops/extend/)
+- [Azure DevOps Extension Documentation](https://learn.microsoft.com/en-us/azure/devops/extend/)
 - [tfx-cli Documentation](https://github.com/microsoft/tfs-cli)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Azure Pipelines Documentation](https://docs.microsoft.com/en-us/azure/devops/pipelines/)
+- [Azure Pipelines Documentation](https://learn.microsoft.com/en-us/azure/devops/pipelines/)
