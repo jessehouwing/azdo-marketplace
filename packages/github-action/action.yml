@@ -13,11 +13,17 @@ inputs:
   
   # Authentication
   auth-type:
-    description: 'Authentication type (pat or oidc). Default: pat'
+    description: |
+      Authentication type: 'pat' or 'oidc'
+      - pat: Use Personal Access Token (recommended, works out of the box)
+      - oidc: Use GitHub OIDC (requires id-token: write permission and marketplace configuration)
+      Default: pat
     required: false
     default: 'pat'
   token:
-    description: 'Personal Access Token for marketplace authentication'
+    description: |
+      Personal Access Token for marketplace authentication (required when auth-type is 'pat')
+      For OIDC, the token is automatically obtained from GitHub Actions.
     required: false
   
   # TFX Configuration
