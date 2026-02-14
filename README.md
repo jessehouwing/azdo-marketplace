@@ -37,6 +37,23 @@ Visual Studio
 
 ## Contribute
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed information about:
+- Development setup
+- CI/CD workflows (GitHub Actions and Azure Pipelines)
+- Testing procedures
+- Release process
+
+### Quick Start
+
 1. From the root of the repo run `npm run initdev`. This will pull down the necessary modules and TypeScript declare files.
 2. Run `npm run build` to compile the build tasks.
 3. Run `npm run package` to create a .vsix extension package that includes the build tasks.
+
+## CI/CD
+
+This project uses both GitHub Actions and Azure Pipelines for continuous integration:
+
+- **GitHub Actions**: CI, unit tests, integration tests, linting, and release automation
+- **Azure Pipelines**: Cross-platform builds and marketplace publishing
+
+See the [workflows documentation](CONTRIBUTING.md#cicd-workflows) for details.
