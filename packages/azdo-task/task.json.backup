@@ -175,15 +175,6 @@
       "groupName": "manifest"
     },
     {
-      "name": "localizationRoot",
-      "type": "filePath",
-      "label": "Localization Root Folder",
-      "required": false,
-      "helpMarkDown": "Folder where localization files exist",
-      "visibleRule": "operation = package || (operation = publish && publishSource = manifest)",
-      "groupName": "manifest"
-    },
-    {
       "name": "manifestGlobs",
       "type": "multiLine",
       "label": "Manifest Patterns",
@@ -235,21 +226,6 @@
       }
     },
     {
-      "name": "extensionPricing",
-      "type": "pickList",
-      "label": "Extension Pricing",
-      "required": false,
-      "defaultValue": "default",
-      "helpMarkDown": "Override extension pricing (Free vs Paid). If not specified, pricing from manifest will be used",
-      "visibleRule": "operation = package || operation = publish",
-      "groupName": "overrides",
-      "options": {
-        "default": "Not set",
-        "free": "Free",
-        "paid": "Paid"
-      }
-    },
-    {
       "name": "outputPath",
       "type": "filePath",
       "label": "Output Path",
@@ -293,7 +269,7 @@
       "label": "Share With",
       "required": false,
       "helpMarkDown": "Organizations to share with (one per line). Example: myorg1\\nmyorg2",
-      "visibleRule": "(operation = publish && (extensionVisibility = private || extensionVisibility = private_preview || extensionVisibility = default)) || operation = share",
+      "visibleRule": "operation = publish || operation = share",
       "groupName": "sharing"
     },
     {
@@ -333,21 +309,6 @@
       "helpMarkDown": "Update all task versions to match extension version",
       "visibleRule": "operation = package || operation = publish",
       "groupName": "advanced"
-    },
-    {
-      "name": "updateTasksVersionType",
-      "type": "pickList",
-      "label": "Update Tasks Version Type",
-      "required": false,
-      "defaultValue": "major",
-      "helpMarkDown": "Specify which part(s) of version to update: Major (x.y.r), Minor (1.y.r), or Patch (1.0.r)",
-      "visibleRule": "updateTasksVersion = true && (operation = package || operation = publish)",
-      "groupName": "advanced",
-      "options": {
-        "major": "Replace Major, Minor, Patch (x.y.r)",
-        "minor": "Replace Minor, Patch (1.y.r)",
-        "patch": "Replace Only Patch (1.0.r)"
-      }
     },
     {
       "name": "updateTasksId",
