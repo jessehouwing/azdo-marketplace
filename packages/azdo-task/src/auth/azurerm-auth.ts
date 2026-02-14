@@ -1,5 +1,5 @@
 import { AzureRMEndpoint } from 'azure-pipelines-tasks-azure-arm-rest/azure-arm-endpoint.js';
-import { AuthCredentials } from '@extension-tasks/core';
+import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 
 /**
  * Get Azure RM authentication using workload identity federation (OIDC)
@@ -9,7 +9,10 @@ import { AuthCredentials } from '@extension-tasks/core';
  * For now, we get the endpoint and use the token from it.
  * In a real implementation, you'd need to exchange the OIDC token for a marketplace token.
  */
-export async function getAzureRmAuth(connectionName: string): Promise<AuthCredentials> {
+export async function getAzureRmAuth(
+  connectionName: string,
+  platform: IPlatformAdapter
+): Promise<AuthCredentials> {
   try {
     const endpoint = new AzureRMEndpoint(connectionName);
     const azureEndpoint = await endpoint.getEndpoint();
@@ -20,6 +23,9 @@ export async function getAzureRmAuth(connectionName: string): Promise<AuthCreden
     if (!token) {
       throw new Error('Failed to get access token from Azure RM endpoint');
     }
+
+    // Mask the token immediately to prevent exposure in logs
+    platform.setSecret(token);
 
     // For marketplace operations, use the marketplace URL
     const serviceUrl = 'https://marketplace.visualstudio.com';

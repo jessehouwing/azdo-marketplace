@@ -1,4 +1,4 @@
-import { AuthCredentials } from '@extension-tasks/core';
+import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 import { getPatAuth } from './pat-auth.js';
 import { getBasicAuth } from './basic-auth.js';
 import { getAzureRmAuth } from './azurerm-auth.js';
@@ -10,17 +10,18 @@ export type ConnectionType = 'connectedService:VsTeam' | 'connectedService:Azure
  */
 export async function getAuth(
   connectionType: ConnectionType,
-  connectionName: string
+  connectionName: string,
+  platform: IPlatformAdapter
 ): Promise<AuthCredentials> {
   switch (connectionType) {
     case 'connectedService:VsTeam':
-      return getPatAuth(connectionName);
+      return getPatAuth(connectionName, platform);
     
     case 'connectedService:AzureRM':
-      return getAzureRmAuth(connectionName);
+      return getAzureRmAuth(connectionName, platform);
     
     case 'connectedService:Generic':
-      return getBasicAuth(connectionName);
+      return getBasicAuth(connectionName, platform);
     
     default:
       throw new Error(`Unsupported connection type: ${connectionType}`);

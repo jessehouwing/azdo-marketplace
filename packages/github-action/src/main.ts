@@ -35,9 +35,14 @@ async function run(): Promise<void> {
     if (operation !== 'package') {
       const authType = (platform.getInput('auth-type') || 'pat') as AuthType;
       const token = platform.getInput('token');
-      auth = await getAuth(authType, token);
+      auth = await getAuth(authType, platform, token);
+      // Secret masking is now handled inside auth providers
+      // But we keep this as defense in depth
       if (auth.token) {
         platform.setSecret(auth.token);
+      }
+      if (auth.password) {
+        platform.setSecret(auth.password);
       }
     }
 

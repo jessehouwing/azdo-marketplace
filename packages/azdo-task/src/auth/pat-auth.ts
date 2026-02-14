@@ -1,10 +1,13 @@
 import * as tl from 'azure-pipelines-task-lib/task.js';
-import { AuthCredentials } from '@extension-tasks/core';
+import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 
 /**
  * Get PAT authentication from service connection
  */
-export async function getPatAuth(connectionName: string): Promise<AuthCredentials> {
+export async function getPatAuth(
+  connectionName: string,
+  platform: IPlatformAdapter
+): Promise<AuthCredentials> {
   const endpoint = tl.getEndpointAuthorization(connectionName, false);
   if (!endpoint) {
     throw new Error(`Service connection '${connectionName}' not found`);
@@ -14,6 +17,9 @@ export async function getPatAuth(connectionName: string): Promise<AuthCredential
   if (!pat) {
     throw new Error(`PAT not found in service connection '${connectionName}'`);
   }
+
+  // Mask the secret immediately to prevent exposure in logs
+  platform.setSecret(pat);
 
   // For marketplace operations, use the marketplace URL
   const serviceUrl = 'https://marketplace.visualstudio.com';

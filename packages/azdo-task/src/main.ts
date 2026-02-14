@@ -49,7 +49,7 @@ async function run(): Promise<void> {
         throw new Error('Service connection name is required for this operation');
       }
       
-      auth = await getAuth(connectionType, connectionName);
+      auth = await getAuth(connectionType, connectionName, platform);
     }
 
     // Route to appropriate command

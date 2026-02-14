@@ -1,4 +1,4 @@
-import { AuthCredentials } from '@extension-tasks/core';
+import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 import { getPatAuth } from './pat-auth.js';
 import { getOidcAuth } from './oidc-auth.js';
 
@@ -9,6 +9,7 @@ export type AuthType = 'pat' | 'oidc';
  */
 export async function getAuth(
   authType: AuthType,
+  platform: IPlatformAdapter,
   token?: string
 ): Promise<AuthCredentials> {
   switch (authType) {
@@ -16,10 +17,10 @@ export async function getAuth(
       if (!token) {
         throw new Error('Token is required for PAT authentication');
       }
-      return getPatAuth(token);
+      return getPatAuth(token, platform);
     
     case 'oidc':
-      return getOidcAuth();
+      return getOidcAuth(undefined, platform);
     
     default:
       throw new Error(`Unsupported auth type: ${authType}`);

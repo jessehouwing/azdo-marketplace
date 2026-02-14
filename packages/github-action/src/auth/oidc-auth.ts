@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
-import { AuthCredentials } from '@extension-tasks/core';
+import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 
 /**
  * Get Azure AD token via Azure CLI for marketplace authentication
@@ -33,8 +33,12 @@ import { AuthCredentials } from '@extension-tasks/core';
  * See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
  * 
  * @param resource - The Azure resource to get token for (defaults to marketplace)
+ * @param platform - Platform adapter for secret masking
  */
-export async function getOidcAuth(resource?: string): Promise<AuthCredentials> {
+export async function getOidcAuth(
+  resource: string | undefined,
+  platform: IPlatformAdapter
+): Promise<AuthCredentials> {
   const tokenResource = resource || 'https://marketplace.visualstudio.com';
   const marketplaceUrl = 'https://marketplace.visualstudio.com';
   
@@ -73,8 +77,12 @@ export async function getOidcAuth(resource?: string): Promise<AuthCredentials> {
       throw new Error('No accessToken in Azure CLI response');
     }
     
-    core.info('Successfully obtained Azure AD token via Azure CLI');
+    // Mask the token immediately using both the core API and platform adapter
+    // This provides defense in depth
     core.setSecret(token);
+    platform.setSecret(token);
+    
+    core.info('Successfully obtained Azure AD token via Azure CLI');
     
     return {
       authType: 'pat', // Use 'pat' type as the token format is similar
