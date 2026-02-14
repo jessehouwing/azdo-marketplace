@@ -51,7 +51,7 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/jest": "^29.5.14",
-    "@types/node": "^20.19.24",
+    "@types/node": "^20.19.33",
     "@types/promise-retry": "^1.1.6",
     "@types/q": "^1.5.8",
     "@types/xmldom": "^0.1.34",
