@@ -11,7 +11,7 @@ import { JsonOutputStream } from './json-output-stream.js';
  * Options for TfxManager
  */
 export interface TfxManagerOptions {
-  /** Version of tfx to use: "embedded" or semver (e.g., "0.17.x", "latest") */
+  /** Version of tfx to use: "built-in" or semver (e.g., "0.17.x", "latest") */
   version: string;
   /** Platform adapter for operations */
   platform: IPlatformAdapter;
@@ -67,9 +67,9 @@ export class TfxManager {
       return this.resolvedPath;
     }
 
-    // 2. Embedded mode - locate bundled tfx
-    if (this.version === 'embedded') {
-      this.resolvedPath = await this.resolveEmbedded();
+    // 2. Built-in mode - use tfx from core package dependencies
+    if (this.version === 'built-in') {
+      this.resolvedPath = await this.resolveBuiltIn();
       return this.resolvedPath;
     }
 
@@ -87,14 +87,21 @@ export class TfxManager {
   }
 
   /**
-   * Resolve embedded tfx binary
+   * Resolve built-in tfx binary from core package dependencies
+   * Similar to tfxinstaller v5 behavior
+   * 
+   * The tfx-cli package is a direct dependency of the core package.
+   * When bundled, tfx-cli is marked as external and will be in node_modules.
+   * We use 'which' to locate it, which will find it in node_modules/.bin/ or PATH.
    */
-  private async resolveEmbedded(): Promise<string> {
-    // For embedded mode, tfx should be bundled with the task/action
-    // The exact location depends on how it's packaged
-    // For now, use 'which' to find it on PATH
-    this.platform.info('Using embedded tfx-cli from PATH');
+  private async resolveBuiltIn(): Promise<string> {
+    this.platform.info('Using built-in tfx-cli from core package dependencies');
+    
+    // The tfx-cli is a dependency, so it's in node_modules
+    // Use which to find the tfx executable (will check node_modules/.bin and PATH)
     const tfxPath = await this.platform.which('tfx', true);
+    
+    this.platform.debug(`Resolved built-in tfx at: ${tfxPath}`);
     return tfxPath;
   }
 

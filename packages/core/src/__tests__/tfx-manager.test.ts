@@ -10,25 +10,25 @@ describe('TfxManager', () => {
   });
 
   describe('resolve', () => {
-    it('should use embedded tfx from PATH', async () => {
+    it('should use built-in tfx from core package dependencies', async () => {
       platform.registerTool('tfx', '/usr/local/bin/tfx');
 
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
       const tfxPath = await manager.resolve();
 
       expect(tfxPath).toBe('/usr/local/bin/tfx');
-      expect(platform.infoMessages).toContain('Using embedded tfx-cli from PATH');
+      expect(platform.infoMessages).toContain('Using built-in tfx-cli from core package dependencies');
     });
 
     it('should cache resolved path for subsequent calls', async () => {
       platform.registerTool('tfx', '/usr/local/bin/tfx');
 
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -75,7 +75,7 @@ describe('TfxManager', () => {
         m.includes('Downloading tfx-cli@')
       );
       const usedFallback = platform.warningMessages.some((m) =>
-        m.includes('Failed to download') || m.includes('Falling back to tfx from PATH')
+        m.includes('Failed to download') || m.includes('Falling back to tfx from core package dependencies')
       );
       expect(attemptedDownload || usedFallback).toBe(true);
     });
@@ -88,7 +88,7 @@ describe('TfxManager', () => {
 
     it('should execute tfx with provided arguments', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -102,7 +102,7 @@ describe('TfxManager', () => {
 
     it('should add JSON flags when captureJson is true', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -116,7 +116,7 @@ describe('TfxManager', () => {
 
     it('should not duplicate JSON flags if already present', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -129,7 +129,7 @@ describe('TfxManager', () => {
 
     it('should pass working directory option', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -140,7 +140,7 @@ describe('TfxManager', () => {
 
     it('should pass environment variables', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -152,7 +152,7 @@ describe('TfxManager', () => {
 
     it('should log execution command', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -165,7 +165,7 @@ describe('TfxManager', () => {
 
     it('should create JsonOutputStream when captureJson is enabled', async () => {
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -224,7 +224,7 @@ describe('TfxManager', () => {
       // Should fall back to PATH
       expect(tfxPath).toBe('/usr/local/bin/tfx');
       expect(platform.warningMessages.some((m) =>
-        m.includes('Falling back to tfx from PATH')
+        m.includes('Falling back to tfx from core package dependencies')
       )).toBe(true);
     });
 

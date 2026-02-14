@@ -149,11 +149,11 @@ describe('TfxManager Integration Tests', () => {
     );
   });
 
-  describe('embedded tfx execution', () => {
+  describe('built-in tfx execution', () => {
     it('should execute tfx from PATH when embedded mode is used', async () => {
       // Check if tfx is available in PATH
       try {
-        await execFileAsync('tfx', ['--version'], { timeout: 10000 });
+        await execFileAsync('tfx', [], { timeout: 10000 });
       } catch (error) {
         // Skip test if tfx not in PATH
         platform.warning('Skipping embedded test: tfx not found in PATH');
@@ -163,7 +163,7 @@ describe('TfxManager Integration Tests', () => {
       platform.registerTool('tfx', 'tfx');
 
       const manager = new TfxManager({
-        version: 'embedded',
+        version: 'built-in',
         platform,
       });
 
@@ -177,7 +177,7 @@ describe('TfxManager Integration Tests', () => {
       platform.info('Embedded tfx executed successfully');
     });
 
-    it('should verify embedded tfx is executable', async () => {
+    it('should verify built-in tfx is executable', async () => {
       // Check if tfx is available in PATH
       let tfxPath: string;
       try {

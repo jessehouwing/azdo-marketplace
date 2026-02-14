@@ -23,6 +23,7 @@ async function bundle() {
       'azure-pipelines-tool-lib',
       'azure-pipelines-tasks-azure-arm-rest',
       'azure-devops-node-api',
+      'tfx-cli',
     ],
   });
   console.log('✓ Azure DevOps Task bundled');
@@ -42,6 +43,7 @@ async function bundle() {
       '@actions/exec',
       '@actions/tool-cache',
       '@actions/io',
+      'tfx-cli',
     ],
   });
   console.log('✓ GitHub Action bundled');

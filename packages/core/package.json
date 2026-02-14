@@ -20,6 +20,7 @@
   "dependencies": {
     "@types/uuid": "^3.4.13",
     "azure-devops-node-api": "^14.1.0",
+    "tfx-cli": "^0.17.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

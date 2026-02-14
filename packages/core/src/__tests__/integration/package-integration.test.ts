@@ -39,7 +39,7 @@ describe('Package Command Integration Test', () => {
     // Arrange
     const outputPath = path.join(outputDir, 'test.vsix');
     const tfx = new TfxManager({
-      version: 'embedded',
+      version: 'built-in',
       platform,
     });
 
@@ -92,7 +92,7 @@ describe('Package Command Integration Test', () => {
     // Arrange
     const outputPath = path.join(outputDir, 'structured-test.vsix');
     const tfx = new TfxManager({
-      version: 'embedded',
+      version: 'built-in',
       platform,
     });
 
@@ -127,7 +127,7 @@ describe('Package Command Integration Test', () => {
     const outputPath = path.join(outputDir, 'custom-var-test.vsix');
     const outputVariable = 'CustomVsixPath';
     const tfx = new TfxManager({
-      version: 'embedded',
+      version: 'built-in',
       platform,
     });
 
