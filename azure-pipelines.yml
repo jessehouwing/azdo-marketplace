@@ -233,9 +233,9 @@ stages:
         npm install -g tfx-cli
       displayName: 'Install tfx-cli'
     
-    - script: |
-        echo "Verifying VSIX package integrity..."
-        ls -lh $(Pipeline.Workspace)/vsix/*.vsix || dir $(Pipeline.Workspace)\vsix\*.vsix
+    - pwsh: |
+        Write-Host "Verifying VSIX package integrity..."
+        Get-ChildItem -Path "$(Pipeline.Workspace)/vsix/*.vsix" | Format-Table Name, Length
       displayName: 'Verify VSIX packages'
       condition: succeededOrFailed()
     
