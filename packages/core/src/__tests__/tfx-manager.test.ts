@@ -201,17 +201,17 @@ describe('TfxManager', () => {
 
       const tfxPath = await manager.resolve();
 
-      // Verify it attempted the download process
+      // Verify it attempted the install process
       expect(platform.infoMessages.some((m) =>
-        m.includes('Downloading tfx-cli@0.19.0 from npm')
+        m.includes('Installing tfx-cli@0.19.0 from npm')
       )).toBe(true);
       
-      // Should fall back gracefully when npm pack fails in mock
+      // Should fall back gracefully when npm install fails in mock
       expect(tfxPath).toBeDefined();
     });
 
-    it('should handle npm pack failure gracefully', async () => {
-      // Don't register npm, which will cause download to fail
+    it('should handle npm install failure gracefully', async () => {
+      // Don't register npm, which will cause install to fail
       platform.registerTool('tfx', '/usr/local/bin/tfx');
 
       const manager = new TfxManager({
@@ -228,7 +228,7 @@ describe('TfxManager', () => {
       )).toBe(true);
     });
 
-    it('should throw error if npm pack fails and no tfx in PATH', async () => {
+    it('should throw error if npm install fails and no tfx in PATH', async () => {
       // Don't register npm or tfx
 
       const manager = new TfxManager({
@@ -237,7 +237,7 @@ describe('TfxManager', () => {
       });
 
       await expect(manager.resolve()).rejects.toThrow(
-        /Failed to download tfx-cli/
+        /Failed to install tfx-cli/
       );
     });
   });

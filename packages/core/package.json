@@ -20,11 +20,9 @@
   "dependencies": {
     "@types/uuid": "^3.4.13",
     "azure-devops-node-api": "^14.1.0",
-    "tar": "^7.4.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.19.24",
-    "@types/tar": "^6.1.13"
+    "@types/node": "^20.19.24"
   }
 }
