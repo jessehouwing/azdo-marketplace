@@ -170,4 +170,4 @@ outputs:
 
 runs:
   using: 'node20'
-  main: 'dist/main.js'
+  main: 'packages/github-action/dist/main.js'
