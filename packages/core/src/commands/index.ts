@@ -10,5 +10,6 @@ export * from './unshare.js';
 export * from './install.js';
 export * from './show.js';
 export * from './is-valid.js';
+export * from './verify-install.js';
 // Additional commands will be exported here as they are implemented
 // export * from './verify-install.js';
