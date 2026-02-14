@@ -130,6 +130,7 @@
       "label": "Publisher ID",
       "required": false,
       "helpMarkDown": "Publisher ID for the extension",
+      "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = isValid || operation = verifyInstall",
       "groupName": "extensionIdentity"
     },
     {
@@ -138,6 +139,7 @@
       "label": "Extension ID",
       "required": false,
       "helpMarkDown": "Extension ID (unique within publisher)",
+      "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = isValid || operation = verifyInstall",
       "groupName": "extensionIdentity"
     },
     {
@@ -146,6 +148,7 @@
       "label": "Extension Tag",
       "required": false,
       "helpMarkDown": "Tag to append to extension ID (e.g., -dev, -preview)",
+      "visibleRule": "operation = package || operation = publish",
       "groupName": "extensionIdentity"
     },
     {
@@ -195,6 +198,7 @@
       "label": "Extension Version",
       "required": false,
       "helpMarkDown": "Override extension version (e.g., 1.2.3 or $(Build.BuildNumber))",
+      "visibleRule": "operation = package || operation = publish || operation = install",
       "groupName": "overrides"
     },
     {
@@ -203,6 +207,7 @@
       "label": "Extension Name",
       "required": false,
       "helpMarkDown": "Override extension display name",
+      "visibleRule": "operation = package || operation = publish",
       "groupName": "overrides"
     },
     {
@@ -302,7 +307,7 @@
       "required": false,
       "defaultValue": "false",
       "helpMarkDown": "Update all task versions to match extension version",
-      "visibleRule": "operation = publish",
+      "visibleRule": "operation = package || operation = publish",
       "groupName": "advanced"
     },
     {
@@ -312,7 +317,7 @@
       "required": false,
       "defaultValue": "false",
       "helpMarkDown": "Generate new deterministic task IDs",
-      "visibleRule": "operation = publish",
+      "visibleRule": "operation = package || operation = publish",
       "groupName": "advanced"
     },
     {
