@@ -125,6 +125,15 @@
       "groupName": "authentication"
     },
     {
+      "name": "tfxVersion",
+      "type": "string",
+      "label": "tfx-cli Version",
+      "defaultValue": "built-in",
+      "required": false,
+      "helpMarkDown": "Version of tfx-cli to use: 'built-in' (bundled with task), 'path' (from system PATH), or a version spec (e.g., '^0.17', 'latest')",
+      "groupName": "advanced"
+    },
+    {
       "name": "publisherId",
       "type": "string",
       "label": "Publisher ID",
