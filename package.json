@@ -1,5 +1,6 @@
 {
   "name": "vsts-developer-tools",
+  "version": "6.0.0-alpha.1",
   "description": "Azure DevOps Extension Tasks",
   "repository": {
     "type": "git",
@@ -10,6 +11,11 @@
     "azure-pipelines",
     "vsts",
     "tfs"
+  ],
+  "workspaces": [
+    "packages/core",
+    "packages/azdo-task",
+    "packages/github-action"
   ],
   "scripts": {
     "initdev": "npm run initdev:npm",
@@ -22,10 +28,18 @@
     "lint:tasks": "npm run lint:tasks:v5",
     "lint:tasks:v5": "glob-exec --parallel --foreach \"BuildTasks/*/tsconfig.json\" -- \"eslint {{file.dir}}\\*.ts --parser-options \"{'project':['{{file}}']}\"",
     "package:tasks": "tfx extension create --root . --output-path dist --manifest-globs vss-extension.json",
-    "build": "npm run build:tasks",
+    "build": "npm run build:tasks && npm run build:v6",
+    "build:v6": "npm run build -ws --if-present",
     "build:clean": "npm run clean && npm run initdev && npm run build",
     "build:tasks": "npm run compile:tasks",
     "package": "glob-exec --parallel --foreach \"BuildTasks/*/tsconfig.json\" -- \"cd {{file.dir}} && npm dedupe && npm prune --omit=dev\"",
+    "test": "npm run test -ws --if-present",
+    "test:coverage": "npm run test:coverage -ws --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "bundle": "npm run bundle -ws --if-present",
     "clean": "git clean -fdX"
   },
   "author": "Microsoft Corporation",
@@ -33,6 +47,10 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
+    "@rollup/plugin-commonjs": "^28.0.5",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.19.24",
     "@types/promise-retry": "^1.1.6",
     "@types/q": "^1.5.8",
@@ -43,7 +61,12 @@
     "eslint": "^9.39.2",
     "glob-exec": "^0.1.1",
     "globals": "^17.3.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.4.2",
+    "rollup": "^4.31.0",
     "tfx-cli": "^0.23.1",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"
   }
