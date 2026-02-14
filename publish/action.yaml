@@ -1,0 +1,105 @@
+name: 'Publish Azure DevOps Extension'
+description: 'Publish an Azure DevOps extension to the Visual Studio Marketplace'
+author: 'Jesse Houwing'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  # Authentication (Required for publish)
+  auth-type:
+    description: 'Authentication type: pat or oidc (default: pat)'
+    required: false
+    default: 'pat'
+  token:
+    description: 'Personal Access Token (required when auth-type is pat)'
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: 'Version of tfx-cli to use (embedded, latest, or specific version)'
+    required: false
+    default: 'embedded'
+  
+  # Extension Identity
+  publisher-id:
+    description: 'Publisher ID'
+    required: false
+  extension-id:
+    description: 'Extension ID'
+    required: false
+  extension-tag:
+    description: 'Extension tag to append to extension ID'
+    required: false
+  
+  # Source Selection
+  publish-source:
+    description: 'Source for publish: manifest or vsix (default: manifest)'
+    required: false
+    default: 'manifest'
+  
+  # Manifest Source (when publish-source is manifest)
+  root-folder:
+    description: 'Root folder for extension files'
+    required: false
+  manifest-globs:
+    description: 'Manifest file patterns (newline-separated)'
+    required: false
+  
+  # VSIX Source (when publish-source is vsix)
+  vsix-file:
+    description: 'Path to .vsix file'
+    required: false
+  
+  # Metadata Overrides
+  extension-version:
+    description: 'Extension version override'
+    required: false
+  extension-name:
+    description: 'Extension name override'
+    required: false
+  extension-visibility:
+    description: 'Extension visibility (private, public, private_preview, public_preview)'
+    required: false
+  
+  # Publish Options
+  share-with:
+    description: 'Organizations to share with (newline-separated)'
+    required: false
+  no-wait-validation:
+    description: 'Do not wait for validation to complete'
+    required: false
+    default: 'false'
+  update-tasks-version:
+    description: 'Update task versions to match extension version'
+    required: false
+    default: 'false'
+  update-tasks-id:
+    description: 'Update task IDs (generates new deterministic IDs)'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - id: publish
+      uses: jessehouwing/azure-devops-extension-tasks@v6
+      with:
+        operation: 'publish'
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        tfx-version: ${{ inputs.tfx-version }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        extension-tag: ${{ inputs.extension-tag }}
+        publish-source: ${{ inputs.publish-source }}
+        root-folder: ${{ inputs.root-folder }}
+        manifest-globs: ${{ inputs.manifest-globs }}
+        vsix-file: ${{ inputs.vsix-file }}
+        extension-version: ${{ inputs.extension-version }}
+        extension-name: ${{ inputs.extension-name }}
+        extension-visibility: ${{ inputs.extension-visibility }}
+        share-with: ${{ inputs.share-with }}
+        no-wait-validation: ${{ inputs.no-wait-validation }}
+        update-tasks-version: ${{ inputs.update-tasks-version }}
+        update-tasks-id: ${{ inputs.update-tasks-id }}

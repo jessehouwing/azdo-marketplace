@@ -1,0 +1,49 @@
+name: 'Unshare Azure DevOps Extension'
+description: 'Unshare an Azure DevOps extension from specific organizations'
+author: 'Jesse Houwing'
+branding:
+  icon: 'user-minus'
+  color: 'blue'
+
+inputs:
+  # Authentication (Required)
+  auth-type:
+    description: 'Authentication type: pat or oidc (default: pat)'
+    required: false
+    default: 'pat'
+  token:
+    description: 'Personal Access Token (required when auth-type is pat)'
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: 'Version of tfx-cli to use (embedded, latest, or specific version)'
+    required: false
+    default: 'embedded'
+  
+  # Extension Identity (Required)
+  publisher-id:
+    description: 'Publisher ID'
+    required: true
+  extension-id:
+    description: 'Extension ID'
+    required: true
+  
+  # Unshare Options (Required)
+  unshare-with:
+    description: 'Organizations to unshare from (newline-separated)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - id: unshare
+      uses: jessehouwing/azure-devops-extension-tasks@v6
+      with:
+        operation: 'unshare'
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        tfx-version: ${{ inputs.tfx-version }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        unshare-with: ${{ inputs.unshare-with }}

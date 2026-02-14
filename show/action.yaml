@@ -1,0 +1,54 @@
+name: 'Show Azure DevOps Extension'
+description: 'Display metadata for an Azure DevOps extension'
+author: 'Jesse Houwing'
+branding:
+  icon: 'info'
+  color: 'blue'
+
+inputs:
+  # Authentication (Required)
+  auth-type:
+    description: 'Authentication type: pat or oidc (default: pat)'
+    required: false
+    default: 'pat'
+  token:
+    description: 'Personal Access Token (required when auth-type is pat)'
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: 'Version of tfx-cli to use (embedded, latest, or specific version)'
+    required: false
+    default: 'embedded'
+  
+  # Extension Identity (Required)
+  publisher-id:
+    description: 'Publisher ID'
+    required: true
+  extension-id:
+    description: 'Extension ID'
+    required: true
+  
+  # Output Options
+  output-variable:
+    description: 'Output variable name to store metadata JSON'
+    required: false
+
+outputs:
+  extension-metadata:
+    description: 'Extension metadata JSON'
+    value: ${{ steps.show.outputs.extension-metadata }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: show
+      uses: jessehouwing/azure-devops-extension-tasks@v6
+      with:
+        operation: 'show'
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        tfx-version: ${{ inputs.tfx-version }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        output-variable: ${{ inputs.output-variable }}
