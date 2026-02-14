@@ -147,9 +147,6 @@ export async function publishExtension(
     if (options.extensionVisibility) {
       args.option('--extension-visibility', options.extensionVisibility);
     }
-
-    // TODO: Handle updateTasksVersion and updateTasksId
-    // These require reading and patching task manifests before packaging
   } else {
     // Publishing from VSIX file
     if (!options.vsixFile) {

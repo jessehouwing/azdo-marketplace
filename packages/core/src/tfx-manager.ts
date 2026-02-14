@@ -104,14 +104,18 @@ export class TfxManager {
     this.platform.info(`Downloading tfx-cli@${this.version} from npm...`);
 
     // Download tfx-cli package
-    // In a real implementation, we would:
-    // 1. Run: npm pack tfx-cli@version in temp dir
-    // 2. Extract the tarball
-    // 3. Cache the extracted directory
-    // For now, we'll use a placeholder implementation
-
-    // TODO: Implement actual npm pack + extract logic
-    // For now, just try to find tfx on PATH as fallback
+    // TODO: Implement npm pack + extract logic for dynamic tfx-cli download
+    //
+    // Current implementation: Uses tfx from PATH as fallback when not embedded/cached
+    //
+    // Future enhancement would:
+    // 1. Run: npm pack tfx-cli@${version} in temp dir
+    // 2. Extract the .tgz tarball
+    // 3. Cache the extracted node_modules directory
+    // 4. Return path to bin/tfx executable
+    //
+    // Priority: Low - current approach works for most scenarios where tfx is pre-installed
+    // or bundled (embedded mode). Dynamic download mainly needed for custom versions.
     this.platform.warning(
       'TfxManager.downloadAndCache not fully implemented - using tfx from PATH'
     );

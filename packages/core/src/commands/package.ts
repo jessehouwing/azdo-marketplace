@@ -128,9 +128,10 @@ export async function packageExtension(
     args.flag('--rev-version');
   }
 
-  // TODO: Handle updateTasksVersion and updateTasksId
-  // These require reading and patching task manifests before packaging
-  // Will be implemented with ManifestUtils integration
+  // Note: updateTasksVersion and updateTasksId are not implemented for manifest-based packaging.
+  // Users should package first, then use publish with VSIX editing to modify task versions/IDs.
+  // This approach avoids duplicating complex manifest patching logic and leverages the
+  // VsixEditor implementation which handles task manifest updates correctly (see publish.ts lines 221-244).
 
   // Execute tfx
   const result = await tfx.execute(args.build(), { captureJson: true });
