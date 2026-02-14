@@ -29,9 +29,7 @@
     }
   ],
   "scopes": [],
-  "categories": [
-    "Azure Pipelines"
-  ],
+  "categories": ["Azure Pipelines"],
   "content": {
     "details": {
       "path": "Metadata/overview.md"
@@ -106,9 +104,7 @@
     {
       "id": "package-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/PackageExtension"
       }
@@ -116,9 +112,7 @@
     {
       "id": "publish-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/PublishExtension"
       }
@@ -126,9 +120,7 @@
     {
       "id": "unpublish-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/UnpublishExtension"
       }
@@ -136,9 +128,7 @@
     {
       "id": "publish-vs-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/PublishVSExtension"
       }
@@ -146,9 +136,7 @@
     {
       "id": "install-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/InstallExtension"
       }
@@ -156,9 +144,7 @@
     {
       "id": "is-valid-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/IsValidExtension"
       }
@@ -166,9 +152,7 @@
     {
       "id": "is-valid-extension-agent-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/IsValidExtensionAgent"
       }
@@ -176,9 +160,7 @@
     {
       "id": "extension-version-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/ExtensionVersion"
       }
@@ -186,9 +168,7 @@
     {
       "id": "share-extension-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/ShareExtension"
       }
@@ -196,9 +176,7 @@
     {
       "id": "tfx-installer-build-task",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
         "name": "BuildTasks/TfxInstaller"
       }
@@ -206,9 +184,7 @@
     {
       "id": "vsts-marketplace-endpoint-type",
       "type": "ms.vss-endpoint.service-endpoint-type",
-      "targets": [
-        "ms.vss-endpoint.endpoint-types"
-      ],
+      "targets": ["ms.vss-endpoint.endpoint-types"],
       "properties": {
         "name": "VstsMarketplacePublishing",
         "displayName": "Visual Studio Marketplace",
@@ -258,9 +234,7 @@
     {
       "id": "tfs-marketplace-endpoint-type",
       "type": "ms.vss-endpoint.service-endpoint-type",
-      "targets": [
-        "ms.vss-endpoint.endpoint-types"
-      ],
+      "targets": ["ms.vss-endpoint.endpoint-types"],
       "properties": {
         "name": "TFSMarketplacePublishing",
         "displayName": "Azure DevOps Server Extension Local Gallery",

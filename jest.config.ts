@@ -16,6 +16,9 @@ const config: Config = {
           module: 'Node16',
           moduleResolution: 'Node16',
         },
+        diagnostics: {
+          ignoreCodes: [151002], // Suppress Node16 module kind warning
+        },
       },
     ],
   },
@@ -27,20 +30,6 @@ const config: Config = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  projects: [
-    {
-      displayName: 'core',
-      testMatch: ['<rootDir>/packages/core/src/**/*.test.ts'],
-    },
-    {
-      displayName: 'azdo-task',
-      testMatch: ['<rootDir>/packages/azdo-task/src/**/*.test.ts'],
-    },
-    {
-      displayName: 'github-action',
-      testMatch: ['<rootDir>/packages/github-action/src/**/*.test.ts'],
-    },
-  ],
 };
 
 export default config;

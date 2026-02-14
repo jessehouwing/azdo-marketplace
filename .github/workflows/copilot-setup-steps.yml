@@ -14,8 +14,8 @@ permissions:
   packages: read
 
 env:
-  NODE_VERSION: "24"
-  AZDO_ORG_URL: "https://dev.azure.com/jessehouwing-dev"
+  NODE_VERSION: '24'
+  AZDO_ORG_URL: 'https://dev.azure.com/jessehouwing-dev'
 
 jobs:
   copilot-setup-steps:

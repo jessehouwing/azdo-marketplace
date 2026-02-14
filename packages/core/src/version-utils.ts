@@ -68,8 +68,8 @@ export function formatVersion(version: Version): string {
  */
 export function updateTaskVersion(
   manifest: any,
-  extensionVersion: string,
-  versionType: 'major' | 'minor' | 'patch'
+  _extensionVersion: string,
+  _versionType: 'major' | 'minor' | 'patch'
 ): any {
   // Implementation will be added in Phase 2
   // For now, return unchanged manifest
@@ -81,9 +81,9 @@ export function updateTaskVersion(
  * Based on publisher, extension ID, and task name
  */
 export function generateTaskId(
-  publisher: string,
-  extensionId: string,
-  taskName: string
+  _publisher: string,
+  _extensionId: string,
+  _taskName: string
 ): string {
   // Implementation will be added in Phase 2
   // For now, return a placeholder

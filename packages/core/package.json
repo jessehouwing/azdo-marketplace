@@ -14,8 +14,8 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist",
-    "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage"
   },
   "dependencies": {
     "azure-devops-node-api": "^14.1.0"

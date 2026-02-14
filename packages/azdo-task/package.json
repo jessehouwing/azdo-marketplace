@@ -7,14 +7,14 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "bundle": "rollup -c ../../rollup.config.ts --configPlugin typescript"
   },
   "dependencies": {
     "@extension-tasks/core": "*",
-    "azure-pipelines-task-lib": "^4.19.2",
-    "azure-pipelines-tool-lib": "^2.0.14",
-    "azure-arm-rest": "^2.1.2"
+    "azure-pipelines-task-lib": "^5.2.6",
+    "azure-pipelines-tool-lib": "^2.0.10",
+    "azure-pipelines-tasks-azure-arm-rest": "^3.267.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.24"

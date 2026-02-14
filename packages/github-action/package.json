@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "bundle": "rollup -c ../../rollup.config.ts --configPlugin typescript"
   },
   "dependencies": {

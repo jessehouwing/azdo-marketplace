@@ -5,12 +5,14 @@
 This repository is undergoing a major refactor from v5 to v6. The goal is to consolidate 10 separate Azure DevOps pipeline tasks into a single unified task with a shared, platform-agnostic core library.
 
 **Current State**: The repository contains both:
+
 - **v5 tasks** (legacy): Individual tasks in `BuildTasks/` directory
 - **v6 packages** (new): npm workspace monorepo with 3 packages in `packages/`
 
 ### v6 Architecture (Work in Progress)
 
 npm workspace monorepo with 3 packages:
+
 - `packages/core` — Platform-agnostic extension task business logic
 - `packages/azdo-task` — Azure Pipelines task adapter
 - `packages/github-action` — GitHub Actions adapter
@@ -45,15 +47,15 @@ npm run format:check
 
 ## Key Commands (v6 Development)
 
-| Command | Description |
-|---------|-------------|
-| `npm run build:v6` | TypeScript compile v6 packages (via workspaces) |
-| `npm run test` | Jest unit tests (ESM mode, v6 packages) |
-| `npm run bundle` | Rollup bundle for azdo-task and github-action |
-| `npm run lint` | ESLint check (flat config) |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format` | Auto-format with Prettier |
-| `npm run format:check` | Check Prettier formatting |
+| Command                | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| `npm run build:v6`     | TypeScript compile v6 packages (via workspaces) |
+| `npm run test`         | Jest unit tests (ESM mode, v6 packages)         |
+| `npm run bundle`       | Rollup bundle for azdo-task and github-action   |
+| `npm run lint`         | ESLint check (flat config)                      |
+| `npm run lint:fix`     | Auto-fix ESLint issues                          |
+| `npm run format`       | Auto-format with Prettier                       |
+| `npm run format:check` | Check Prettier formatting                       |
 
 ## v6 Architecture Principles
 

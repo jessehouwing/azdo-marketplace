@@ -30,6 +30,7 @@ Consolidate 10 separate Azure DevOps pipeline tasks into a **single unified task
 ## 1. Goals & Non-Goals
 
 ### Goals
+
 - **Single task, multiple commands**: One pipeline task with a `command` selector (`package`, `publish`, `unpublish`, `share`, `unshare`, `install`, `show`, `isValid`, `verifyInstall`)
 - **Platform-agnostic core**: The business logic must NOT depend on `azure-pipelines-task-lib` or `@actions/core` directly — abstractions only
 - **Dual-platform delivery**: Ship as both an Azure DevOps extension (v6) and a GitHub Action
@@ -43,6 +44,7 @@ Consolidate 10 separate Azure DevOps pipeline tasks into a **single unified task
 - **Resolve open issues**: #205, #189, #39, #188, #172
 
 ### Non-Goals
+
 - Visual Studio extension publishing (`VsixPublisher.exe`) — **dropped**
 - Visual Studio Code extension publishing — **dropped**
 - Server-side / gate task (HttpRequest-based `IsValidExtension`) — retained as-is (replaced by agent-based `isValid` with retry). Not available in Github Actions.
@@ -227,7 +229,7 @@ Use **npm workspaces** (not Lerna/Nx) for simplicity:
 ```jsonc
 // root package.json
 {
-  "workspaces": ["packages/core", "packages/azdo-task", "packages/github-action"]
+  "workspaces": ["packages/core", "packages/azdo-task", "packages/github-action"],
 }
 ```
 
@@ -309,7 +311,7 @@ export interface IPlatformAdapter {
 // packages/core/src/auth.ts
 
 export interface AuthCredentials {
-  authType: "pat" | "basic";
+  authType: 'pat' | 'basic';
   serviceUrl: string;
   token?: string;
   username?: string;
@@ -330,6 +332,7 @@ The core library does NOT implement auth providers — each platform adapter pro
 ### 4.3 `TfxManager`
 
 Responsible for:
+
 1. **Embedded mode** (`version: "embedded"`): Locate the bundled tfx binary shipped with the extension/action
 2. **Specified version** (`version: "<semver>"`): Download from npm, cache, and locate
 3. **Execution**: Run tfx with args, capture output, parse JSON
@@ -367,7 +370,7 @@ export class TfxManager {
 
 export interface TfxResult {
   exitCode: number;
-  json?: unknown;       // Parsed JSON from stdout (if --json was used)
+  json?: unknown; // Parsed JSON from stdout (if --json was used)
   stdout: string;
   stderr: string;
 }
@@ -391,6 +394,7 @@ resolve()
 ```
 
 **Key reuse guarantees**:
+
 - **Azure Pipelines**: `azure-pipelines-tool-lib` stores cached tools in `$AGENT_TOOLSDIRECTORY`, which persists for the lifetime of the agent job. Multiple task invocations within the same job share this cache.
 - **GitHub Actions**: `@actions/tool-cache` stores in `$RUNNER_TOOL_CACHE`, persisted across all steps in a job. Additionally, the cache can be persisted across workflow runs using `actions/cache`.
 - **Same step / composite**: The in-memory `resolvedPath` field shortcuts repeat calls within the same Node process.
@@ -458,13 +462,13 @@ export interface PackageOptions {
   extensionPricing?: string;
   displayName?: string;
   description?: string;
-  baseUri?: string;              // Issue #39
-  overrideJson?: string;         // Raw JSON override string
+  baseUri?: string; // Issue #39
+  overrideJson?: string; // Raw JSON override string
   overridesFile?: string;
 
   // Task patching
   updateTasksVersion?: boolean;
-  updateTasksVersionType?: "major" | "minor" | "patch";
+  updateTasksVersionType?: 'major' | 'minor' | 'patch';
   updateTasksId?: boolean;
 
   // Behavior
@@ -483,7 +487,7 @@ export interface PackageResult {
 
 export async function packageExtension(
   options: PackageOptions,
-  auth: AuthCredentials | null,  // null for local-only packaging
+  auth: AuthCredentials | null, // null for local-only packaging
   tfx: TfxManager,
   platform: IPlatformAdapter
 ): Promise<PackageResult>;
@@ -500,23 +504,23 @@ The `verifyInstall` command uses the **Azure DevOps REST API** (via `azure-devop
 ```typescript
 // packages/core/src/commands/verify-install.ts
 
-import { WebApi, getPersonalAccessTokenHandler } from "azure-devops-node-api";
-import type { ITaskAgentApi } from "azure-devops-node-api/TaskAgentApi.js";
+import { WebApi, getPersonalAccessTokenHandler } from 'azure-devops-node-api';
+import type { ITaskAgentApi } from 'azure-devops-node-api/TaskAgentApi.js';
 
 export interface VerifyInstallOptions {
   publisherId: string;
   extensionId: string;
   extensionTag?: string;
-  accounts: string[];            // Target org URLs
-  expectedTaskNames?: string[];  // If known; otherwise derived from extension manifest
-  timeoutMinutes?: number;       // Default: 5
+  accounts: string[]; // Target org URLs
+  expectedTaskNames?: string[]; // If known; otherwise derived from extension manifest
+  timeoutMinutes?: number; // Default: 5
   pollingIntervalSeconds?: number; // Default: 10
 }
 
 export interface InstalledTask {
   taskName: string;
   taskVersion: string;
-  isBuiltIn: boolean;            // Contributed by agent vs extension
+  isBuiltIn: boolean; // Contributed by agent vs extension
 }
 
 export interface VerifyInstallResult {
@@ -557,17 +561,21 @@ export async function verifyInstall(
       }
 
       // Check if expected tasks from the extension are present
-      const extensionTasks = taskDefinitions.filter(t =>
+      const extensionTasks = taskDefinitions.filter((t) =>
         t.contributionIdentifier?.startsWith(`${options.publisherId}.${fullExtensionId}.`)
       );
 
       if (extensionTasks.length > 0) {
-        platform.info(`Found ${extensionTasks.length} task(s) from ${options.publisherId}.${fullExtensionId}`);
+        platform.info(
+          `Found ${extensionTasks.length} task(s) from ${options.publisherId}.${fullExtensionId}`
+        );
         break;
       }
 
-      platform.info(`Tasks not yet available, polling again in ${options.pollingIntervalSeconds ?? 10}s...`);
-      await new Promise(r => setTimeout(r, (options.pollingIntervalSeconds ?? 10) * 1000));
+      platform.info(
+        `Tasks not yet available, polling again in ${options.pollingIntervalSeconds ?? 10}s...`
+      );
+      await new Promise((r) => setTimeout(r, (options.pollingIntervalSeconds ?? 10) * 1000));
     }
   }
   // ... return aggregated results
@@ -575,6 +583,7 @@ export async function verifyInstall(
 ```
 
 **Key details**:
+
 - Uses `azure-devops-node-api` `WebApi` + `getTaskDefinitions()` from `ITaskAgentApi`
 - Tasks contributed by extensions have a `contributionIdentifier` matching `{publisher}.{extensionId}.{taskName}`
 - Built-in (agent-shipped) tasks have no `contributionIdentifier`
@@ -589,18 +598,35 @@ See [Phase 4](#7-phase-4--vsix-editor-rewrite) for details.
 ### 4.9 `VersionUtils`
 
 ```typescript
-export function parseVersion(str: string): { major: number; minor: number; patch: number; revision?: number };
-export function incrementVersion(version: string, type: "major" | "minor" | "patch"): string;
-export function updateTaskVersion(manifest: unknown, extensionVersion: string, versionType: string): unknown;
+export function parseVersion(str: string): {
+  major: number;
+  minor: number;
+  patch: number;
+  revision?: number;
+};
+export function incrementVersion(version: string, type: 'major' | 'minor' | 'patch'): string;
+export function updateTaskVersion(
+  manifest: unknown,
+  extensionVersion: string,
+  versionType: string
+): unknown;
 export function generateTaskId(publisher: string, extensionId: string, taskName: string): string; // UUID v5
 ```
 
 ### 4.10 `ManifestUtils`
 
 ```typescript
-export function resolveManifestPaths(rootFolder: string, patterns: string[], platform: IPlatformAdapter): string[];
+export function resolveManifestPaths(
+  rootFolder: string,
+  patterns: string[],
+  platform: IPlatformAdapter
+): string[];
 export function readManifest(path: string, platform: IPlatformAdapter): Promise<unknown>;
-export function writeManifest(manifest: unknown, path: string, platform: IPlatformAdapter): Promise<void>;
+export function writeManifest(
+  manifest: unknown,
+  path: string,
+  platform: IPlatformAdapter
+): Promise<void>;
 
 // Issue #188: Honor package path mappings when resolving task manifests
 export function resolveTaskManifestPaths(
@@ -638,31 +664,53 @@ Single task with `command` picklist as the primary selector. Inputs show/hide vi
   "demands": ["npm"],
   "instanceNameFormat": "tfx extension $(command)",
   "groups": [
-    { "name": "connection",     "displayName": "Service Connection" },
-    { "name": "extension",      "displayName": "Extension Identity" },
-    { "name": "manifest",       "displayName": "Manifest",           "isExpanded": true,
-      "visibleRule": "command = package || command = publish" },
-    { "name": "overrides",      "displayName": "Overrides",          "isExpanded": false },
-    { "name": "sharing",        "displayName": "Sharing",            "isExpanded": false,
-      "visibleRule": "command = publish || command = share || command = unshare" },
-    { "name": "install",        "displayName": "Installation",       "isExpanded": false,
-      "visibleRule": "command = install" },
-    { "name": "validation",     "displayName": "Validation",         "isExpanded": false,
-      "visibleRule": "command = publish || command = isValid" },
-    { "name": "versioning",     "displayName": "Versioning",         "isExpanded": false,
-      "visibleRule": "command = show" },
-    { "name": "tfx",            "displayName": "tfx Configuration",  "isExpanded": false },
-    { "name": "advanced",       "displayName": "Advanced",           "isExpanded": false }
+    { "name": "connection", "displayName": "Service Connection" },
+    { "name": "extension", "displayName": "Extension Identity" },
+    {
+      "name": "manifest",
+      "displayName": "Manifest",
+      "isExpanded": true,
+      "visibleRule": "command = package || command = publish",
+    },
+    { "name": "overrides", "displayName": "Overrides", "isExpanded": false },
+    {
+      "name": "sharing",
+      "displayName": "Sharing",
+      "isExpanded": false,
+      "visibleRule": "command = publish || command = share || command = unshare",
+    },
+    {
+      "name": "install",
+      "displayName": "Installation",
+      "isExpanded": false,
+      "visibleRule": "command = install",
+    },
+    {
+      "name": "validation",
+      "displayName": "Validation",
+      "isExpanded": false,
+      "visibleRule": "command = publish || command = isValid",
+    },
+    {
+      "name": "versioning",
+      "displayName": "Versioning",
+      "isExpanded": false,
+      "visibleRule": "command = show",
+    },
+    { "name": "tfx", "displayName": "tfx Configuration", "isExpanded": false },
+    { "name": "advanced", "displayName": "Advanced", "isExpanded": false },
   ],
-  "inputs": [ /* See §12 */ ],
+  "inputs": [
+    /* See §12 */
+  ],
   "execution": {
     "Node24": {
-      "target": "dist/main.js"
+      "target": "dist/main.js",
     },
     "Node20_1": {
-      "target": "dist/main.js"
-    }
-  }
+      "target": "dist/main.js",
+    },
+  },
 }
 ```
 
@@ -672,17 +720,29 @@ Maps to `azure-pipelines-task-lib` and `azure-pipelines-tool-lib`:
 
 ```typescript
 // packages/azdo-task/src/azdo-adapter.ts
-import tl from "azure-pipelines-task-lib/task.js";
-import * as toolLib from "azure-pipelines-tool-lib/tool.js";
+import tl from 'azure-pipelines-task-lib/task.js';
+import * as toolLib from 'azure-pipelines-tool-lib/tool.js';
 
 export class AzdoPlatformAdapter implements IPlatformAdapter {
-  getInput(name, required)    { return tl.getInput(name, required) ?? undefined; }
-  getBoolInput(name, required){ return tl.getBoolInput(name, required); }
+  getInput(name, required) {
+    return tl.getInput(name, required) ?? undefined;
+  }
+  getBoolInput(name, required) {
+    return tl.getBoolInput(name, required);
+  }
   // ... etc.
-  exec(tool, args, options)   { /* use tl.tool(tool).arg(args).execAsync(options) */ }
-  which(tool)                 { return Promise.resolve(tl.which(tool, true)); }
-  cacheDir(dir, tool, ver)    { return toolLib.cacheDir(dir, tool, ver); }
-  findCachedTool(tool, ver)   { return toolLib.findLocalTool(tool, ver) || undefined; }
+  exec(tool, args, options) {
+    /* use tl.tool(tool).arg(args).execAsync(options) */
+  }
+  which(tool) {
+    return Promise.resolve(tl.which(tool, true));
+  }
+  cacheDir(dir, tool, ver) {
+    return toolLib.cacheDir(dir, tool, ver);
+  }
+  findCachedTool(tool, ver) {
+    return toolLib.findLocalTool(tool, ver) || undefined;
+  }
   // ...
 }
 ```
@@ -691,31 +751,31 @@ export class AzdoPlatformAdapter implements IPlatformAdapter {
 
 ```typescript
 // packages/azdo-task/src/azdo-auth.ts
-import tl from "azure-pipelines-task-lib/task.js";
-import { AzureRMEndpoint } from "azure-pipelines-tasks-azure-arm-rest/azure-arm-endpoint.js";
+import tl from 'azure-pipelines-task-lib/task.js';
+import { AzureRMEndpoint } from 'azure-pipelines-tasks-azure-arm-rest/azure-arm-endpoint.js';
 
 export class AzdoPATAuthProvider implements IAuthProvider {
   async getCredentials(): Promise<AuthCredentials> {
-    const endpoint = tl.getInput("connectedServiceName", true);
+    const endpoint = tl.getInput('connectedServiceName', true);
     const url = tl.getEndpointUrl(endpoint, false);
     const auth = tl.getEndpointAuthorization(endpoint, false);
-    const token = auth.parameters["password"] || auth.parameters["apitoken"];
+    const token = auth.parameters['password'] || auth.parameters['apitoken'];
     tl.setSecret(token);
-    return { authType: "pat", serviceUrl: url, token };
+    return { authType: 'pat', serviceUrl: url, token };
   }
 }
 
 export class AzdoOIDCAuthProvider implements IAuthProvider {
   async getCredentials(): Promise<AuthCredentials> {
-    const serviceName = tl.getInput("connectedServiceNameAzureRM", true);
+    const serviceName = tl.getInput('connectedServiceNameAzureRM', true);
     const endpoint = await new AzureRMEndpoint(serviceName).getEndpoint();
     endpoint.applicationTokenCredentials.activeDirectoryResourceId =
-      "499b84ac-1321-427f-aa17-267ca6975798"; // VS Marketplace scope
+      '499b84ac-1321-427f-aa17-267ca6975798'; // VS Marketplace scope
     const token = await endpoint.applicationTokenCredentials.getToken();
     tl.setSecret(token);
     return {
-      authType: "pat",
-      serviceUrl: "https://marketplace.visualstudio.com",
+      authType: 'pat',
+      serviceUrl: 'https://marketplace.visualstudio.com',
       token,
     };
   }
@@ -723,21 +783,21 @@ export class AzdoOIDCAuthProvider implements IAuthProvider {
 
 export class AzdoTFSAuthProvider implements IAuthProvider {
   async getCredentials(): Promise<AuthCredentials> {
-    const endpoint = tl.getInput("connectedServiceNameTFS", true);
+    const endpoint = tl.getInput('connectedServiceNameTFS', true);
     const url = tl.getEndpointUrl(endpoint, false);
     const auth = tl.getEndpointAuthorization(endpoint, false);
-    if (auth.parameters["username"]) {
-      tl.setSecret(auth.parameters["password"]);
+    if (auth.parameters['username']) {
+      tl.setSecret(auth.parameters['password']);
       return {
-        authType: "basic",
+        authType: 'basic',
         serviceUrl: url,
-        username: auth.parameters["username"],
-        password: auth.parameters["password"],
+        username: auth.parameters['username'],
+        password: auth.parameters['password'],
       };
     }
-    const token = auth.parameters["apitoken"];
+    const token = auth.parameters['apitoken'];
     tl.setSecret(token);
-    return { authType: "pat", serviceUrl: url, token };
+    return { authType: 'pat', serviceUrl: url, token };
   }
 }
 ```
@@ -745,21 +805,27 @@ export class AzdoTFSAuthProvider implements IAuthProvider {
 ### 5.4 Entry Point (`main.ts`)
 
 ```typescript
-import { AzdoPlatformAdapter } from "./azdo-adapter.js";
-import { AzdoPATAuthProvider, AzdoOIDCAuthProvider, AzdoTFSAuthProvider } from "./azdo-auth.js";
-import { run } from "@extension-tasks/core";
+import { AzdoPlatformAdapter } from './azdo-adapter.js';
+import { AzdoPATAuthProvider, AzdoOIDCAuthProvider, AzdoTFSAuthProvider } from './azdo-auth.js';
+import { run } from '@extension-tasks/core';
 
 const platform = new AzdoPlatformAdapter();
-const command = platform.getInput("command", true);
-const connectTo = platform.getInput("connectTo", true);
+const command = platform.getInput('command', true);
+const connectTo = platform.getInput('connectTo', true);
 
 // Select auth provider
 let auth: IAuthProvider | null = null;
-if (command !== "package") {
+if (command !== 'package') {
   switch (connectTo) {
-    case "VsTeam":  auth = new AzdoPATAuthProvider();  break;
-    case "AzureRM": auth = new AzdoOIDCAuthProvider(); break;
-    case "TFS":     auth = new AzdoTFSAuthProvider();  break;
+    case 'VsTeam':
+      auth = new AzdoPATAuthProvider();
+      break;
+    case 'AzureRM':
+      auth = new AzdoOIDCAuthProvider();
+      break;
+    case 'TFS':
+      auth = new AzdoTFSAuthProvider();
+      break;
   }
 }
 
@@ -773,74 +839,102 @@ await run(command, auth, platform);
 ### 6.1 `action.yml`
 
 ```yaml
-name: "Azure DevOps Extension Tasks"
-description: "Package, publish, share, install, query, and validate Azure DevOps extensions"
+name: 'Azure DevOps Extension Tasks'
+description: 'Package, publish, share, install, query, and validate Azure DevOps extensions'
 branding:
-  icon: "package"
-  color: "blue"
+  icon: 'package'
+  color: 'blue'
 
 inputs:
   command:
-    description: "Command to run: package, publish, unpublish, share, unshare, install, show, isValid, verifyInstall"
+    description: 'Command to run: package, publish, unpublish, share, unshare, install, show, isValid, verifyInstall'
     required: true
   connectTo:
-    description: "Authentication method: PAT or OIDC"
+    description: 'Authentication method: PAT or OIDC'
     required: false
-    default: "OIDC"
+    default: 'OIDC'
   serviceUrl:
-    description: "Marketplace or Azure DevOps Server URL"
+    description: 'Marketplace or Azure DevOps Server URL'
     required: false
-    default: "https://marketplace.visualstudio.com"
+    default: 'https://marketplace.visualstudio.com'
   token:
-    description: "PAT token (when connectTo=PAT)"
+    description: 'PAT token (when connectTo=PAT)'
     required: false
   azureClientId:
-    description: "Entra ID app registration client ID (when connectTo=OIDC)"
+    description: 'Entra ID app registration client ID (when connectTo=OIDC)'
     required: false
   azureTenantId:
-    description: "Entra ID tenant ID (when connectTo=OIDC)"
+    description: 'Entra ID tenant ID (when connectTo=OIDC)'
     required: false
   # ... all other inputs matching the core options ...
   tfxVersion:
     description: "tfx-cli version to use ('embedded' for bundled)"
     required: false
-    default: "embedded"
+    default: 'embedded'
 
 outputs:
   extensionOutputPath:
-    description: "Path to the packaged/published VSIX file"
+    description: 'Path to the packaged/published VSIX file'
   extensionVersion:
-    description: "Extension version (from show command)"
+    description: 'Extension version (from show command)'
 
 runs:
-  using: "node24"
-  main: "dist/index.js"
+  using: 'node24'
+  main: 'dist/index.js'
 ```
 
 ### 6.2 `GitHubAdapter` — `IPlatformAdapter` for GitHub Actions
 
 ```typescript
-import * as core from "@actions/core";
-import * as exec from "@actions/exec";
-import * as io from "@actions/io";
-import * as tc from "@actions/tool-cache";
-import * as glob from "@actions/glob";
+import * as core from '@actions/core';
+import * as exec from '@actions/exec';
+import * as io from '@actions/io';
+import * as tc from '@actions/tool-cache';
+import * as glob from '@actions/glob';
 
 export class GitHubPlatformAdapter implements IPlatformAdapter {
-  getInput(name, required)    { return core.getInput(name, { required }) || undefined; }
-  getBoolInput(name, required){ return core.getBooleanInput(name, { required }); }
-  setOutput(name, value)      { core.setOutput(name, value); }
-  setResult(result, message)  { if (result !== TaskResult.Succeeded) core.setFailed(message); }
-  setSecret(value)            { core.setSecret(value); }
-  debug(message)              { core.debug(message); }
-  info(message)               { core.info(message); }
-  warning(message)            { core.warning(message); }
-  error(message)              { core.error(message); }
-  exec(tool, args, options)   { return exec.exec(tool, args, options); }
-  which(tool, check)          { return io.which(tool, check); }
-  cacheDir(dir, tool, ver)    { return tc.cacheDir(dir, tool, ver); }
-  findCachedTool(tool, ver)   { return tc.find(tool, ver) || undefined; }
-  downloadTool(url)           { return tc.downloadTool(url); }
+  getInput(name, required) {
+    return core.getInput(name, { required }) || undefined;
+  }
+  getBoolInput(name, required) {
+    return core.getBooleanInput(name, { required });
+  }
+  setOutput(name, value) {
+    core.setOutput(name, value);
+  }
+  setResult(result, message) {
+    if (result !== TaskResult.Succeeded) core.setFailed(message);
+  }
+  setSecret(value) {
+    core.setSecret(value);
+  }
+  debug(message) {
+    core.debug(message);
+  }
+  info(message) {
+    core.info(message);
+  }
+  warning(message) {
+    core.warning(message);
+  }
+  error(message) {
+    core.error(message);
+  }
+  exec(tool, args, options) {
+    return exec.exec(tool, args, options);
+  }
+  which(tool, check) {
+    return io.which(tool, check);
+  }
+  cacheDir(dir, tool, ver) {
+    return tc.cacheDir(dir, tool, ver);
+  }
+  findCachedTool(tool, ver) {
+    return tc.find(tool, ver) || undefined;
+  }
+  downloadTool(url) {
+    return tc.downloadTool(url);
+  }
   // ...
 }
 ```
@@ -849,9 +943,12 @@ export class GitHubPlatformAdapter implements IPlatformAdapter {
 
 ```typescript
 export class GitHubPATAuthProvider implements IAuthProvider {
-  constructor(private token: string, private serviceUrl: string) {}
+  constructor(
+    private token: string,
+    private serviceUrl: string
+  ) {}
   async getCredentials() {
-    return { authType: "pat" as const, serviceUrl: this.serviceUrl, token: this.token };
+    return { authType: 'pat' as const, serviceUrl: this.serviceUrl, token: this.token };
   }
 }
 
@@ -876,8 +973,8 @@ export class GitHubOIDCAuthProvider implements IAuthProvider {
    * - Inputs: `azureClientId`, `azureTenantId` (from the app registration).
    */
   async getCredentials() {
-    const clientId = core.getInput("azureClientId", { required: true });
-    const tenantId = core.getInput("azureTenantId", { required: true });
+    const clientId = core.getInput('azureClientId', { required: true });
+    const tenantId = core.getInput('azureTenantId', { required: true });
 
     // Step 1: Get GitHub OIDC token with the Entra app as audience
     const idToken = await core.getIDToken(clientId);
@@ -885,14 +982,14 @@ export class GitHubOIDCAuthProvider implements IAuthProvider {
     // Step 2: Exchange for Entra ID access token targeting VS Marketplace
     const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     const body = new URLSearchParams({
-      grant_type: "client_credentials",
+      grant_type: 'client_credentials',
       client_id: clientId,
-      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
       client_assertion: idToken,
-      scope: "499b84ac-1321-427f-aa17-267ca6975798/.default",
+      scope: '499b84ac-1321-427f-aa17-267ca6975798/.default',
     });
 
-    const resp = await fetch(tokenUrl, { method: "POST", body });
+    const resp = await fetch(tokenUrl, { method: 'POST', body });
     if (!resp.ok) {
       throw new Error(`Entra token exchange failed: ${resp.status} ${await resp.text()}`);
     }
@@ -900,8 +997,8 @@ export class GitHubOIDCAuthProvider implements IAuthProvider {
     core.setSecret(access_token);
 
     return {
-      authType: "pat" as const,
-      serviceUrl: "https://marketplace.visualstudio.com",
+      authType: 'pat' as const,
+      serviceUrl: 'https://marketplace.visualstudio.com',
       token: access_token,
     };
   }
@@ -913,6 +1010,7 @@ export class GitHubOIDCAuthProvider implements IAuthProvider {
 ## 7. Phase 4 — VSIX Editor Rewrite
 
 ### Goals
+
 - Remove dependency on `7zip-bin` (large native binary)
 - Use pure JS zip library (`yazl`/`yauzl` or `archiver`/`unzipper`) — much smaller
 - Make platform-agnostic (current impl has Windows/Linux branching for 7zip vs unzip)
@@ -924,9 +1022,9 @@ export class GitHubOIDCAuthProvider implements IAuthProvider {
 ```typescript
 // packages/core/src/vsix-editor.ts
 
-import { createReadStream } from "node:fs";
-import { Open as unzipper } from "unzipper";
-import yazl from "yazl";
+import { createReadStream } from 'node:fs';
+import { Open as unzipper } from 'unzipper';
+import yazl from 'yazl';
 
 export interface VsixEditOptions {
   publisher?: string;
@@ -939,7 +1037,7 @@ export interface VsixEditOptions {
   updateTasksVersion?: boolean;
   updateTasksVersionType?: string;
   updateTasksId?: boolean;
-  updateContributionReferences?: boolean;  // Issue #172
+  updateContributionReferences?: boolean; // Issue #172
 }
 
 export class VsixEditor {
@@ -968,6 +1066,7 @@ export class VsixEditor {
 ```
 
 ### Key Improvements
+
 - **Single pass**: Read original zip, stream entries to new zip, replacing only modified files
 - **No temp extraction to disk**: Parse XML/JSON in memory, only write the final output VSIX
 - **Fix #205**: Always read publisher+extensionId from the VSIX's `extension.vsixmanifest` as fallback
@@ -988,27 +1087,27 @@ export class VsixEditor {
 
 ```typescript
 // jest.config.ts
-import type { Config } from "jest";
+import type { Config } from 'jest';
 
 const config: Config = {
-  preset: "ts-jest/presets/default-esm",
-  extensionsToTreatAsEsm: [".ts"],
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
-    "^(\\.{1,2}/.*)\\.js$": "$1",  // Strip .js from ESM imports for resolution
+    '^(\\.{1,2}/.*)\\.js$': '$1', // Strip .js from ESM imports for resolution
   },
   transform: {
-    "^.+\\.tsx?$": [
-      "ts-jest",
+    '^.+\\.tsx?$': [
+      'ts-jest',
       {
         useESM: true,
-        tsconfig: "tsconfig.base.json",
+        tsconfig: 'tsconfig.base.json',
       },
     ],
   },
-  resolver: "ts-jest-resolver",
-  collectCoverageFrom: ["./packages/*/src/**/*.ts"],
-  coveragePathIgnorePatterns: ["/node_modules/", "/__tests__/"],
-  testMatch: ["**/__tests__/**/*.test.ts"],
+  resolver: 'ts-jest-resolver',
+  collectCoverageFrom: ['./packages/*/src/**/*.ts'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
+  testMatch: ['**/__tests__/**/*.test.ts'],
 };
 
 export default config;
@@ -1020,17 +1119,18 @@ export default config;
 
 Every module in `packages/core/src/` gets a corresponding test file. Tests use the **mock platform adapter** — no real IO, no real exec.
 
-| Module | Test Focus |
-|--------|-----------|
-| `arg-builder.test.ts` | Fluent API produces correct arg arrays; `argIf` skips falsy; `line()` splits correctly |
-| `json-output-stream.test.ts` | Separates JSON from warnings/commands; handles chunked input; handles empty/invalid JSON |
-| `version-utils.test.ts` | Parsing `##.##.##`, `##.##.##.##`; increment major/minor/patch; invalid input errors; UUID v5 generation for task IDs is deterministic |
-| `manifest-utils.test.ts` | Read/write round-trip; BOM stripping; task path resolution with `packagePath` mapping (#188); contribution reference updates (#172) |
-| `vsix-editor.test.ts` | Use fixture VSIX files; verify identity patching; gallery flag manipulation; task version/ID patching; output file naming |
+| Module                       | Test Focus                                                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `arg-builder.test.ts`        | Fluent API produces correct arg arrays; `argIf` skips falsy; `line()` splits correctly                                                 |
+| `json-output-stream.test.ts` | Separates JSON from warnings/commands; handles chunked input; handles empty/invalid JSON                                               |
+| `version-utils.test.ts`      | Parsing `##.##.##`, `##.##.##.##`; increment major/minor/patch; invalid input errors; UUID v5 generation for task IDs is deterministic |
+| `manifest-utils.test.ts`     | Read/write round-trip; BOM stripping; task path resolution with `packagePath` mapping (#188); contribution reference updates (#172)    |
+| `vsix-editor.test.ts`        | Use fixture VSIX files; verify identity patching; gallery flag manipulation; task version/ID patching; output file naming              |
 
 #### 8.2 Command Unit Tests
 
 Each command test mocks `TfxManager.execute()` and verifies:
+
 1. Correct tfx args are built for various input combinations
 2. JSON output is parsed correctly
 3. Output variables are set
@@ -1081,13 +1181,13 @@ export class MockPlatformAdapter implements IPlatformAdapter {
 
 ### Test Coverage Target
 
-| Area | Target |
-|------|--------|
-| Core library | ≥ 90% line coverage |
+| Area              | Target                |
+| ----------------- | --------------------- |
+| Core library      | ≥ 90% line coverage   |
 | Command functions | ≥ 95% branch coverage |
-| Platform adapters | ≥ 80% line coverage |
-| Auth providers | ≥ 85% line coverage |
-| Overall | ≥ 90% line coverage |
+| Platform adapters | ≥ 80% line coverage   |
+| Auth providers    | ≥ 85% line coverage   |
+| Overall           | ≥ 90% line coverage   |
 
 ---
 
@@ -1095,13 +1195,13 @@ export class MockPlatformAdapter implements IPlatformAdapter {
 
 ### Build Toolchain
 
-| Tool | Purpose |
-|------|---------|
-| **TypeScript 6** | Compile to ESNext with strict mode |
-| **Rollup** | Bundle each entry point to a single file |
-| **npm workspaces** | Monorepo dependency management |
-| **ESLint** | Linting (flat config) |
-| **Prettier** | Code formatting |
+| Tool               | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| **TypeScript 6**   | Compile to ESNext with strict mode       |
+| **Rollup**         | Bundle each entry point to a single file |
+| **npm workspaces** | Monorepo dependency management           |
+| **ESLint**         | Linting (flat config)                    |
+| **Prettier**       | Code formatting                          |
 
 ### Bundle Strategy
 
@@ -1109,18 +1209,18 @@ Each consumer (azdo-task, github-action) produces a **single bundled JS file** v
 
 ```typescript
 // rollup.config.ts
-import { defineConfig } from "rollup";
-import typescript from "@rollup/plugin-typescript";
-import nodeResolve from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
+import { defineConfig } from 'rollup';
+import typescript from '@rollup/plugin-typescript';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
 
 export default defineConfig([
   // Azure Pipelines task
   {
-    input: "packages/azdo-task/src/main.ts",
+    input: 'packages/azdo-task/src/main.ts',
     output: {
-      file: "packages/azdo-task/dist/main.js",
-      format: "es",
+      file: 'packages/azdo-task/dist/main.js',
+      format: 'es',
       sourcemap: true,
     },
     external: [
@@ -1130,22 +1230,22 @@ export default defineConfig([
       /^azure-pipelines-tasks-azure-arm-rest/,
     ],
     plugins: [
-      typescript({ tsconfig: "packages/azdo-task/tsconfig.json" }),
+      typescript({ tsconfig: 'packages/azdo-task/tsconfig.json' }),
       nodeResolve({ preferBuiltins: true }),
       commonjs(),
     ],
   },
   // GitHub Action
   {
-    input: "packages/github-action/src/main.ts",
+    input: 'packages/github-action/src/main.ts',
     output: {
-      file: "packages/github-action/dist/index.js",
-      format: "es",
+      file: 'packages/github-action/dist/index.js',
+      format: 'es',
       sourcemap: true,
     },
     // Bundle everything into one file for GitHub Actions
     plugins: [
-      typescript({ tsconfig: "packages/github-action/tsconfig.json" }),
+      typescript({ tsconfig: 'packages/github-action/tsconfig.json' }),
       nodeResolve({ preferBuiltins: true }),
       commonjs(),
     ],
@@ -1164,11 +1264,11 @@ export default defineConfig([
 
 ### Expected Size Comparison
 
-| Component | Current (est.) | Target |
-|-----------|---------------|--------|
-| All tasks combined (VSIX) | ~40-60 MB | ~10-15 MB |
-| Single task node_modules | varies | < 5 MB |
-| GitHub Action dist/ | N/A | < 2 MB |
+| Component                 | Current (est.) | Target    |
+| ------------------------- | -------------- | --------- |
+| All tasks combined (VSIX) | ~40-60 MB      | ~10-15 MB |
+| Single task node_modules  | varies         | < 5 MB    |
+| GitHub Action dist/       | N/A            | < 2 MB    |
 
 ### ESLint Configuration
 
@@ -1176,31 +1276,31 @@ Flat config (ESLint 9+) with TypeScript, Jest, and Prettier integration:
 
 ```javascript
 // eslint.config.mjs
-import eslint from "@eslint/js";
-import tseslint from "typescript-eslint";
-import jest from "eslint-plugin-jest";
-import prettier from "eslint-config-prettier";
-import importPlugin from "eslint-plugin-import";
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import jest from 'eslint-plugin-jest';
+import prettier from 'eslint-config-prettier';
+import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.ts"],
+    files: ['**/*.ts'],
     plugins: { import: importPlugin },
     rules: {
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "@typescript-eslint/explicit-function-return-type": "off",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "import/order": ["error", { "newlines-between": "always", alphabetize: { order: "asc" } }],
-      "import/no-duplicates": "error",
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'import/order': ['error', { 'newlines-between': 'always', alphabetize: { order: 'asc' } }],
+      'import/no-duplicates': 'error',
     },
   },
   {
-    files: ["**/__tests__/**/*.ts"],
-    ...jest.configs["flat/recommended"],
+    files: ['**/__tests__/**/*.ts'],
+    ...jest.configs['flat/recommended'],
   },
-  prettier, // Must be last — disables formatting rules handled by Prettier
+  prettier // Must be last — disables formatting rules handled by Prettier
 );
 ```
 
@@ -1240,8 +1340,8 @@ coverage/
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check-dist": "npm run bundle && git diff --exit-code packages/*/dist/",
-    "package": "tfx extension create --root . --output-path dist --manifest-globs vss-extension.json"
-  }
+    "package": "tfx extension create --root . --output-path dist --manifest-globs vss-extension.json",
+  },
 }
 ```
 
@@ -1268,7 +1368,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with: { node-version: '24' }
       - run: npm ci
       - run: npm run build
       - run: npm run test:coverage
@@ -1284,7 +1384,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with: { node-version: '24' }
       - run: npm ci
       - run: npm run bundle
       - name: Test package command
@@ -1315,7 +1415,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with: { node-version: '24' }
       - run: npm ci
       - run: npm run build
       - run: npm run test:coverage
@@ -1342,7 +1442,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with: { node-version: '24' }
       - run: npm ci
       - run: npm run bundle
       - name: Compare expected vs actual dist/
@@ -1370,7 +1470,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with: { node-version: '24' }
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
@@ -1388,7 +1488,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with: { node-version: '24' }
       - run: npm ci
       - run: npm run build
       - run: npm run test
@@ -1413,25 +1513,25 @@ stages:
         strategy:
           matrix:
             linux_node24:
-              vmImage: "ubuntu-latest"
-              nodeVersion: "24.x"
+              vmImage: 'ubuntu-latest'
+              nodeVersion: '24.x'
             linux_node20:
-              vmImage: "ubuntu-latest"
-              nodeVersion: "20.x"
+              vmImage: 'ubuntu-latest'
+              nodeVersion: '20.x'
             windows_node24:
-              vmImage: "windows-latest"
-              nodeVersion: "24.x"
+              vmImage: 'windows-latest'
+              nodeVersion: '24.x'
             windows_node20:
-              vmImage: "windows-latest"
-              nodeVersion: "20.x"
+              vmImage: 'windows-latest'
+              nodeVersion: '20.x'
             macos_node24:
-              vmImage: "macos-latest"
-              nodeVersion: "24.x"
+              vmImage: 'macos-latest'
+              nodeVersion: '24.x'
         pool:
           vmImage: $(vmImage)
         steps:
           - task: NodeTool@0
-            inputs: { versionSpec: "$(nodeVersion)" }
+            inputs: { versionSpec: '$(nodeVersion)' }
           - script: npm ci
           - script: npm run build
           - script: npm run test:coverage
@@ -1441,10 +1541,10 @@ stages:
       - job: Bundle
         dependsOn: BuildAndTest
         pool:
-          vmImage: "ubuntu-latest"
+          vmImage: 'ubuntu-latest'
         steps:
           - task: NodeTool@0
-            inputs: { versionSpec: "24.x" }
+            inputs: { versionSpec: '24.x' }
           - script: npm ci
           - script: npm run build
           - script: npm run bundle
@@ -1461,7 +1561,7 @@ stages:
           runOnce:
             deploy:
               steps:
-                - # Publish private extension to marketplace
+                -  # Publish private extension to marketplace
 
   - stage: PublishProd
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
@@ -1472,7 +1572,7 @@ stages:
           runOnce:
             deploy:
               steps:
-                - # Publish public extension + GitHub release
+                -  # Publish public extension + GitHub release
 ```
 
 #### Azure Pipelines Integration Tests (separate pipeline)
@@ -1481,34 +1581,34 @@ Tests the packaged Azure DevOps task on all hosted agent images:
 
 ```yaml
 # azure-pipelines-integration.yml
-trigger: none  # Run manually or after PublishDev
+trigger: none # Run manually or after PublishDev
 
 strategy:
   matrix:
     ubuntu_node24:
-      vmImage: "ubuntu-latest"
-      nodeVersion: "24.x"
+      vmImage: 'ubuntu-latest'
+      nodeVersion: '24.x'
     ubuntu_node20:
-      vmImage: "ubuntu-latest"
-      nodeVersion: "20.x"
+      vmImage: 'ubuntu-latest'
+      nodeVersion: '20.x'
     windows_node24:
-      vmImage: "windows-latest"
-      nodeVersion: "24.x"
+      vmImage: 'windows-latest'
+      nodeVersion: '24.x'
     windows_node20:
-      vmImage: "windows-latest"
-      nodeVersion: "20.x"
+      vmImage: 'windows-latest'
+      nodeVersion: '20.x'
     macos_node24:
-      vmImage: "macos-latest"
-      nodeVersion: "24.x"
+      vmImage: 'macos-latest'
+      nodeVersion: '24.x'
 
 pool:
   vmImage: $(vmImage)
 
 steps:
   - task: NodeTool@0
-    inputs: { versionSpec: "$(nodeVersion)" }
+    inputs: { versionSpec: '$(nodeVersion)' }
   - task: TfxExtension@6
-    displayName: "Test: package"
+    displayName: 'Test: package'
     inputs:
       command: package
       rootFolder: test/fixtures/sample-extension
@@ -1531,6 +1631,7 @@ steps:
 ### Migration Guide (in README or `docs/migration-v6.md`)
 
 Document:
+
 1. Task name change: `PackageAzureDevOpsExtension@5` → `TfxExtension@6` with `command: package`
 2. Input name mappings (e.g. `fileType` → `extensionSource`, `method` → `extensionSource`)
 3. Removed tasks and alternatives
@@ -1549,7 +1650,7 @@ Rewrite to reflect new single-package architecture, workspace layout, test comma
   "name": "Azure DevOps Extension Tasks",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:24",
   "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
   },
   "postCreateCommand": "npm ci",
   "customizations": {
@@ -1561,11 +1662,11 @@ Rewrite to reflect new single-package architecture, workspace layout, test comma
           "editor.defaultFormatter": "esbenp.prettier-vscode",
           "editor.codeActionsOnSave": {
             "source.fixAll.eslint": "explicit",
-            "source.organizeImports": "explicit"
-          }
+            "source.organizeImports": "explicit",
+          },
         },
         "jest.autoRun": "off",
-        "typescript.tsdk": "node_modules/typescript/lib"
+        "typescript.tsdk": "node_modules/typescript/lib",
       },
       "extensions": [
         "dbaeumer.vscode-eslint",
@@ -1577,10 +1678,10 @@ Rewrite to reflect new single-package architecture, workspace layout, test comma
         "GitHub.vscode-pull-request-github",
         "eamodio.gitlens",
         "EditorConfig.EditorConfig",
-        "ms-vscode.vscode-typescript-next"
-      ]
-    }
-  }
+        "ms-vscode.vscode-typescript-next",
+      ],
+    },
+  },
 }
 ```
 
@@ -1596,8 +1697,8 @@ Rewrite to reflect new single-package architecture, workspace layout, test comma
   "eslint.useFlatConfig": true,
   "search.exclude": {
     "**/dist": true,
-    "**/*.vsix": true
-  }
+    "**/*.vsix": true,
+  },
 }
 ```
 
@@ -1611,6 +1712,7 @@ This file lives at the repo root and is automatically read by Copilot Coding Age
 ## Repository Overview
 
 npm workspace monorepo with 3 packages:
+
 - `packages/core` — Platform-agnostic extension task business logic
 - `packages/azdo-task` — Azure Pipelines task adapter
 - `packages/github-action` — GitHub Actions adapter
@@ -1618,25 +1720,25 @@ npm workspace monorepo with 3 packages:
 ## Quick Start
 
 \`\`\`bash
-npm ci                    # Install all dependencies
-npm run build             # TypeScript compile all packages
-npm run test              # Run Jest tests
-npm run test:coverage     # Run tests with coverage
-npm run bundle            # Rollup bundle for each consumer
-npm run lint              # ESLint check
-npm run format:check      # Prettier check
+npm ci # Install all dependencies
+npm run build # TypeScript compile all packages
+npm run test # Run Jest tests
+npm run test:coverage # Run tests with coverage
+npm run bundle # Rollup bundle for each consumer
+npm run lint # ESLint check
+npm run format:check # Prettier check
 \`\`\`
 
 ## Key Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run build` | TypeScript compile (all packages via project references) |
-| `npm run test` | Jest unit tests (ESM mode) |
-| `npm run bundle` | Rollup bundle for azdo-task and github-action |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format` | Auto-format with Prettier |
-| `npm run package` | Create .vsix extension package |
+| Command            | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `npm run build`    | TypeScript compile (all packages via project references) |
+| `npm run test`     | Jest unit tests (ESM mode)                               |
+| `npm run bundle`   | Rollup bundle for azdo-task and github-action            |
+| `npm run lint:fix` | Auto-fix ESLint issues                                   |
+| `npm run format`   | Auto-format with Prettier                                |
+| `npm run package`  | Create .vsix extension package                           |
 
 ## Architecture
 
@@ -1668,112 +1770,112 @@ Pin the default Node.js version for tools like `nvm`, `fnm`, `mise`, `nodenv`, a
 
 ### Global Inputs (all commands)
 
-| Input | Type | Default | Required | Description |
-|-------|------|---------|----------|-------------|
-| `command` | picklist | — | ✅ | `package`, `publish`, `unpublish`, `share`, `unshare`, `install`, `show`, `isValid`, `verifyInstall` |
-| `connectTo` | radio | `AzureRM` | ✅ (except package) | `VsTeam`, `AzureRM`, `TFS` |
-| `connectedServiceName` | connectedService | — | When VsTeam | PAT endpoint |
-| `connectedServiceNameAzureRM` | connectedService | — | When AzureRM | WIF/OIDC endpoint |
-| `connectedServiceNameTFS` | connectedService | — | When TFS | TFS endpoint |
-| `tfxVersion` | string | `embedded` | No | `embedded` or semver spec |
-| `cwd` | filePath | — | No | Working directory |
-| `arguments` | string | — | No | Additional raw tfx args |
+| Input                         | Type             | Default    | Required            | Description                                                                                          |
+| ----------------------------- | ---------------- | ---------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `command`                     | picklist         | —          | ✅                  | `package`, `publish`, `unpublish`, `share`, `unshare`, `install`, `show`, `isValid`, `verifyInstall` |
+| `connectTo`                   | radio            | `AzureRM`  | ✅ (except package) | `VsTeam`, `AzureRM`, `TFS`                                                                           |
+| `connectedServiceName`        | connectedService | —          | When VsTeam         | PAT endpoint                                                                                         |
+| `connectedServiceNameAzureRM` | connectedService | —          | When AzureRM        | WIF/OIDC endpoint                                                                                    |
+| `connectedServiceNameTFS`     | connectedService | —          | When TFS            | TFS endpoint                                                                                         |
+| `tfxVersion`                  | string           | `embedded` | No                  | `embedded` or semver spec                                                                            |
+| `cwd`                         | filePath         | —          | No                  | Working directory                                                                                    |
+| `arguments`                   | string           | —          | No                  | Additional raw tfx args                                                                              |
 
 ### Extension Identity Inputs (most commands)
 
-| Input | Type | Visible When | Description |
-|-------|------|-------------|-------------|
-| `extensionSource` | radio (`manifest` / `vsix`) | package, publish | How the extension is identified |
-| `publisherId` | string | — | Publisher ID |
-| `extensionId` | string | — | Extension ID |
-| `extensionTag` | string | — | Tag appended to extension ID |
-| `vsixFile` | filePath | extensionSource=vsix | VSIX file path (supports globs) |
+| Input             | Type                        | Visible When         | Description                     |
+| ----------------- | --------------------------- | -------------------- | ------------------------------- |
+| `extensionSource` | radio (`manifest` / `vsix`) | package, publish     | How the extension is identified |
+| `publisherId`     | string                      | —                    | Publisher ID                    |
+| `extensionId`     | string                      | —                    | Extension ID                    |
+| `extensionTag`    | string                      | —                    | Tag appended to extension ID    |
+| `vsixFile`        | filePath                    | extensionSource=vsix | VSIX file path (supports globs) |
 
 ### Manifest Inputs (package, publish)
 
-| Input | Type | Default | Visible When | Description |
-|-------|------|---------|-------------|-------------|
-| `rootFolder` | filePath | — | extensionSource=manifest | Root folder |
-| `manifestGlobs` | multiLine | `vss-extension.json` | extensionSource=manifest | Manifest file patterns |
-| `manifestJs` | filePath | — | extensionSource=manifest | JS manifest generator file (new) |
-| `manifestJsEnv` | multiLine | — | manifestJs specified | Env vars for manifest-js (`key=value`) (new) |
-| `json5` | boolean | false | extensionSource=manifest | Enable JSON5 support (new) |
-| `localizationRoot` | filePath | — | extensionSource=manifest | Localization root |
-| `outputPath` | filePath | — | — | VSIX output path |
+| Input              | Type      | Default              | Visible When             | Description                                  |
+| ------------------ | --------- | -------------------- | ------------------------ | -------------------------------------------- |
+| `rootFolder`       | filePath  | —                    | extensionSource=manifest | Root folder                                  |
+| `manifestGlobs`    | multiLine | `vss-extension.json` | extensionSource=manifest | Manifest file patterns                       |
+| `manifestJs`       | filePath  | —                    | extensionSource=manifest | JS manifest generator file (new)             |
+| `manifestJsEnv`    | multiLine | —                    | manifestJs specified     | Env vars for manifest-js (`key=value`) (new) |
+| `json5`            | boolean   | false                | extensionSource=manifest | Enable JSON5 support (new)                   |
+| `localizationRoot` | filePath  | —                    | extensionSource=manifest | Localization root                            |
+| `outputPath`       | filePath  | —                    | —                        | VSIX output path                             |
 
 ### Override Inputs (package, publish)
 
-| Input | Type | Default | Description |
-|-------|------|---------|-------------|
-| `extensionName` | string | — | Override display name |
-| `displayName` | string | — | Override display name (new, tfx flag) |
-| `description` | string | — | Override description (new, tfx flag) |
-| `extensionVersion` | string | — | Override version (`##.##.##(.##)`) |
-| `extensionVisibility` | picklist | `default` | `default`, `private`, `privatepreview`, `publicpreview`, `public` |
-| `extensionPricing` | picklist | `default` | `default`, `free`, `paid` |
-| `baseUri` | string | — | Override baseUri for dev (issue #39) (new) |
-| `overrideJson` | string | — | Raw JSON override string (new) |
-| `overridesFile` | filePath | — | JSON overrides file path (new) |
-| `updateTasksVersion` | boolean | false | Update task versions from extension version |
-| `updateTasksVersionType` | picklist | `major` | `major`, `minor`, `patch` |
-| `updateTasksId` | boolean | false | Generate deterministic task IDs |
-| `revVersion` | boolean | false | Auto-increment patch and save to manifest (new) |
+| Input                    | Type     | Default   | Description                                                       |
+| ------------------------ | -------- | --------- | ----------------------------------------------------------------- |
+| `extensionName`          | string   | —         | Override display name                                             |
+| `displayName`            | string   | —         | Override display name (new, tfx flag)                             |
+| `description`            | string   | —         | Override description (new, tfx flag)                              |
+| `extensionVersion`       | string   | —         | Override version (`##.##.##(.##)`)                                |
+| `extensionVisibility`    | picklist | `default` | `default`, `private`, `privatepreview`, `publicpreview`, `public` |
+| `extensionPricing`       | picklist | `default` | `default`, `free`, `paid`                                         |
+| `baseUri`                | string   | —         | Override baseUri for dev (issue #39) (new)                        |
+| `overrideJson`           | string   | —         | Raw JSON override string (new)                                    |
+| `overridesFile`          | filePath | —         | JSON overrides file path (new)                                    |
+| `updateTasksVersion`     | boolean  | false     | Update task versions from extension version                       |
+| `updateTasksVersionType` | picklist | `major`   | `major`, `minor`, `patch`                                         |
+| `updateTasksId`          | boolean  | false     | Generate deterministic task IDs                                   |
+| `revVersion`             | boolean  | false     | Auto-increment patch and save to manifest (new)                   |
 
 ### Sharing Inputs (publish, share, unshare)
 
-| Input | Type | Description |
-|-------|------|-------------|
-| `shareWith` | string | Comma-separated org names to share with |
+| Input         | Type   | Description                                     |
+| ------------- | ------ | ----------------------------------------------- |
+| `shareWith`   | string | Comma-separated org names to share with         |
 | `unshareWith` | string | Comma-separated org names to unshare from (new) |
 
 ### Install Inputs
 
-| Input | Type | Description |
-|-------|------|-------------|
-| `accounts` | string | Comma-separated org URLs to install to |
-| `waitForTaskAvailability` | boolean | Poll until tasks are available (#189) (new) |
-| `taskAvailabilityTimeout` | string | Max wait time in minutes for task availability (new) |
+| Input                     | Type    | Description                                          |
+| ------------------------- | ------- | ---------------------------------------------------- |
+| `accounts`                | string  | Comma-separated org URLs to install to               |
+| `waitForTaskAvailability` | boolean | Poll until tasks are available (#189) (new)          |
+| `taskAvailabilityTimeout` | string  | Max wait time in minutes for task availability (new) |
 
 ### Verify Install Inputs (verifyInstall)
 
-| Input | Type | Default | Description |
-|-------|------|---------|-------------|
-| `accounts` | string | — | Azure DevOps org URL to check (single account) |
-| `publisherId` | string | — | Publisher to look up |
-| `extensionId` | string | — | Extension to look up |
-| `taskNames` | multiLine | — | Task names to verify are installed (one per line) |
-| `taskAvailabilityTimeout` | string | `10` | Max wait time in minutes |
-| `pollInterval` | string | `30` | Seconds between polls |
+| Input                     | Type      | Default | Description                                       |
+| ------------------------- | --------- | ------- | ------------------------------------------------- |
+| `accounts`                | string    | —       | Azure DevOps org URL to check (single account)    |
+| `publisherId`             | string    | —       | Publisher to look up                              |
+| `extensionId`             | string    | —       | Extension to look up                              |
+| `taskNames`               | multiLine | —       | Task names to verify are installed (one per line) |
+| `taskAvailabilityTimeout` | string    | `10`    | Max wait time in minutes                          |
+| `pollInterval`            | string    | `30`    | Seconds between polls                             |
 
 Uses `azure-devops-node-api` (`TaskAgentApi.getTaskDefinitions()`) to poll Azure DevOps for task availability. Based on the pattern from [jessehouwing/azure-pipelines-dependency-submission](https://github.com/jessehouwing/azure-pipelines-dependency-submission).
 
 ### Validation Inputs (publish, isValid)
 
-| Input | Type | Default | Description |
-|-------|------|---------|-------------|
-| `noWaitValidation` | boolean | false | Skip waiting for marketplace validation |
-| `bypassValidation` | boolean | false | Bypass local validation |
-| `bypassScopeCheck` | boolean | false | Bypass scope check (new) |
-| `maxRetries` | string | `10` | Max validation poll retries (isValid) |
-| `minTimeout` | string | `1` | Minutes between retries (isValid) |
-| `extensionVersion` | string | — | Specific version to validate (isValid) |
+| Input              | Type    | Default | Description                             |
+| ------------------ | ------- | ------- | --------------------------------------- |
+| `noWaitValidation` | boolean | false   | Skip waiting for marketplace validation |
+| `bypassValidation` | boolean | false   | Bypass local validation                 |
+| `bypassScopeCheck` | boolean | false   | Bypass scope check (new)                |
+| `maxRetries`       | string  | `10`    | Max validation poll retries (isValid)   |
+| `minTimeout`       | string  | `1`     | Minutes between retries (isValid)       |
+| `extensionVersion` | string  | —       | Specific version to validate (isValid)  |
 
 ### Version Query Inputs (show)
 
-| Input | Type | Default | Description |
-|-------|------|---------|-------------|
-| `versionAction` | picklist | `None` | `None`, `Patch`, `Minor`, `Major` |
-| `setBuildNumber` | boolean | false | Update pipeline build number |
-| `extensionVersionOverride` | string | `Extension.VersionOverride` | Variable name to check for version override |
+| Input                      | Type     | Default                     | Description                                 |
+| -------------------------- | -------- | --------------------------- | ------------------------------------------- |
+| `versionAction`            | picklist | `None`                      | `None`, `Patch`, `Minor`, `Major`           |
+| `setBuildNumber`           | boolean  | false                       | Update pipeline build number                |
+| `extensionVersionOverride` | string   | `Extension.VersionOverride` | Variable name to check for version override |
 
 ### Output Variables
 
-| Command | Variable | Description |
-|---------|----------|-------------|
-| package | `Extension.OutputPath` | Path to generated VSIX |
-| publish | `Extension.OutputPath` | Path to published VSIX |
-| show | `Extension.Version` | Queried/incremented version |
-| verifyInstall | `Tasks.Available` | `true` if all specified tasks are available |
+| Command       | Variable               | Description                                 |
+| ------------- | ---------------------- | ------------------------------------------- |
+| package       | `Extension.OutputPath` | Path to generated VSIX                      |
+| publish       | `Extension.OutputPath` | Path to published VSIX                      |
+| show          | `Extension.Version`    | Queried/incremented version                 |
+| verifyInstall | `Tasks.Available`      | `true` if all specified tasks are available |
 
 ---
 
@@ -1781,54 +1883,54 @@ Uses `azure-devops-node-api` (`TaskAgentApi.getTaskDefinitions()`) to poll Azure
 
 Matrix showing which inputs each command uses:
 
-| Input | package | publish | unpublish | share | unshare | install | show | isValid | verifyInstall |
-|-------|---------|---------|-----------|-------|---------|---------|------|---------|---------------|
-| connectTo | — | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| extensionSource | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | — |
-| publisherId | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| extensionId | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| extensionTag | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| connectTo | — | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| extensionSource | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| publisherId | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| extensionId | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| extensionTag | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| vsixFile | ✅¹ | ✅¹ | ✅¹ | ✅¹ | ✅¹ | ✅¹ | — | ✅¹ | — |
-| rootFolder | ✅ | ✅ | — | — | — | — | — | — | — |
-| manifestGlobs | ✅ | ✅ | — | — | — | — | — | — | — |
-| manifestJs | ✅ | ✅ | — | — | — | — | — | — | — |
-| manifestJsEnv | ✅ | ✅ | — | — | — | — | — | — | — |
-| json5 | ✅ | ✅ | — | — | — | — | — | — | — |
-| localizationRoot | ✅ | ✅ | — | — | — | — | — | — | — |
-| outputPath | ✅ | — | — | — | — | — | — | — | — |
-| extensionName | ✅ | ✅ | — | — | — | — | — | — | — |
-| displayName | ✅ | ✅ | — | — | — | — | — | — | — |
-| description | ✅ | ✅ | — | — | — | — | — | — | — |
-| extensionVersion | ✅ | ✅ | — | — | — | — | — | ✅² | — |
-| extensionVisibility | ✅ | ✅ | — | — | — | — | — | — | — |
-| extensionPricing | ✅ | ✅ | — | — | — | — | — | — | — |
-| baseUri | ✅ | ✅ | — | — | — | — | — | — | — |
-| overrideJson | ✅ | ✅ | — | — | — | — | — | — | — |
-| overridesFile | ✅ | ✅ | — | — | — | — | — | — | — |
-| updateTasksVersion | ✅ | ✅ | — | — | — | — | — | — | — |
-| updateTasksVersionType | ✅ | ✅ | — | — | — | — | — | — | — |
-| updateTasksId | ✅ | ✅ | — | — | — | — | — | — | — |
-| revVersion | ✅ | ✅ | — | — | — | — | — | — | — |
-| shareWith | — | ✅ | — | ✅ | — | — | — | — | — |
-| unshareWith | — | — | — | — | ✅ | — | — | — | — |
-| accounts | — | — | — | — | — | ✅ | — | — | ✅ |
-| waitForTaskAvailability | — | — | — | — | — | ✅ | — | — | — |
-| taskNames | — | — | — | — | — | — | — | — | ✅ |
-| taskAvailabilityTimeout | — | — | — | — | — | ✅ | — | — | ✅ |
-| pollInterval | — | — | — | — | — | — | — | — | ✅ |
-| noWaitValidation | — | ✅ | — | — | — | — | — | — | — |
-| bypassValidation | ✅ | ✅ | — | — | — | — | — | — | — |
-| bypassScopeCheck | — | ✅ | — | — | — | — | — | — | — |
-| maxRetries | — | — | — | — | — | — | — | ✅ | — |
-| minTimeout | — | — | — | — | — | — | — | ✅ | — |
-| versionAction | — | — | — | — | — | — | ✅ | — | — |
-| setBuildNumber | — | — | — | — | — | — | ✅ | — | — |
-| extensionVersionOverride | — | — | — | — | — | — | ✅ | — | — |
+| Input                    | package | publish | unpublish | share | unshare | install | show | isValid | verifyInstall |
+| ------------------------ | ------- | ------- | --------- | ----- | ------- | ------- | ---- | ------- | ------------- |
+| connectTo                | —       | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      | ✅            |
+| extensionSource          | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | —    | ✅      | —             |
+| publisherId              | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      | ✅            |
+| extensionId              | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      | ✅            |
+| extensionTag             | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      | —             |
+| connectTo                | —       | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      |
+| extensionSource          | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | —    | ✅      |
+| publisherId              | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      |
+| extensionId              | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      |
+| extensionTag             | ✅      | ✅      | ✅        | ✅    | ✅      | ✅      | ✅   | ✅      |
+| vsixFile                 | ✅¹     | ✅¹     | ✅¹       | ✅¹   | ✅¹     | ✅¹     | —    | ✅¹     | —             |
+| rootFolder               | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| manifestGlobs            | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| manifestJs               | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| manifestJsEnv            | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| json5                    | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| localizationRoot         | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| outputPath               | ✅      | —       | —         | —     | —       | —       | —    | —       | —             |
+| extensionName            | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| displayName              | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| description              | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| extensionVersion         | ✅      | ✅      | —         | —     | —       | —       | —    | ✅²     | —             |
+| extensionVisibility      | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| extensionPricing         | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| baseUri                  | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| overrideJson             | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| overridesFile            | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| updateTasksVersion       | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| updateTasksVersionType   | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| updateTasksId            | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| revVersion               | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| shareWith                | —       | ✅      | —         | ✅    | —       | —       | —    | —       | —             |
+| unshareWith              | —       | —       | —         | —     | ✅      | —       | —    | —       | —             |
+| accounts                 | —       | —       | —         | —     | —       | ✅      | —    | —       | ✅            |
+| waitForTaskAvailability  | —       | —       | —         | —     | —       | ✅      | —    | —       | —             |
+| taskNames                | —       | —       | —         | —     | —       | —       | —    | —       | ✅            |
+| taskAvailabilityTimeout  | —       | —       | —         | —     | —       | ✅      | —    | —       | ✅            |
+| pollInterval             | —       | —       | —         | —     | —       | —       | —    | —       | ✅            |
+| noWaitValidation         | —       | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| bypassValidation         | ✅      | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| bypassScopeCheck         | —       | ✅      | —         | —     | —       | —       | —    | —       | —             |
+| maxRetries               | —       | —       | —         | —     | —       | —       | —    | ✅      | —             |
+| minTimeout               | —       | —       | —         | —     | —       | —       | —    | ✅      | —             |
+| versionAction            | —       | —       | —         | —     | —       | —       | ✅   | —       | —             |
+| setBuildNumber           | —       | —       | —         | —     | —       | —       | ✅   | —       | —             |
+| extensionVersionOverride | —       | —       | —         | —     | —       | —       | ✅   | —       | —             |
 
 ¹ When `extensionSource = vsix`
 ² Version to validate against in `isValid`
@@ -1848,6 +1950,7 @@ Matrix showing which inputs each command uses:
 ### Issue #189 — Poll for task availability after install
 
 **Fix**: Add `waitForTaskAvailability` boolean input to the install command. After successful `tfx extension install`, if enabled:
+
 1. Extract task IDs from the extension metadata (via `tfx extension show --json`)
 2. Poll `tfx build tasks list --json` (or use the Azure DevOps REST API via `azure-devops-node-api`) at each target account
 3. Check if all expected task IDs appear in the list
@@ -1858,6 +1961,7 @@ Matrix showing which inputs each command uses:
 ### Issue #39 — Add `baseUri` override
 
 **Fix**: Add `baseUri` input. When specified:
+
 - In manifest mode: Add to JSON overrides as `{ "baseUri": "<value>" }`
 - In VSIX mode: Patch via VsixEditor (add manifest property override)
 - Also expose as `--override '{"baseUri":"<value>"}'` to tfx
@@ -1884,16 +1988,16 @@ Matrix showing which inputs each command uses:
 
 ## 15. Risk Register
 
-| # | Risk | Impact | Mitigation |
-|---|------|--------|------------|
-| 1 | Breaking change confuses existing users | High | Comprehensive migration guide; keep v5 extension published; use new task name + v6 major |
-| 2 | yauzl/yazl VSIX editing misses edge cases (encoding, large files, symlinks) | Medium | Extensive VSIX round-trip integration tests; test with real marketplace extensions |
-| 3 | GitHub Actions OIDC requires Entra ID app registration + federated credential setup | Medium | Document prerequisites in README with step-by-step guide; provide integration test; validate token exchange in CI |
-| 4 | tfx-cli npm API changes between versions | Low | Pin embedded version; version override allows user control |
-| 5 | Rollup bundling breaks dynamic requires in dependencies | Medium | Mark problematic deps as external; test bundled output end-to-end |
-| 6 | azure-pipelines-tool-lib API changes | Low | Pin version; minimal surface area used |
-| 7 | `unshare` is new and untested in current tasks | Low | Unit test thoroughly; it's a simple tfx passthrough |
-| 8 | Contribution reference update (#172) may have false positives | Medium | Use precise pattern: `{publisher}.{extensionId}.` prefix only; add opt-out flag |
+| #   | Risk                                                                                | Impact | Mitigation                                                                                                        |
+| --- | ----------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | Breaking change confuses existing users                                             | High   | Comprehensive migration guide; keep v5 extension published; use new task name + v6 major                          |
+| 2   | yauzl/yazl VSIX editing misses edge cases (encoding, large files, symlinks)         | Medium | Extensive VSIX round-trip integration tests; test with real marketplace extensions                                |
+| 3   | GitHub Actions OIDC requires Entra ID app registration + federated credential setup | Medium | Document prerequisites in README with step-by-step guide; provide integration test; validate token exchange in CI |
+| 4   | tfx-cli npm API changes between versions                                            | Low    | Pin embedded version; version override allows user control                                                        |
+| 5   | Rollup bundling breaks dynamic requires in dependencies                             | Medium | Mark problematic deps as external; test bundled output end-to-end                                                 |
+| 6   | azure-pipelines-tool-lib API changes                                                | Low    | Pin version; minimal surface area used                                                                            |
+| 7   | `unshare` is new and untested in current tasks                                      | Low    | Unit test thoroughly; it's a simple tfx passthrough                                                               |
+| 8   | Contribution reference update (#172) may have false positives                       | Medium | Use precise pattern: `{publisher}.{extensionId}.` prefix only; add opt-out flag                                   |
 
 ---
 
@@ -1924,24 +2028,23 @@ All open questions have been answered. Decisions are recorded below for traceabi
 
 ## Implementation Order
 
-| Phase | Description | Dependencies | Est. Effort |
-|-------|-------------|--------------|-------------|
-| **0** | Repo scaffold: npm workspaces, TypeScript 6, ESLint, Prettier, Jest, Rollup, DevContainer, AGENT.md, .node-version, CI workflows (empty stubs) | None | 1-2 days |
-| **1** | Core library scaffold + `IPlatformAdapter` + `ArgBuilder` + `JsonOutputStream` + `VersionUtils` | Phase 0 | 2-3 days |
-| **2a** | Command implementations (package, publish, unpublish, share, unshare) | Phase 1 | 3-4 days |
-| **2b** | Command implementations (install, show, isValid) | Phase 1 | 2-3 days |
-| **2c** | `verifyInstall` command (`azure-devops-node-api` polling) | Phase 1 | 1-2 days |
-| **3** | VSIX Editor rewrite (yauzl/yazl, fixes #205, #172, #188) | Phase 1 | 3-4 days |
-| **3a** | Issue-specific fixes (#39 baseUri, #189 task polling) | Phase 2, 5 | 1-2 days |
-| **4** | TfxManager (embedded + download modes) | Phase 1 | 1-2 days |
-| **5** | Azure Pipelines adapter + auth + task.json (Node 24 + Node 20) + main.ts | Phase 2, 3, 4 | 2-3 days |
-| **6** | GitHub Actions adapter + auth + action.yml (Node 24) + main.ts | Phase 2, 3, 4 | 2-3 days |
-| **7** | Unit tests (all modules) — Jest + ts-jest ESM | Phase 1-6 | 4-5 days |
-| **8** | Build + Rollup bundling + check-dist workflow + size optimization | Phase 5, 6 | 1-2 days |
-| **9** | CI/CD: GitHub Actions workflows (ci, unit-tests, check-dist, linter, copilot-setup-steps) | Phase 8 | 1-2 days |
-| **10** | CI/CD: Azure Pipelines (build matrix × agents × Node versions, integration tests) | Phase 8 | 1-2 days |
-| **11** | Integration tests on all hosted runners/agents (ubuntu, windows, macos) × Node versions | All | 2-3 days |
-| **12** | Documentation (migration guide, README, copilot-instructions, AGENT.md) | All | 1-2 days |
-
+| Phase  | Description                                                                                                                                    | Dependencies  | Est. Effort |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ----------- |
+| **0**  | Repo scaffold: npm workspaces, TypeScript 6, ESLint, Prettier, Jest, Rollup, DevContainer, AGENT.md, .node-version, CI workflows (empty stubs) | None          | 1-2 days    |
+| **1**  | Core library scaffold + `IPlatformAdapter` + `ArgBuilder` + `JsonOutputStream` + `VersionUtils`                                                | Phase 0       | 2-3 days    |
+| **2a** | Command implementations (package, publish, unpublish, share, unshare)                                                                          | Phase 1       | 3-4 days    |
+| **2b** | Command implementations (install, show, isValid)                                                                                               | Phase 1       | 2-3 days    |
+| **2c** | `verifyInstall` command (`azure-devops-node-api` polling)                                                                                      | Phase 1       | 1-2 days    |
+| **3**  | VSIX Editor rewrite (yauzl/yazl, fixes #205, #172, #188)                                                                                       | Phase 1       | 3-4 days    |
+| **3a** | Issue-specific fixes (#39 baseUri, #189 task polling)                                                                                          | Phase 2, 5    | 1-2 days    |
+| **4**  | TfxManager (embedded + download modes)                                                                                                         | Phase 1       | 1-2 days    |
+| **5**  | Azure Pipelines adapter + auth + task.json (Node 24 + Node 20) + main.ts                                                                       | Phase 2, 3, 4 | 2-3 days    |
+| **6**  | GitHub Actions adapter + auth + action.yml (Node 24) + main.ts                                                                                 | Phase 2, 3, 4 | 2-3 days    |
+| **7**  | Unit tests (all modules) — Jest + ts-jest ESM                                                                                                  | Phase 1-6     | 4-5 days    |
+| **8**  | Build + Rollup bundling + check-dist workflow + size optimization                                                                              | Phase 5, 6    | 1-2 days    |
+| **9**  | CI/CD: GitHub Actions workflows (ci, unit-tests, check-dist, linter, copilot-setup-steps)                                                      | Phase 8       | 1-2 days    |
+| **10** | CI/CD: Azure Pipelines (build matrix × agents × Node versions, integration tests)                                                              | Phase 8       | 1-2 days    |
+| **11** | Integration tests on all hosted runners/agents (ubuntu, windows, macos) × Node versions                                                        | All           | 2-3 days    |
+| **12** | Documentation (migration guide, README, copilot-instructions, AGENT.md)                                                                        | All           | 1-2 days    |
 
 **Total estimated effort: 28-40 days**
