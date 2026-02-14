@@ -11,5 +11,5 @@ export * from './json-output-stream.js';
 export * from './manifest-utils.js';
 export * from './tfx-manager.js';
 
-// Commands (to be implemented in Phase 2)
-// export * from './commands/index.js';
+// Commands
+export * from './commands/index.js';

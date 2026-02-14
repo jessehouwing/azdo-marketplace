@@ -53,6 +53,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build v6 packages
+        run: npm run build:v6
+
+      - name: Run tests
+        run: npm test
+
       - name: Setup summary
         run: |
           {
@@ -60,4 +66,5 @@ jobs:
             echo "- Node: ${NODE_VERSION}"
             echo "- Azure CLI: $(az version --query '"azure-cli"' -o tsv)"
             echo "- tfx-cli: $(tfx --version)"
+            echo "- Tests: ✅ All tests passing"
           } >> "$GITHUB_STEP_SUMMARY"
