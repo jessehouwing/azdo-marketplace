@@ -3,6 +3,8 @@
  */
 
 import path from 'path';
+import fs from 'fs/promises';
+import * as tar from 'tar';
 import type { IPlatformAdapter } from './platform.js';
 import { JsonOutputStream } from './json-output-stream.js';
 
@@ -103,31 +105,91 @@ export class TfxManager {
   private async downloadAndCache(): Promise<string> {
     this.platform.info(`Downloading tfx-cli@${this.version} from npm...`);
 
-    // Download tfx-cli package
-    // TODO: Implement npm pack + extract logic for dynamic tfx-cli download
-    //
-    // Current implementation: Uses tfx from PATH as fallback when not embedded/cached
-    //
-    // Future enhancement would:
-    // 1. Run: npm pack tfx-cli@${version} in temp dir
-    // 2. Extract the .tgz tarball
-    // 3. Cache the extracted node_modules directory
-    // 4. Return path to bin/tfx executable
-    //
-    // Priority: Low - current approach works for most scenarios where tfx is pre-installed
-    // or bundled (embedded mode). Dynamic download mainly needed for custom versions.
-    this.platform.warning(
-      'TfxManager.downloadAndCache not fully implemented - using tfx from PATH'
-    );
+    // Create temp directory for download
+    const tempDir = await this.platform.getTempDir();
+    const downloadDir = path.join(tempDir, `tfx-download-${Date.now()}`);
+    await fs.mkdir(downloadDir, { recursive: true });
 
-    const tfxPath = await this.platform.which('tfx', true);
+    try {
+      // Step 1: Run npm pack to download the package
+      this.platform.debug(`Running npm pack tfx-cli@${this.version} in ${downloadDir}`);
+      const npmPath = await this.platform.which('npm', true);
+      const exitCode = await this.platform.exec(
+        npmPath,
+        ['pack', `tfx-cli@${this.version}`, '--pack-destination', downloadDir],
+        { cwd: downloadDir }
+      );
 
-    // Cache for future use
-    const tfxDir = path.dirname(tfxPath);
-    const cachedDir = await this.platform.cacheDir(tfxDir, 'tfx-cli', this.version);
-    this.platform.info(`Cached tfx-cli@${this.version} to ${cachedDir}`);
+      if (exitCode !== 0) {
+        throw new Error(`npm pack failed with exit code ${exitCode}`);
+      }
 
-    return this.getTfxExecutable(cachedDir);
+      // Step 2: Find the .tgz file that was created
+      const files = await fs.readdir(downloadDir);
+      const tgzFile = files.find((f) => f.endsWith('.tgz'));
+      if (!tgzFile) {
+        throw new Error('No .tgz file found after npm pack');
+      }
+
+      const tgzPath = path.join(downloadDir, tgzFile);
+      this.platform.info(`Downloaded ${tgzFile}`);
+
+      // Step 3: Extract the tarball
+      const extractDir = path.join(downloadDir, 'extract');
+      await fs.mkdir(extractDir, { recursive: true });
+      
+      this.platform.debug(`Extracting ${tgzFile} to ${extractDir}`);
+      await tar.extract({
+        file: tgzPath,
+        cwd: extractDir,
+      });
+
+      // npm pack creates a 'package' directory containing the extracted package
+      const packageDir = path.join(extractDir, 'package');
+      
+      // Verify the package directory exists
+      try {
+        await fs.access(packageDir);
+      } catch {
+        throw new Error(`Expected package directory not found at ${packageDir}`);
+      }
+
+      // Step 4: Cache the extracted package
+      this.platform.info(`Caching tfx-cli@${this.version}...`);
+      const cachedDir = await this.platform.cacheDir(packageDir, 'tfx-cli', this.version);
+      this.platform.info(`Cached tfx-cli@${this.version} to ${cachedDir}`);
+
+      // Step 5: Return path to tfx executable
+      // The tfx executable is in bin/tfx within the package
+      const binDir = path.join(cachedDir, 'bin');
+      return this.getTfxExecutable(binDir);
+    } catch (error) {
+      // If download fails, fall back to PATH as last resort
+      this.platform.warning(
+        `Failed to download tfx-cli@${this.version}: ${error instanceof Error ? error.message : String(error)}`
+      );
+      this.platform.warning('Falling back to tfx from PATH');
+      
+      try {
+        const tfxPath = await this.platform.which('tfx', true);
+        return tfxPath;
+      } catch (fallbackError) {
+        throw new Error(
+          `Failed to download tfx-cli@${this.version} and no tfx found in PATH. ` +
+          `Original error: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    } finally {
+      // Clean up temp directory
+      try {
+        await this.platform.rmRF(downloadDir);
+        this.platform.debug(`Cleaned up temp directory: ${downloadDir}`);
+      } catch (cleanupError) {
+        this.platform.warning(
+          `Failed to clean up temp directory ${downloadDir}: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`
+        );
+      }
+    }
   }
 
   /**

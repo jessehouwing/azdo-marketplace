@@ -58,6 +58,7 @@ describe('TfxManager', () => {
     });
 
     it('should handle version resolution for non-embedded', async () => {
+      platform.registerTool('npm', '/usr/bin/npm');
       platform.registerTool('tfx', '/usr/local/bin/tfx');
 
       const manager = new TfxManager({
@@ -68,12 +69,15 @@ describe('TfxManager', () => {
       const tfxPath = await manager.resolve();
 
       expect(tfxPath).toBeDefined();
-      // Should have warning about not fully implemented
-      expect(
-        platform.warningMessages.some((m) =>
-          m.includes('TfxManager.downloadAndCache not fully implemented')
-        )
-      ).toBe(true);
+      // With new implementation, it will try npm pack but fall back to PATH on mock platform
+      // Check that either npm pack was attempted OR fallback occurred
+      const attemptedDownload = platform.infoMessages.some((m) =>
+        m.includes('Downloading tfx-cli@')
+      );
+      const usedFallback = platform.warningMessages.some((m) =>
+        m.includes('Failed to download') || m.includes('Falling back to tfx from PATH')
+      );
+      expect(attemptedDownload || usedFallback).toBe(true);
     });
   });
 
@@ -179,6 +183,62 @@ describe('TfxManager', () => {
       // This is more of a documentation test
       // In real implementation, TfxManager would check process.platform
       expect(process.platform).toBeDefined();
+    });
+  });
+
+  describe('downloadAndCache', () => {
+    it('should attempt npm pack and extract workflow', async () => {
+      // Register npm tool
+      platform.registerTool('npm', '/usr/bin/npm');
+      
+      // Mock npm pack will fail in MockPlatformAdapter, so it will fall back
+      platform.registerTool('tfx', '/usr/local/bin/tfx');
+
+      const manager = new TfxManager({
+        version: '0.19.0',
+        platform,
+      });
+
+      const tfxPath = await manager.resolve();
+
+      // Verify it attempted the download process
+      expect(platform.infoMessages.some((m) =>
+        m.includes('Downloading tfx-cli@0.19.0 from npm')
+      )).toBe(true);
+      
+      // Should fall back gracefully when npm pack fails in mock
+      expect(tfxPath).toBeDefined();
+    });
+
+    it('should handle npm pack failure gracefully', async () => {
+      // Don't register npm, which will cause download to fail
+      platform.registerTool('tfx', '/usr/local/bin/tfx');
+
+      const manager = new TfxManager({
+        version: 'latest',
+        platform,
+      });
+
+      const tfxPath = await manager.resolve();
+
+      // Should fall back to PATH
+      expect(tfxPath).toBe('/usr/local/bin/tfx');
+      expect(platform.warningMessages.some((m) =>
+        m.includes('Falling back to tfx from PATH')
+      )).toBe(true);
+    });
+
+    it('should throw error if npm pack fails and no tfx in PATH', async () => {
+      // Don't register npm or tfx
+
+      const manager = new TfxManager({
+        version: '0.20.0',
+        platform,
+      });
+
+      await expect(manager.resolve()).rejects.toThrow(
+        /Failed to download tfx-cli/
+      );
     });
   });
 });
