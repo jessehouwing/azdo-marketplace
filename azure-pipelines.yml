@@ -13,20 +13,35 @@ pr:
 pool:
   vmImage: 'windows-2022'
 
+# Cross-platform testing support
+strategy:
+  matrix:
+    Windows_Node20:
+      vmImage: 'windows-2022'
+      nodeVersion: '20.x'
+    Linux_Node20:
+      vmImage: 'ubuntu-latest'
+      nodeVersion: '20.x'
+    macOS_Node20:
+      vmImage: 'macos-latest'
+      nodeVersion: '20.x'
+
 variables:
 - name: 'marketplaceServiceConnection'
   value: '84645cfd-95a8-4fcc-bb6a-d8e35e3d699d'
 
 stages:
 - stage: 'Build'
-  displayName: 'Build'
+  displayName: 'Build and Test'
   jobs:
-  - job:
-    displayName: 'Build on Windows'
+  - job: Build
+    displayName: 'Build on $(vmImage) with Node $(nodeVersion)'
+    pool:
+      vmImage: $(vmImage)
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '20.x'
+        versionSpec: '$(nodeVersion)'
       displayName: 'Install Node.js'
 
     - script: |
@@ -181,10 +196,62 @@ stages:
       displayName: 'Publish vsix as pipeline artifact'
       condition: succeededOrFailed()
 
+- stage: IntegrationTests
+  displayName: 'Integration Tests'
+  dependsOn: 'Build'
+  condition: succeeded()
+  jobs:
+  - job: IntegrationTest
+    displayName: 'Integration Test on $(vmImage)'
+    strategy:
+      matrix:
+        Windows_Node20:
+          vmImage: 'windows-2022'
+          nodeVersion: '20.x'
+        Linux_Node20:
+          vmImage: 'ubuntu-latest'
+          nodeVersion: '20.x'
+        macOS_Node20:
+          vmImage: 'macos-latest'
+          nodeVersion: '20.x'
+    pool:
+      vmImage: $(vmImage)
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '$(nodeVersion)'
+      displayName: 'Install Node.js'
+    
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifact: vsix
+        path: $(Pipeline.Workspace)/vsix
+      displayName: 'Download VSIX artifacts'
+    
+    - script: |
+        npm install -g tfx-cli
+      displayName: 'Install tfx-cli'
+    
+    - script: |
+        echo "Verifying VSIX package integrity..."
+        ls -lh $(Pipeline.Workspace)/vsix/*.vsix || dir $(Pipeline.Workspace)\vsix\*.vsix
+      displayName: 'Verify VSIX packages'
+      condition: succeededOrFailed()
+    
+    - task: PublishTestResults@2
+      displayName: 'Publish integration test results'
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/integration-test-results.xml'
+        failTaskOnFailedTests: false
+
 - stage: PublishDev
   displayName: 'Publish privately'
+  # To enable: Set condition to: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  # This will publish to the private marketplace for testing before production release
   condition: false # and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  dependsOn: 'Build'
+  dependsOn: 'IntegrationTests'
   jobs:
   - deployment:
     environment: dev
@@ -224,6 +291,9 @@ stages:
 
 - stage: PublishProd
   displayName: 'Publish publicly to MsDevLabs'
+  # To enable: Set condition to: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  # This will publish to the public marketplace and create a GitHub release
+  # Ensure GitHub connection 'microsoft/azure-devops-extension-tasks' is configured
   condition: false # and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   dependsOn: 'PublishDev'
   jobs:

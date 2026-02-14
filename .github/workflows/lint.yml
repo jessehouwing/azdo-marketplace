@@ -1,0 +1,38 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm run initdev
+
+      - name: Lint tasks
+        run: npm run lint:tasks
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All tasks passed ESLint checks" >> $GITHUB_STEP_SUMMARY

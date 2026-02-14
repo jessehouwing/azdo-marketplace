@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 5.0.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build Release Assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Install dependencies
+        run: npm run initdev
+
+      - name: Build tasks
+        run: npm run build
+
+      - name: Package tasks
+        run: npm run package
+
+      - name: Create VSIX packages
+        run: npm run package:tasks
+
+      - name: Verify VSIX created
+        run: |
+          ls -lh dist/*.vsix
+          if [ ! -f dist/*.vsix ]; then
+            echo "Error: VSIX file not created"
+            exit 1
+          fi
+
+      - name: Upload VSIX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-release-${{ steps.version.outputs.version }}
+          path: dist/*.vsix
+          retention-days: 90
+
+  create-release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix-release-${{ needs.build.outputs.version }}
+          path: dist/
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          echo "## Release v${{ needs.build.outputs.version }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### Changes" >> release_notes.md
+          git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> release_notes.md || echo "- Initial release" >> release_notes.md
+          cat release_notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release v${{ needs.build.outputs.version }}
+          tag_name: v${{ needs.build.outputs.version }}
+          body_path: release_notes.md
+          files: |
+            dist/*.vsix
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-marketplace:
+    name: Publish to Marketplace
+    needs: [build, create-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplace-production
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix-release-${{ needs.build.outputs.version }}
+          path: dist/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install tfx-cli
+        run: npm install -g tfx-cli
+
+      - name: Publish to Marketplace (placeholder)
+        run: |
+          echo "📦 Would publish to Azure DevOps Marketplace"
+          echo "Version: ${{ needs.build.outputs.version }}"
+          echo "Files: $(ls dist/*.vsix)"
+          echo ""
+          echo "Note: Actual publishing requires Azure DevOps service connection"
+          echo "Configure AZURE_DEVOPS_TOKEN secret or Azure credentials for production use"

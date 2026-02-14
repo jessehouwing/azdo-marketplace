@@ -1,0 +1,69 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration-test:
+    name: Integration Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install tfx-cli globally
+        run: npm install -g tfx-cli
+
+      - name: Verify tfx-cli installation
+        run: tfx --version || echo "tfx installed but no version flag available"
+
+      - name: Install dependencies
+        run: npm run initdev
+
+      - name: Build tasks
+        run: npm run build
+
+      - name: Package tasks
+        run: npm run package
+
+      - name: Create test extension package
+        run: npm run package:tasks
+
+      - name: Verify VSIX created
+        shell: bash
+        run: |
+          if [ -f dist/*.vsix ]; then
+            echo "✅ VSIX package created successfully"
+            ls -lh dist/*.vsix
+          else
+            echo "❌ VSIX package not found"
+            exit 1
+          fi
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-${{ matrix.os }}
+          path: dist/*.vsix
+          retention-days: 7

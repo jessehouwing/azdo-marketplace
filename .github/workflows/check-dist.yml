@@ -1,0 +1,56 @@
+name: Check Build Output
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-build:
+    name: Verify Compiled Output is Up-to-Date
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm run initdev
+
+      - name: Build tasks
+        run: npm run build
+
+      - name: Check for uncommitted changes
+        id: diff
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "error=true" >> $GITHUB_OUTPUT
+            echo "## ❌ Uncommitted changes detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following files have uncommitted changes after build:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            git status --porcelain >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`npm run build\` locally and commit the changes." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "error=false" >> $GITHUB_OUTPUT
+            echo "## ✅ All build outputs are up-to-date" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Show git diff
+        if: steps.diff.outputs.error == 'true'
+        run: |
+          git diff
+          exit 1
