@@ -36,11 +36,15 @@ import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
  * @param platform - Platform adapter for secret masking
  */
 export async function getOidcAuth(
-  resource: string | undefined,
+  serviceUrl: string | undefined,
   platform: IPlatformAdapter
 ): Promise<AuthCredentials> {
-  const tokenResource = resource || 'https://marketplace.visualstudio.com';
-  const marketplaceUrl = 'https://marketplace.visualstudio.com';
+  // Determine the resource URL to request token for
+  // If custom service URL is provided, use it as the token resource
+  const tokenResource = serviceUrl || 'https://marketplace.visualstudio.com';
+  
+  // Use the provided service URL or default to marketplace URL
+  const finalServiceUrl = serviceUrl || 'https://marketplace.visualstudio.com';
   
   core.info('Getting Azure AD token via Azure CLI (requires azure/login action)...');
   
@@ -86,7 +90,7 @@ export async function getOidcAuth(
     
     return {
       authType: 'pat', // Use 'pat' type as the token format is similar
-      serviceUrl: marketplaceUrl,
+      serviceUrl: finalServiceUrl,
       token: token,
     };
   } catch (error) {
