@@ -5,6 +5,11 @@
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import { ArgBuilder } from '../arg-builder.js';
+import {
+  validateExtensionId,
+  validatePublisherId,
+  validateVersion,
+} from '../validation.js';
 
 /**
  * Options for package command
@@ -66,6 +71,19 @@ export async function packageExtension(
   platform: IPlatformAdapter
 ): Promise<PackageResult> {
   platform.info('Packaging extension...');
+
+  // Validate inputs early to fail fast
+  if (options.publisherId) {
+    validatePublisherId(options.publisherId);
+  }
+  
+  if (options.extensionId) {
+    validateExtensionId(options.extensionId);
+  }
+  
+  if (options.extensionVersion) {
+    validateVersion(options.extensionVersion);
+  }
 
   // Build tfx arguments
   const args = new ArgBuilder()
