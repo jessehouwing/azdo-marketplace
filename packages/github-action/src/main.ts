@@ -12,11 +12,22 @@ import {
   showExtension,
   isValidExtension,
   verifyInstall,
+  validateExtensionId,
+  validatePublisherId,
+  validateVersion,
+  validateAccountUrl,
+  validateNodeAvailable,
+  validateNpmAvailable,
+  validateTfxAvailable,
+  validateAzureCliAvailable,
 } from '@extension-tasks/core';
 
 async function run(): Promise<void> {
   try {
     const platform = new GitHubAdapter();
+    
+    // Validate node is available (always required)
+    await validateNodeAvailable(platform);
     
     // Get the operation to perform
     const operation = platform.getInput('operation', true);
@@ -26,14 +37,46 @@ async function run(): Promise<void> {
 
     platform.debug(`Starting operation: ${operation}`);
 
+    // Validate common inputs early to fail fast
+    const publisherId = platform.getInput('publisher-id');
+    if (publisherId) {
+      validatePublisherId(publisherId);
+    }
+
+    const extensionId = platform.getInput('extension-id');
+    if (extensionId) {
+      validateExtensionId(extensionId);
+    }
+
+    const extensionVersion = platform.getInput('extension-version');
+    if (extensionVersion) {
+      validateVersion(extensionVersion);
+    }
+
     // Create TfxManager
-    const tfxVersion = platform.getInput('tfx-version') || 'embedded';
+    const tfxVersion = platform.getInput('tfx-version') || 'built-in';
+    
+    // Validate binaries based on tfx version mode
+    if (tfxVersion === 'path') {
+      // User wants to use tfx from PATH
+      await validateTfxAvailable(platform);
+    } else if (tfxVersion !== 'built-in') {
+      // Version spec mode - need npm to download
+      await validateNpmAvailable(platform);
+    }
+    
     const tfxManager = new TfxManager({ tfxVersion: tfxVersion, platform });
 
     // Get authentication if needed (not required for package)
     let auth;
     if (operation !== 'package') {
       const authType = (platform.getInput('auth-type') || 'pat') as AuthType;
+      
+      // For OIDC auth, validate Azure CLI is available
+      if (authType === 'oidc') {
+        await validateAzureCliAvailable(platform);
+      }
+      
       const token = platform.getInput('token');
       auth = await getAuth(authType, platform, token);
       // Secret masking is now handled inside auth providers
@@ -44,6 +87,21 @@ async function run(): Promise<void> {
       if (auth.password) {
         platform.setSecret(auth.password);
       }
+      
+      // Validate service URL if present
+      if (auth.serviceUrl) {
+        validateAccountUrl(auth.serviceUrl);
+      }
+    }
+
+    // Validate account URLs for operations that need them
+    if (operation === 'install' || operation === 'verify-install') {
+      const accounts = platform.getDelimitedInput('accounts', ';', false);
+      accounts.forEach(account => {
+        if (account) {
+          validateAccountUrl(account);
+        }
+      });
     }
 
     // Route to appropriate command

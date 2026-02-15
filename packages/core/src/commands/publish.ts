@@ -6,12 +6,6 @@ import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import type { AuthCredentials } from '../auth.js';
 import { ArgBuilder } from '../arg-builder.js';
-import {
-  validateExtensionId,
-  validatePublisherId,
-  validateVersion,
-  validateAccountUrl,
-} from '../validation.js';
 
 /**
  * Source for publishing
@@ -88,23 +82,6 @@ export async function publishExtension(
   platform: IPlatformAdapter
 ): Promise<PublishResult> {
   platform.info('Publishing extension...');
-
-  // Validate inputs early to fail fast
-  if (options.publisherId) {
-    validatePublisherId(options.publisherId);
-  }
-  
-  if (options.extensionId) {
-    validateExtensionId(options.extensionId);
-  }
-  
-  if (options.extensionVersion) {
-    validateVersion(options.extensionVersion);
-  }
-  
-  if (auth.serviceUrl) {
-    validateAccountUrl(auth.serviceUrl);
-  }
 
   // Build tfx arguments
   const args = new ArgBuilder()

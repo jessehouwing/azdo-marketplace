@@ -14,5 +14,8 @@ export * from './vsix-reader.js';
 export * from './vsix-editor.js';
 export * from './vsix-writer.js';
 
+// Validation
+export * from './validation.js';
+
 // Commands
 export * from './commands/index.js';

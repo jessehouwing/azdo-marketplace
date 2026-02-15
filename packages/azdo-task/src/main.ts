@@ -12,11 +12,21 @@ import {
   showExtension,
   isValidExtension,
   verifyInstall,
+  validateExtensionId,
+  validatePublisherId,
+  validateVersion,
+  validateAccountUrl,
+  validateNodeAvailable,
+  validateNpmAvailable,
+  validateTfxAvailable,
 } from '@extension-tasks/core';
 
 async function run(): Promise<void> {
   try {
     const platform = new AzdoAdapter();
+    
+    // Validate node is available (always required)
+    await validateNodeAvailable(platform);
     
     // Get the operation to perform
     const operation = platform.getInput('operation', true);
@@ -26,8 +36,34 @@ async function run(): Promise<void> {
 
     platform.debug(`Starting operation: ${operation}`);
 
+    // Validate common inputs early to fail fast
+    const publisherId = platform.getInput('publisherId');
+    if (publisherId) {
+      validatePublisherId(publisherId);
+    }
+
+    const extensionId = platform.getInput('extensionId');
+    if (extensionId) {
+      validateExtensionId(extensionId);
+    }
+
+    const extensionVersion = platform.getInput('extensionVersion');
+    if (extensionVersion) {
+      validateVersion(extensionVersion);
+    }
+
     // Create TfxManager
-    const tfxVersion = platform.getInput('tfxVersion') || 'embedded';
+    const tfxVersion = platform.getInput('tfxVersion') || 'built-in';
+    
+    // Validate binaries based on tfx version mode
+    if (tfxVersion === 'path') {
+      // User wants to use tfx from PATH
+      await validateTfxAvailable(platform);
+    } else if (tfxVersion !== 'built-in') {
+      // Version spec mode - need npm to download
+      await validateNpmAvailable(platform);
+    }
+    
     const tfxManager = new TfxManager({ tfxVersion: tfxVersion, platform });
 
     // Get authentication if needed (not required for package)
@@ -50,6 +86,21 @@ async function run(): Promise<void> {
       }
       
       auth = await getAuth(connectionType, connectionName, platform);
+      
+      // Validate service URL if present
+      if (auth.serviceUrl) {
+        validateAccountUrl(auth.serviceUrl);
+      }
+    }
+
+    // Validate account URLs for operations that need them
+    if (operation === 'install' || operation === 'verifyInstall') {
+      const accounts = platform.getDelimitedInput('accounts', ';', false);
+      accounts.forEach(account => {
+        if (account) {
+          validateAccountUrl(account);
+        }
+      });
     }
 
     // Route to appropriate command
