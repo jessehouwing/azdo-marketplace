@@ -6,6 +6,8 @@ import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import type { AuthCredentials } from '../auth.js';
 import { ArgBuilder } from '../arg-builder.js';
+import { VsixReader } from '../vsix-reader.js';
+import { ManifestEditor } from '../manifest-editor.js';
 
 /**
  * Source for publishing
@@ -65,6 +67,78 @@ export interface PublishResult {
   publisherId: string;
   /** Exit code from tfx */
   exitCode: number;
+}
+
+/**
+ * Helper function to execute tfx publish and parse results
+ */
+async function executeTfxPublish(
+  tfx: TfxManager,
+  args: ArgBuilder,
+  platform: IPlatformAdapter,
+  options: PublishOptions
+): Promise<PublishResult> {
+  // Sharing
+  if (options.shareWith && options.shareWith.length > 0) {
+    // Only share if extension is not public
+    const isPublic =
+      options.extensionVisibility === 'public' || 
+      options.extensionVisibility === 'public_preview';
+    
+    if (isPublic) {
+      platform.warning('Ignoring shareWith - not available for public extensions');
+    } else {
+      args.flag('--share-with');
+      options.shareWith.forEach((org) => args.arg(org));
+    }
+  }
+
+  // Flags
+  if (options.noWaitValidation) {
+    args.flag('--no-wait-validation');
+  }
+
+  if (options.bypassValidation) {
+    args.flag('--bypass-validation');
+  }
+
+  // Execute tfx
+  const result = await tfx.execute(args.build(), { captureJson: true });
+
+  if (result.exitCode !== 0) {
+    platform.error(`tfx exited with code ${result.exitCode}`);
+    throw new Error(`tfx extension publish failed with exit code ${result.exitCode}`);
+  }
+
+  // Parse JSON result
+  const json = result.json as any;
+  if (!json || !json.published) {
+    throw new Error('tfx did not return expected JSON output with published status');
+  }
+
+  // Determine vsix path
+  let vsixPath = '';
+  if (options.publishSource === 'manifest') {
+    vsixPath = json.packaged || '';
+  } else {
+    vsixPath = options.vsixFile || '';
+  }
+
+  // Set output variable if specified
+  if (options.outputVariable && vsixPath) {
+    platform.setVariable(options.outputVariable, vsixPath, false, true);
+  }
+
+  platform.info(`Published extension: ${json.id} v${json.version}`);
+
+  return {
+    published: json.published === true,
+    vsixPath,
+    extensionId: json.id || options.extensionId || '',
+    extensionVersion: json.version || options.extensionVersion || '',
+    publisherId: json.publisher || options.publisherId || '',
+    exitCode: result.exitCode,
+  };
 }
 
 /**
@@ -147,7 +221,77 @@ export async function publishExtension(
     if (options.extensionVisibility) {
       args.option('--extension-visibility', options.extensionVisibility);
     }
+
+    // Handle task version and ID updates for manifest publishing
+    // This uses the same approach as package.ts
+    let cleanupWriter: (() => Promise<void>) | null = null;
+    
+    if (options.updateTasksVersion || options.updateTasksId) {
+      platform.info('Updating task manifests before publishing...');
+      
+      try {
+        // Import filesystem manifest modules
+        const { FilesystemManifestReader } = await import('../filesystem-manifest-reader.js');
+        const { ManifestEditor } = await import('../manifest-editor.js');
+        
+        // Create filesystem reader for the source directory
+        const rootFolder = options.rootFolder || '.';
+        const manifestGlobs = options.manifestGlobs || ['vss-extension.json'];
+        
+        const reader = new FilesystemManifestReader({
+          rootFolder,
+          manifestGlobs,
+          platform
+        });
+        
+        // Create editor and apply all options at once
+        const editor = ManifestEditor.fromReader(reader);
+        await editor.applyOptions({
+          publisherId: options.publisherId,
+          extensionId: options.extensionId,
+          extensionTag: options.extensionTag,
+          extensionVersion: options.extensionVersion,
+          extensionName: options.extensionName,
+          extensionVisibility: options.extensionVisibility,
+          updateTasksVersion: options.updateTasksVersion,
+          updateTasksVersionType: options.updateTasksVersionType,
+          updateTasksId: options.updateTasksId,
+        });
+        
+        // Write modifications to filesystem
+        const writer = await editor.toWriter();
+        await writer.writeToFilesystem();
+        
+        // Get overrides file path if generated
+        const overridesPath = (writer as any).getOverridesPath();
+        if (overridesPath) {
+          platform.debug(`Using overrides file: ${overridesPath}`);
+          args.option('--overrides-file', overridesPath);
+        }
+        
+        // Setup cleanup function
+        cleanupWriter = async () => {
+          await writer.close();
+          await reader.close();
+        };
+        
+        platform.info('Task manifests updated successfully');
+      } catch (err) {
+        platform.error(`Failed to update task manifests: ${(err as Error).message}`);
+        throw err;
+      }
+    }
+
+  // Execute tfx and handle cleanup
+    try {
+      return await executeTfxPublish(tfx, args, platform, options);
+    } finally {
+      if (cleanupWriter) {
+        await cleanupWriter();
+      }
+    }
   } else {
+    // Publishing from VSIX file
     // Publishing from VSIX file
     if (!options.vsixFile) {
       throw new Error('vsixFile is required when publishSource is "vsix"');
@@ -172,73 +316,22 @@ export async function publishExtension(
     if (needsModification) {
       platform.info('Modifying VSIX before publishing...');
       
-      // Import VSIX editor modules dynamically to avoid circular dependencies
-      const { VsixReader } = await import('../vsix-reader.js');
-      const { VsixEditor } = await import('../vsix-editor.js');
-      
-      // Open the VSIX and create an editor
+      // Open the VSIX and create an editor using the unified architecture
       const reader = await VsixReader.open(options.vsixFile);
-      let editor = VsixEditor.fromReader(reader);
+      const editor = ManifestEditor.fromReader(reader);
       
-      // Apply manifest overrides
-      if (options.publisherId) {
-        platform.debug(`Setting publisher: ${options.publisherId}`);
-        editor = editor.setPublisher(options.publisherId);
-      }
-      
-      let extensionId = options.extensionId;
-      if (extensionId && options.extensionTag) {
-        extensionId = extensionId + options.extensionTag;
-        platform.debug(`Extension ID with tag: ${extensionId}`);
-      }
-      
-      if (extensionId) {
-        platform.debug(`Setting extension ID: ${extensionId}`);
-        editor = editor.setExtensionId(extensionId);
-      }
-      
-      if (options.extensionVersion) {
-        platform.debug(`Setting version: ${options.extensionVersion}`);
-        editor = editor.setVersion(options.extensionVersion);
-      }
-      
-      if (options.extensionName) {
-        platform.debug(`Setting name: ${options.extensionName}`);
-        editor = editor.setName(options.extensionName);
-      }
-      
-      if (options.extensionVisibility) {
-        platform.debug(`Setting visibility: ${options.extensionVisibility}`);
-        // Map extended visibility values to simple public/private for VsixEditor
-        const simpleVisibility = options.extensionVisibility.includes('public') ? 'public' : 'private';
-        editor = editor.setVisibility(simpleVisibility);
-      }
-      
-      // Apply task modifications
-      if (options.updateTasksVersion && options.extensionVersion) {
-        platform.info('Updating task versions...');
-        const tasks = await reader.getTasksInfo();
-        for (const task of tasks) {
-          platform.debug(`Updating task ${task.name} to version ${options.extensionVersion}`);
-          editor = editor.updateTaskVersion(task.name, options.extensionVersion);
-        }
-      }
-      
-      if (options.updateTasksId) {
-        platform.info('Updating task IDs...');
-        // Generate new UUIDs for tasks
-        const { v5: uuidv5 } = await import('uuid');
-        const tasks = await reader.getTasksInfo();
-        const extensionManifest = await reader.readExtensionManifest();
-        
-        for (const task of tasks) {
-          // Generate deterministic UUID based on namespace and task name
-          const namespace = `${extensionManifest.publisher}.${extensionManifest.id}.${task.name}`;
-          const newId = uuidv5(namespace, uuidv5.URL);
-          platform.debug(`Updating task ${task.name} ID to ${newId}`);
-          editor = editor.updateTaskId(task.name, newId);
-        }
-      }
+      // Apply all options at once
+      await editor.applyOptions({
+        publisherId: options.publisherId,
+        extensionId: options.extensionId,
+        extensionTag: options.extensionTag,
+        extensionVersion: options.extensionVersion,
+        extensionName: options.extensionName,
+        extensionVisibility: options.extensionVisibility,
+        updateTasksVersion: options.updateTasksVersion,
+        updateTasksVersionType: options.updateTasksVersionType,
+        updateTasksId: options.updateTasksId,
+      });
       
       // Write modified VSIX to a temporary file
       const writer = await editor.toWriter();
@@ -260,65 +353,6 @@ export async function publishExtension(
     }
   }
 
-  // Sharing
-  if (options.shareWith && options.shareWith.length > 0) {
-    // Only share if extension is not public
-    const isPublic =
-      options.extensionVisibility === 'public' || 
-      options.extensionVisibility === 'public_preview';
-    
-    if (isPublic) {
-      platform.warning('Ignoring shareWith - not available for public extensions');
-    } else {
-      args.flag('--share-with');
-      options.shareWith.forEach((org) => args.arg(org));
-    }
-  }
-
-  // Flags
-  if (options.noWaitValidation) {
-    args.flag('--no-wait-validation');
-  }
-
-  if (options.bypassValidation) {
-    args.flag('--bypass-validation');
-  }
-
-  // Execute tfx
-  const result = await tfx.execute(args.build(), { captureJson: true });
-
-  if (result.exitCode !== 0) {
-    platform.error(`tfx exited with code ${result.exitCode}`);
-    throw new Error(`tfx extension publish failed with exit code ${result.exitCode}`);
-  }
-
-  // Parse JSON result
-  const json = result.json as any;
-  if (!json || !json.published) {
-    throw new Error('tfx did not return expected JSON output with published status');
-  }
-
-  // Determine vsix path
-  let vsixPath = '';
-  if (options.publishSource === 'manifest') {
-    vsixPath = json.packaged || '';
-  } else {
-    vsixPath = options.vsixFile || '';
-  }
-
-  // Set output variable if specified
-  if (options.outputVariable && vsixPath) {
-    platform.setVariable(options.outputVariable, vsixPath, false, true);
-  }
-
-  platform.info(`Published extension: ${json.id} v${json.version}`);
-
-  return {
-    published: json.published === true,
-    vsixPath,
-    extensionId: json.id || options.extensionId || '',
-    extensionVersion: json.version || options.extensionVersion || '',
-    publisherId: json.publisher || options.publisherId || '',
-    exitCode: result.exitCode,
-  };
+  // Execute tfx using the helper function
+  return executeTfxPublish(tfx, args, platform, options);
 }
