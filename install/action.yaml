@@ -1,0 +1,53 @@
+name: 'Install Azure DevOps Extension'
+description: 'Install an Azure DevOps extension to specific accounts/organizations'
+author: 'Jesse Houwing'
+branding:
+  icon: 'download'
+  color: 'blue'
+
+inputs:
+  # Authentication (Required)
+  auth-type:
+    description: 'Authentication type: pat or oidc (default: pat)'
+    required: false
+    default: 'pat'
+  token:
+    description: 'Personal Access Token (required when auth-type is pat)'
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: 'Version of tfx-cli to use (embedded, latest, or specific version)'
+    required: false
+    default: 'embedded'
+  
+  # Extension Identity (Required)
+  publisher-id:
+    description: 'Publisher ID'
+    required: true
+  extension-id:
+    description: 'Extension ID'
+    required: true
+  extension-version:
+    description: 'Extension version to install (optional, defaults to latest)'
+    required: false
+  
+  # Install Options (Required)
+  accounts:
+    description: 'Azure DevOps accounts/organizations to install to (newline-separated)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - id: install
+      uses: jessehouwing/azure-devops-extension-tasks@v6
+      with:
+        operation: 'install'
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        tfx-version: ${{ inputs.tfx-version }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        extension-version: ${{ inputs.extension-version }}
+        accounts: ${{ inputs.accounts }}

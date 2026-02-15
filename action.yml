@@ -1,0 +1,173 @@
+name: 'Azure DevOps Extension Tasks'
+description: 'Package, publish, and manage Azure DevOps extensions and Visual Studio Marketplace extensions'
+author: 'Jesse Houwing'
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  # Operation (required)
+  operation:
+    description: 'Operation to perform (package, publish, unpublish, share, unshare, install, show, is-valid, verify-install)'
+    required: true
+  
+  # Authentication
+  auth-type:
+    description: |
+      Authentication type: 'pat' or 'oidc'
+      - pat: Use Personal Access Token (recommended for simplicity)
+      - oidc: Use Azure OIDC via azure/login action (requires setup, see below)
+      
+      OIDC Setup:
+      Run azure/login action BEFORE this action:
+      
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      Then use auth-type: oidc (no token needed)
+      
+      See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
+      
+      Default: pat
+    required: false
+    default: 'pat'
+  token:
+    description: |
+      Personal Access Token for marketplace authentication
+      Required when auth-type is 'pat'
+      Not needed when auth-type is 'oidc' (token obtained via Azure CLI)
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: "Version of tfx-cli to use: 'built-in' (bundled), 'path' (system), or version spec (e.g., '^0.17', 'latest')"
+    required: false
+    default: 'built-in'
+  
+  # Extension Identity
+  publisher-id:
+    description: 'Publisher ID'
+    required: false
+  extension-id:
+    description: 'Extension ID'
+    required: false
+  extension-tag:
+    description: 'Extension tag to append to extension ID'
+    required: false
+  
+  # Package & Publish - Manifest Source
+  root-folder:
+    description: 'Root folder for extension files'
+    required: false
+  manifest-globs:
+    description: 'Manifest file patterns (newline-separated)'
+    required: false
+  
+  # Package & Publish - VSIX Source
+  vsix-file:
+    description: 'Path to .vsix file (for publish operation)'
+    required: false
+  publish-source:
+    description: 'Source for publish: manifest or vsix'
+    required: false
+    default: 'manifest'
+  
+  # Extension Metadata Overrides
+  extension-version:
+    description: 'Extension version override'
+    required: false
+  extension-name:
+    description: 'Extension name override'
+    required: false
+  extension-visibility:
+    description: 'Extension visibility (private, public, private_preview, public_preview)'
+    required: false
+  
+  # Package Options
+  output-path:
+    description: 'Output path for generated .vsix file'
+    required: false
+  output-variable:
+    description: 'Output variable name to store result'
+    required: false
+  bypass-validation:
+    description: 'Bypass extension validation'
+    required: false
+    default: 'false'
+  rev-version:
+    description: 'Auto-increment patch version'
+    required: false
+    default: 'false'
+  
+  # Publish Options
+  share-with:
+    description: 'Organizations to share with (newline-separated)'
+    required: false
+  no-wait-validation:
+    description: 'Do not wait for validation to complete'
+    required: false
+    default: 'false'
+  update-tasks-version:
+    description: 'Update task versions to match extension version'
+    required: false
+    default: 'false'
+  update-tasks-id:
+    description: 'Update task IDs (generates new deterministic IDs)'
+    required: false
+    default: 'false'
+  
+  # Share/Unshare Options
+  unshare-with:
+    description: 'Organizations to unshare from (newline-separated)'
+    required: false
+  
+  # Install Options
+  accounts:
+    description: 'Azure DevOps accounts/organizations to install to (newline-separated)'
+    required: false
+  
+  # IsValid Options
+  max-retries:
+    description: 'Maximum retry attempts for validation'
+    required: false
+    default: '10'
+  min-timeout:
+    description: 'Minimum timeout between retries (minutes)'
+    required: false
+    default: '1'
+  max-timeout:
+    description: 'Maximum timeout between retries (minutes)'
+    required: false
+    default: '15'
+  
+  # VerifyInstall Options
+  expected-tasks:
+    description: 'Expected tasks JSON (array of {name, versions})'
+    required: false
+  manifest-path:
+    description: 'Path to extension manifest (auto-discovers task versions)'
+    required: false
+  vsix-path:
+    description: 'Path to .vsix file (extracts task versions)'
+    required: false
+  timeout-minutes:
+    description: 'Timeout for verification (minutes)'
+    required: false
+    default: '10'
+  polling-interval-seconds:
+    description: 'Polling interval (seconds)'
+    required: false
+    default: '30'
+
+outputs:
+  vsix-path:
+    description: 'Path to generated .vsix file (package operation)'
+  extension-metadata:
+    description: 'Extension metadata JSON (show operation)'
+
+runs:
+  using: 'node20'
+  main: 'packages/github-action/dist/main.js'

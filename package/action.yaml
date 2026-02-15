@@ -1,0 +1,106 @@
+name: 'Package Azure DevOps Extension'
+description: 'Create a .vsix package for an Azure DevOps extension'
+author: 'Jesse Houwing'
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  # Authentication
+  auth-type:
+    description: 'Authentication type: pat or oidc (default: pat)'
+    required: false
+    default: 'pat'
+  token:
+    description: 'Personal Access Token (required when auth-type is pat)'
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: "Version of tfx-cli to use: 'built-in' (bundled), 'path' (system), or version spec (e.g., '^0.17', 'latest')"
+    required: false
+    default: 'built-in'
+  
+  # Extension Identity
+  publisher-id:
+    description: 'Publisher ID'
+    required: false
+  extension-id:
+    description: 'Extension ID'
+    required: false
+  extension-tag:
+    description: 'Extension tag to append to extension ID'
+    required: false
+  
+  # Manifest Source
+  root-folder:
+    description: 'Root folder for extension files'
+    required: false
+  manifest-globs:
+    description: 'Manifest file patterns (newline-separated)'
+    required: false
+  
+  # Metadata Overrides
+  extension-version:
+    description: 'Extension version override'
+    required: false
+  extension-name:
+    description: 'Extension name override'
+    required: false
+  extension-visibility:
+    description: 'Extension visibility (private, public, private_preview, public_preview)'
+    required: false
+  
+  # Package Options
+  output-path:
+    description: 'Output path for generated .vsix file'
+    required: false
+  output-variable:
+    description: 'Output variable name to store result'
+    required: false
+  bypass-validation:
+    description: 'Bypass extension validation'
+    required: false
+    default: 'false'
+  rev-version:
+    description: 'Auto-increment patch version'
+    required: false
+    default: 'false'
+  update-tasks-version:
+    description: 'Update task versions to match extension version'
+    required: false
+    default: 'false'
+  update-tasks-id:
+    description: 'Update task IDs (generates new deterministic IDs)'
+    required: false
+    default: 'false'
+
+outputs:
+  vsix-path:
+    description: 'Path to generated .vsix file'
+    value: ${{ steps.package.outputs.vsix-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: package
+      uses: jessehouwing/azure-devops-extension-tasks@v6
+      with:
+        operation: 'package'
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        tfx-version: ${{ inputs.tfx-version }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        extension-tag: ${{ inputs.extension-tag }}
+        root-folder: ${{ inputs.root-folder }}
+        manifest-globs: ${{ inputs.manifest-globs }}
+        extension-version: ${{ inputs.extension-version }}
+        extension-name: ${{ inputs.extension-name }}
+        extension-visibility: ${{ inputs.extension-visibility }}
+        output-path: ${{ inputs.output-path }}
+        output-variable: ${{ inputs.output-variable }}
+        bypass-validation: ${{ inputs.bypass-validation }}
+        rev-version: ${{ inputs.rev-version }}
+        update-tasks-version: ${{ inputs.update-tasks-version }}
+        update-tasks-id: ${{ inputs.update-tasks-id }}

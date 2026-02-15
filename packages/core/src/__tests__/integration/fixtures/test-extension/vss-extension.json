@@ -1,0 +1,29 @@
+{
+  "manifestVersion": 1,
+  "id": "test-extension",
+  "version": "1.0.0",
+  "name": "Test Extension",
+  "publisher": "test-publisher",
+  "description": "A test extension for integration testing",
+  "categories": ["Azure Pipelines"],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "test-task",
+      "type": "ms.vss-distributed-task.task",
+      "targets": ["ms.vss-distributed-task.tasks"],
+      "properties": {
+        "name": "TestTask"
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "TestTask"
+    }
+  ]
+}

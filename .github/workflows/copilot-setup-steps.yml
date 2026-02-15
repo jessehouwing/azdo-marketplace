@@ -14,8 +14,8 @@ permissions:
   packages: read
 
 env:
-  NODE_VERSION: "24"
-  AZDO_ORG_URL: "https://dev.azure.com/jessehouwing-dev"
+  NODE_VERSION: '24'
+  AZDO_ORG_URL: 'https://dev.azure.com/jessehouwing-dev'
 
 jobs:
   copilot-setup-steps:
@@ -50,8 +50,17 @@ jobs:
           npm install --global tfx-cli
           tfx --version
 
+      - name: Ensure jest is installed globally
+        run: |
+          set -euo pipefail
+          npm install --global jest
+          jest --version
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Build v6 packages
+        run: npm run build:v6
 
       - name: Setup summary
         run: |
@@ -60,4 +69,7 @@ jobs:
             echo "- Node: ${NODE_VERSION}"
             echo "- Azure CLI: $(az version --query '"azure-cli"' -o tsv)"
             echo "- tfx-cli: $(tfx --version)"
+            echo "- jest: $(jest --version)"
+            echo "- Dependencies: ✅ Installed"
+            echo "- Build: ✅ Successful"
           } >> "$GITHUB_STEP_SUMMARY"

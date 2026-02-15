@@ -1,0 +1,75 @@
+name: 'Verify Azure DevOps Extension Installation'
+description: 'Verify that an Azure DevOps extension has been installed correctly'
+author: 'Jesse Houwing'
+branding:
+  icon: 'check-square'
+  color: 'green'
+
+inputs:
+  # Authentication (Required)
+  auth-type:
+    description: 'Authentication type: pat or oidc (default: pat)'
+    required: false
+    default: 'pat'
+  token:
+    description: 'Personal Access Token (required when auth-type is pat)'
+    required: false
+  
+  # TFX Configuration
+  tfx-version:
+    description: 'Version of tfx-cli to use (embedded, latest, or specific version)'
+    required: false
+    default: 'embedded'
+  
+  # Extension Identity (Required)
+  publisher-id:
+    description: 'Publisher ID'
+    required: true
+  extension-id:
+    description: 'Extension ID'
+    required: true
+  
+  # Account (Required)
+  accounts:
+    description: 'Azure DevOps accounts/organizations to verify (newline-separated)'
+    required: true
+  
+  # Expected Tasks (at least one required)
+  expected-tasks:
+    description: 'Expected tasks JSON (array of {name, versions})'
+    required: false
+  manifest-path:
+    description: 'Path to extension manifest (auto-discovers task versions)'
+    required: false
+  vsix-path:
+    description: 'Path to .vsix file (extracts task versions)'
+    required: false
+  
+  # Verification Options
+  timeout-minutes:
+    description: 'Timeout for verification (minutes)'
+    required: false
+    default: '10'
+  polling-interval-seconds:
+    description: 'Polling interval (seconds)'
+    required: false
+    default: '30'
+
+runs:
+  using: 'composite'
+  steps:
+    - id: verify-install
+      uses: jessehouwing/azure-devops-extension-tasks@v6
+      with:
+        operation: 'verify-install'
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        tfx-version: ${{ inputs.tfx-version }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        accounts: ${{ inputs.accounts }}
+        expected-tasks: ${{ inputs.expected-tasks }}
+        manifest-path: ${{ inputs.manifest-path }}
+        vsix-path: ${{ inputs.vsix-path }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        polling-interval-seconds: ${{ inputs.polling-interval-seconds }}

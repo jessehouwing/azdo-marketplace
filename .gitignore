@@ -23,3 +23,8 @@ BuildTasks/**/*.js.map
 tsconfig.tsbuildinfo
 /*.pfx
 vsixsigntool.exe
+
+# Debug and temporary directories
+.tmp/
+.cache/
+.work/

@@ -1,0 +1,463 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "e91b4815-8c09-45d9-9f97-b4b5e1e5c4f2",
+  "name": "ExtensionTasks",
+  "friendlyName": "Azure DevOps Extension Tasks",
+  "description": "Package, publish, and manage Azure DevOps extensions and Visual Studio Marketplace extensions",
+  "helpMarkDown": "[More Information](https://github.com/jessehouwing/azure-devops-extension-tasks)",
+  "category": "Package",
+  "author": "Jesse Houwing",
+  "version": {
+    "Major": 6,
+    "Minor": 0,
+    "Patch": 0
+  },
+  "instanceNameFormat": "Extension: $(operation)",
+  "demands": [],
+  "minimumAgentVersion": "2.144.0",
+  "groups": [
+    {
+      "name": "authentication",
+      "displayName": "Authentication",
+      "isExpanded": true
+    },
+    {
+      "name": "extensionIdentity",
+      "displayName": "Extension Identity",
+      "isExpanded": true
+    },
+    {
+      "name": "manifest",
+      "displayName": "Manifest Options",
+      "isExpanded": false
+    },
+    {
+      "name": "vsix",
+      "displayName": "VSIX Options",
+      "isExpanded": false
+    },
+    {
+      "name": "overrides",
+      "displayName": "Extension Overrides",
+      "isExpanded": false
+    },
+    {
+      "name": "publish",
+      "displayName": "Publish Options",
+      "isExpanded": false
+    },
+    {
+      "name": "sharing",
+      "displayName": "Sharing Options",
+      "isExpanded": false
+    },
+    {
+      "name": "validation",
+      "displayName": "Validation Options",
+      "isExpanded": false
+    },
+    {
+      "name": "advanced",
+      "displayName": "Advanced",
+      "isExpanded": false
+    }
+  ],
+  "inputs": [
+    {
+      "name": "operation",
+      "type": "pickList",
+      "label": "Operation",
+      "defaultValue": "package",
+      "required": true,
+      "helpMarkDown": "Operation to perform on the extension",
+      "options": {
+        "package": "Package - Create .vsix file",
+        "publish": "Publish - Publish to marketplace",
+        "unpublish": "Unpublish - Remove from marketplace",
+        "share": "Share - Share with organizations",
+        "unshare": "Unshare - Unshare from organizations",
+        "install": "Install - Install to organizations",
+        "show": "Show - Query extension metadata",
+        "isValid": "Is Valid - Validate extension",
+        "verifyInstall": "Verify Install - Verify task availability"
+      }
+    },
+    {
+      "name": "connectionType",
+      "type": "pickList",
+      "label": "Connection Type",
+      "required": true,
+      "helpMarkDown": "Type of service connection to use for authentication",
+      "visibleRule": "operation != package",
+      "groupName": "authentication",
+      "options": {
+        "connectedService:VsTeam": "Visual Studio Team Services (PAT)",
+        "connectedService:AzureRM": "Azure Resource Manager (OIDC)",
+        "connectedService:Generic": "Generic (Basic Auth)"
+      },
+      "defaultValue": "connectedService:VsTeam"
+    },
+    {
+      "name": "connectionName",
+      "type": "connectedService:VsTeam",
+      "label": "Service Connection",
+      "required": true,
+      "helpMarkDown": "Service connection for marketplace authentication",
+      "visibleRule": "operation != package && connectionType = connectedService:VsTeam",
+      "groupName": "authentication"
+    },
+    {
+      "name": "connectionNameAzureRM",
+      "type": "connectedService:AzureRM",
+      "label": "Azure RM Connection",
+      "required": true,
+      "helpMarkDown": "Azure Resource Manager service connection with workload identity",
+      "visibleRule": "operation != package && connectionType = connectedService:AzureRM",
+      "groupName": "authentication"
+    },
+    {
+      "name": "connectionNameGeneric",
+      "type": "connectedService:Generic",
+      "label": "Generic Connection",
+      "required": true,
+      "helpMarkDown": "Generic service connection with username/password",
+      "visibleRule": "operation != package && connectionType = connectedService:Generic",
+      "groupName": "authentication"
+    },
+    {
+      "name": "tfxVersion",
+      "type": "string",
+      "label": "tfx-cli Version",
+      "defaultValue": "built-in",
+      "required": false,
+      "helpMarkDown": "Version of tfx-cli to use: 'built-in' (bundled with task), 'path' (from system PATH), or a version spec (e.g., '^0.17', 'latest')",
+      "groupName": "advanced"
+    },
+    {
+      "name": "publisherId",
+      "type": "string",
+      "label": "Publisher ID",
+      "required": false,
+      "helpMarkDown": "Publisher ID for the extension",
+      "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = isValid || operation = verifyInstall",
+      "groupName": "extensionIdentity"
+    },
+    {
+      "name": "extensionId",
+      "type": "string",
+      "label": "Extension ID",
+      "required": false,
+      "helpMarkDown": "Extension ID (unique within publisher)",
+      "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = isValid || operation = verifyInstall",
+      "groupName": "extensionIdentity"
+    },
+    {
+      "name": "extensionTag",
+      "type": "string",
+      "label": "Extension Tag",
+      "required": false,
+      "helpMarkDown": "Tag to append to extension ID (e.g., -dev, -preview)",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "extensionIdentity"
+    },
+    {
+      "name": "publishSource",
+      "type": "radio",
+      "label": "Publish Source",
+      "required": true,
+      "defaultValue": "manifest",
+      "helpMarkDown": "Source for publishing: manifest files or pre-built .vsix file",
+      "visibleRule": "operation = publish",
+      "groupName": "publish",
+      "options": {
+        "manifest": "Manifest files",
+        "vsix": "VSIX file"
+      }
+    },
+    {
+      "name": "rootFolder",
+      "type": "filePath",
+      "label": "Root Folder",
+      "required": false,
+      "helpMarkDown": "Root folder containing extension files",
+      "visibleRule": "operation = package || (operation = publish && publishSource = manifest) || operation = isValid",
+      "groupName": "manifest"
+    },
+    {
+      "name": "localizationRoot",
+      "type": "filePath",
+      "label": "Localization Root Folder",
+      "required": false,
+      "helpMarkDown": "Folder where localization files exist",
+      "visibleRule": "operation = package || (operation = publish && publishSource = manifest)",
+      "groupName": "manifest"
+    },
+    {
+      "name": "manifestGlobs",
+      "type": "multiLine",
+      "label": "Manifest Patterns",
+      "required": false,
+      "helpMarkDown": "Glob patterns for manifest files (one per line). Example: vss-extension.json",
+      "visibleRule": "operation = package || (operation = publish && publishSource = manifest) || operation = isValid",
+      "groupName": "manifest"
+    },
+    {
+      "name": "vsixFile",
+      "type": "filePath",
+      "label": "VSIX File",
+      "required": true,
+      "helpMarkDown": "Path to the .vsix file to publish",
+      "visibleRule": "operation = publish && publishSource = vsix",
+      "groupName": "vsix"
+    },
+    {
+      "name": "extensionVersion",
+      "type": "string",
+      "label": "Extension Version",
+      "required": false,
+      "helpMarkDown": "Override extension version (e.g., 1.2.3 or $(Build.BuildNumber))",
+      "visibleRule": "operation = package || operation = publish || operation = install",
+      "groupName": "overrides"
+    },
+    {
+      "name": "extensionName",
+      "type": "string",
+      "label": "Extension Name",
+      "required": false,
+      "helpMarkDown": "Override extension display name",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "overrides"
+    },
+    {
+      "name": "extensionVisibility",
+      "type": "pickList",
+      "label": "Extension Visibility",
+      "required": false,
+      "helpMarkDown": "Override extension visibility",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "overrides",
+      "options": {
+        "private": "Private",
+        "public": "Public",
+        "private_preview": "Private Preview",
+        "public_preview": "Public Preview"
+      }
+    },
+    {
+      "name": "extensionPricing",
+      "type": "pickList",
+      "label": "Extension Pricing",
+      "required": false,
+      "defaultValue": "default",
+      "helpMarkDown": "Override extension pricing (Free vs Paid). If not specified, pricing from manifest will be used",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "overrides",
+      "options": {
+        "default": "Not set",
+        "free": "Free",
+        "paid": "Paid"
+      }
+    },
+    {
+      "name": "outputPath",
+      "type": "filePath",
+      "label": "Output Path",
+      "required": false,
+      "helpMarkDown": "Output path for generated .vsix file",
+      "visibleRule": "operation = package",
+      "groupName": "advanced"
+    },
+    {
+      "name": "outputVariable",
+      "type": "string",
+      "label": "Output Variable",
+      "required": false,
+      "helpMarkDown": "Variable name to store output (VSIX path for package, metadata for show)",
+      "visibleRule": "operation = package || operation = show",
+      "groupName": "advanced"
+    },
+    {
+      "name": "bypassValidation",
+      "type": "boolean",
+      "label": "Bypass Validation",
+      "required": false,
+      "defaultValue": "false",
+      "helpMarkDown": "Skip extension validation checks",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "validation"
+    },
+    {
+      "name": "revVersion",
+      "type": "boolean",
+      "label": "Auto-increment Version",
+      "required": false,
+      "defaultValue": "false",
+      "helpMarkDown": "Automatically increment patch version",
+      "visibleRule": "operation = package",
+      "groupName": "advanced"
+    },
+    {
+      "name": "shareWith",
+      "type": "multiLine",
+      "label": "Share With",
+      "required": false,
+      "helpMarkDown": "Organizations to share with (one per line). Example: myorg1\\nmyorg2",
+      "visibleRule": "(operation = publish && (extensionVisibility = private || extensionVisibility = private_preview || extensionVisibility = default)) || operation = share",
+      "groupName": "sharing"
+    },
+    {
+      "name": "unshareWith",
+      "type": "multiLine",
+      "label": "Unshare With",
+      "required": false,
+      "helpMarkDown": "Organizations to unshare from (one per line)",
+      "visibleRule": "operation = unshare",
+      "groupName": "sharing"
+    },
+    {
+      "name": "accounts",
+      "type": "multiLine",
+      "label": "Accounts",
+      "required": true,
+      "helpMarkDown": "Azure DevOps accounts/organizations (one per line). Example: https://dev.azure.com/myorg1",
+      "visibleRule": "operation = install || operation = verifyInstall",
+      "groupName": "sharing"
+    },
+    {
+      "name": "noWaitValidation",
+      "type": "boolean",
+      "label": "No Wait for Validation",
+      "required": false,
+      "defaultValue": "false",
+      "helpMarkDown": "Do not wait for marketplace validation to complete",
+      "visibleRule": "operation = publish",
+      "groupName": "validation"
+    },
+    {
+      "name": "updateTasksVersion",
+      "type": "boolean",
+      "label": "Update Task Versions",
+      "required": false,
+      "defaultValue": "false",
+      "helpMarkDown": "Update all task versions to match extension version",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "advanced"
+    },
+    {
+      "name": "updateTasksVersionType",
+      "type": "pickList",
+      "label": "Update Tasks Version Type",
+      "required": false,
+      "defaultValue": "major",
+      "helpMarkDown": "Specify which part(s) of version to update: Major (x.y.r), Minor (1.y.r), or Patch (1.0.r)",
+      "visibleRule": "updateTasksVersion = true && (operation = package || operation = publish)",
+      "groupName": "advanced",
+      "options": {
+        "major": "Replace Major, Minor, Patch (x.y.r)",
+        "minor": "Replace Minor, Patch (1.y.r)",
+        "patch": "Replace Only Patch (1.0.r)"
+      }
+    },
+    {
+      "name": "updateTasksId",
+      "type": "boolean",
+      "label": "Update Task IDs",
+      "required": false,
+      "defaultValue": "false",
+      "helpMarkDown": "Generate new deterministic task IDs",
+      "visibleRule": "operation = package || operation = publish",
+      "groupName": "advanced"
+    },
+    {
+      "name": "maxRetries",
+      "type": "string",
+      "label": "Max Retries",
+      "required": false,
+      "defaultValue": "10",
+      "helpMarkDown": "Maximum retry attempts",
+      "visibleRule": "operation = isValid",
+      "groupName": "validation"
+    },
+    {
+      "name": "minTimeout",
+      "type": "string",
+      "label": "Min Timeout (minutes)",
+      "required": false,
+      "defaultValue": "1",
+      "helpMarkDown": "Minimum timeout between retries",
+      "visibleRule": "operation = isValid",
+      "groupName": "validation"
+    },
+    {
+      "name": "maxTimeout",
+      "type": "string",
+      "label": "Max Timeout (minutes)",
+      "required": false,
+      "defaultValue": "15",
+      "helpMarkDown": "Maximum timeout between retries",
+      "visibleRule": "operation = isValid",
+      "groupName": "validation"
+    },
+    {
+      "name": "expectedTasks",
+      "type": "multiLine",
+      "label": "Expected Tasks (JSON)",
+      "required": false,
+      "helpMarkDown": "Expected tasks as JSON array: [{\"name\": \"TaskName\", \"versions\": [\"1.0.0\"]}]",
+      "visibleRule": "operation = verifyInstall",
+      "groupName": "validation"
+    },
+    {
+      "name": "manifestPath",
+      "type": "filePath",
+      "label": "Manifest Path",
+      "required": false,
+      "helpMarkDown": "Path to extension manifest (auto-discovers task versions)",
+      "visibleRule": "operation = verifyInstall",
+      "groupName": "validation"
+    },
+    {
+      "name": "vsixPath",
+      "type": "filePath",
+      "label": "VSIX Path",
+      "required": false,
+      "helpMarkDown": "Path to .vsix file (extracts task versions)",
+      "visibleRule": "operation = verifyInstall",
+      "groupName": "validation"
+    },
+    {
+      "name": "timeoutMinutes",
+      "type": "string",
+      "label": "Timeout (minutes)",
+      "required": false,
+      "defaultValue": "10",
+      "helpMarkDown": "Maximum time to wait for tasks to become available",
+      "visibleRule": "operation = verifyInstall",
+      "groupName": "validation"
+    },
+    {
+      "name": "pollingIntervalSeconds",
+      "type": "string",
+      "label": "Polling Interval (seconds)",
+      "required": false,
+      "defaultValue": "30",
+      "helpMarkDown": "Interval between availability checks",
+      "visibleRule": "operation = verifyInstall",
+      "groupName": "validation"
+    },
+    {
+      "name": "tfxVersion",
+      "type": "string",
+      "label": "TFX Version",
+      "required": false,
+      "defaultValue": "embedded",
+      "helpMarkDown": "Version of tfx-cli to use (embedded, latest, or specific like 0.17.x)",
+      "groupName": "advanced"
+    }
+  ],
+  "execution": {
+    "Node20_1": {
+      "target": "dist/main.js"
+    }
+  }
+}
