@@ -1,0 +1,109 @@
+name: Publish private extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension_id:
+        description: Extension ID (base; OIDC job appends -oidc)
+        required: true
+        default: azdo-marketplace-extension
+      initial_version:
+        description: Initial version to use when extension does not yet exist
+        required: true
+        default: 6.0.0
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PUBLISHER_ID: jessehouwing
+
+jobs:
+  publish_oidc:
+    name: Publish private (OIDC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure login for OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - id: query
+        name: Query next patch version
+        continue-on-error: true
+        uses: jessehouwing/azure-devops-extension-tasks/query-version@refactor/v6
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ inputs.extension_id }}
+          version-action: Patch
+
+      - id: version
+        name: Resolve version (query or initial)
+        shell: bash
+        run: |
+          if [[ "${{ steps.query.outcome }}" == "success" && -n "${{ steps.query.outputs.proposed-version }}" ]]; then
+            echo "value=${{ steps.query.outputs.proposed-version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ inputs.initial_version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: package
+        name: Package VSIX
+        uses: jessehouwing/azure-devops-extension-tasks/package@refactor/v6
+        with:
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ inputs.extension_id }}
+          extension-version: ${{ steps.version.outputs.value }}
+          extension-visibility: private
+          update-tasks-version: true
+          update-tasks-id: true
+          output-path: ${{ runner.temp }}
+
+      - name: Publish from VSIX
+        uses: jessehouwing/azure-devops-extension-tasks/publish@refactor/v6
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ inputs.extension_id }}
+          publish-source: vsix
+          vsix-file: ${{ steps.package.outputs.vsix-path }}
+          no-wait-validation: true
+
+      - name: Wait for validation
+        uses: jessehouwing/azure-devops-extension-tasks/wait-for-validation@refactor/v6
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ inputs.extension_id }}
+
+      - name: Share extension
+        uses: jessehouwing/azure-devops-extension-tasks/share@refactor/v6
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ inputs.extension_id }}
+          accounts: |
+            https://dev.azure.com/jessehouwing-dev
+
+      - name: Install extension
+        uses: jessehouwing/azure-devops-extension-tasks/install@refactor/v6
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ inputs.extension_id }}
+          accounts: |
+            https://dev.azure.com/jessehouwing-dev
+
+      - name: Wait for installation
+        uses: jessehouwing/azure-devops-extension-tasks/wait-for-installation@refactor/v6
+        with:
+          auth-type: oidc
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
+          accounts: |
+            https://dev.azure.com/jessehouwing-dev

@@ -1,6 +1,6 @@
 {
   "manifestVersion": 1,
-  "id": "vsts-developer-tools-build-tasks",
+  "id": "azdo-marketplace-extension",
   "publisher": "jessehouwing",
   "name": "Azure DevOps Extension Tasks",
   "version": "6.0.0",
