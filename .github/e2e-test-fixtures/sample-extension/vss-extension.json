@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "id": "e2e-test-extension",
+  "version": "0.0.1",
+  "name": "E2E Test Extension",
+  "publisher": "e2e-test-publisher",
+  "description": "A sample extension for end-to-end testing of Azure DevOps Extension Tasks",
+  "categories": ["Azure Pipelines"],
+  "tags": ["test", "e2e", "automation"],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "images/icon.png"
+  },
+  "contributions": [
+    {
+      "id": "sample-task-v1",
+      "type": "ms.vss-distributed-task.task",
+      "targets": ["ms.vss-distributed-task.tasks"],
+      "properties": {
+        "name": "SampleTaskV1"
+      }
+    },
+    {
+      "id": "sample-task-v2",
+      "type": "ms.vss-distributed-task.task",
+      "targets": ["ms.vss-distributed-task.tasks"],
+      "properties": {
+        "name": "SampleTaskV2"
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "SampleTaskV1"
+    },
+    {
+      "path": "SampleTaskV2"
+    },
+    {
+      "path": "images",
+      "addressable": true
+    }
+  ]
+}

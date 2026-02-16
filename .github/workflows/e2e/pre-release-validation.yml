@@ -1,0 +1,500 @@
+name: E2E - Pre-Release Validation
+
+# Comprehensive end-to-end validation workflow to run before releases
+# Tests all operations through both main action and composites
+# Validates OIDC, marketplace operations, and organization operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      test-organization:
+        description: 'Test Azure DevOps organization (URL or name)'
+        required: false
+        default: ''
+      skip-org-tests:
+        description: 'Skip organization-specific tests'
+        required: false
+        default: 'false'
+      use-oidc:
+        description: 'Use OIDC authentication (requires Azure setup)'
+        required: false
+        default: 'false'
+
+permissions:
+  id-token: write  # For OIDC
+  contents: read
+
+jobs:
+  # Job 1: Basic validation - Package operation
+  validate-package:
+    name: Validate Package Operation
+    runs-on: ubuntu-latest
+    outputs:
+      vsix-main: ${{ steps.package-main.outputs.vsix-path }}
+      vsix-composite: ${{ steps.package-composite.outputs.vsix-path }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build and bundle
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Test package (Main Action)
+        id: package-main
+        uses: ./
+        with:
+          operation: 'package'
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-main'
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'e2e-test' }}
+          extension-id: 'prerelease-test-main'
+          extension-version: '0.0.${{ github.run_number }}'
+          extension-visibility: 'private'
+          update-tasks-version: 'true'
+          update-tasks-id: 'true'
+
+      - name: Test package (Composite)
+        id: package-composite
+        uses: ./package
+        with:
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-composite'
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'e2e-test' }}
+          extension-id: 'prerelease-test-composite'
+          extension-version: '0.0.${{ github.run_number }}'
+          extension-visibility: 'private'
+          update-tasks-version: 'true'
+          update-tasks-id: 'true'
+
+      - name: Validate outputs
+        run: |
+          echo "Main VSIX: ${{ steps.package-main.outputs.vsix-path }}"
+          echo "Composite VSIX: ${{ steps.package-composite.outputs.vsix-path }}"
+          
+          if [ ! -f "${{ steps.package-main.outputs.vsix-path }}" ]; then
+            echo "❌ Main action package failed"
+            exit 1
+          fi
+          
+          if [ ! -f "${{ steps.package-composite.outputs.vsix-path }}" ]; then
+            echo "❌ Composite package failed"
+            exit 1
+          fi
+          
+          echo "✅ Package operations validated"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prerelease-packages
+          path: |
+            ./dist-main/*.vsix
+            ./dist-composite/*.vsix
+          retention-days: 30
+
+  # Job 2: Marketplace operations validation
+  validate-marketplace:
+    name: Validate Marketplace Operations
+    runs-on: ubuntu-latest
+    needs: validate-package
+    if: secrets.MARKETPLACE_TOKEN != ''
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build and bundle
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      # Test Show operation
+      - name: Test show (Main Action)
+        id: show-main
+        uses: ./
+        with:
+          operation: 'show'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'ms-devlabs' }}
+          extension-id: ${{ secrets.E2E_EXISTING_EXTENSION_ID || 'vsts-developer-tools' }}
+
+      - name: Test show (Composite)
+        id: show-composite
+        uses: ./show
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'ms-devlabs' }}
+          extension-id: ${{ secrets.E2E_EXISTING_EXTENSION_ID || 'vsts-developer-tools' }}
+
+      # Test Query Version operation
+      - name: Test query-version (Main Action)
+        id: query-main
+        uses: ./
+        with:
+          operation: 'query-version'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'ms-devlabs' }}
+          extension-id: ${{ secrets.E2E_EXISTING_EXTENSION_ID || 'vsts-developer-tools' }}
+          version-action: 'Patch'
+
+      - name: Test query-version (Composite)
+        id: query-composite
+        uses: ./query-version
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'ms-devlabs' }}
+          extension-id: ${{ secrets.E2E_EXISTING_EXTENSION_ID || 'vsts-developer-tools' }}
+          version-action: 'Minor'
+
+      - name: Validate outputs
+        run: |
+          echo "Show (Main) metadata length: $(echo '${{ steps.show-main.outputs.extension-metadata }}' | wc -c)"
+          echo "Show (Composite) metadata length: $(echo '${{ steps.show-composite.outputs.extension-metadata }}' | wc -c)"
+          echo "Query (Main) - Current: ${{ steps.query-main.outputs.current-version }}, Proposed: ${{ steps.query-main.outputs.proposed-version }}"
+          echo "Query (Composite) - Current: ${{ steps.query-composite.outputs.current-version }}, Proposed: ${{ steps.query-composite.outputs.proposed-version }}"
+          
+          if [ -z "${{ steps.show-main.outputs.extension-metadata }}" ] || \
+             [ -z "${{ steps.show-composite.outputs.extension-metadata }}" ]; then
+            echo "❌ Show operations failed"
+            exit 1
+          fi
+          
+          if [ -z "${{ steps.query-main.outputs.current-version }}" ] || \
+             [ -z "${{ steps.query-composite.outputs.current-version }}" ]; then
+            echo "❌ Query version operations failed"
+            exit 1
+          fi
+          
+          echo "✅ Marketplace operations validated"
+
+  # Job 3: Publish and validation workflow
+  validate-publish:
+    name: Validate Publish and Wait for Validation
+    runs-on: ubuntu-latest
+    needs: validate-package
+    if: secrets.MARKETPLACE_TOKEN != '' && secrets.E2E_PUBLISHER_ID != ''
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build and bundle
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: prerelease-packages
+          path: ./packages
+
+      # Test publish (Main Action - VSIX mode)
+      - name: Test publish VSIX (Main Action)
+        uses: ./
+        with:
+          operation: 'publish'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publish-source: 'vsix'
+          vsix-file: ./packages/dist-main/*.vsix
+          no-wait-validation: 'true'
+
+      - name: Wait for validation (Main Action)
+        uses: ./
+        with:
+          operation: 'wait-for-validation'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-main'
+          max-retries: '10'
+          min-timeout: '1'
+          max-timeout: '5'
+
+      # Test publish (Composite - Manifest mode)
+      - name: Test publish manifest (Composite)
+        uses: ./publish
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publish-source: 'manifest'
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-composite'
+          extension-version: '0.0.${{ github.run_number }}'
+          extension-visibility: 'private'
+          no-wait-validation: 'true'
+
+      - name: Wait for validation (Composite)
+        uses: ./wait-for-validation
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-composite'
+          max-retries: '10'
+          min-timeout: '1'
+          max-timeout: '5'
+
+      - name: Success message
+        run: echo "✅ Publish and validation operations completed"
+
+  # Job 4: OIDC authentication validation
+  validate-oidc:
+    name: Validate OIDC Authentication
+    runs-on: ubuntu-latest
+    if: inputs.use-oidc == 'true' && secrets.AZURE_CLIENT_ID != ''
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build and bundle
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Test show with OIDC
+        uses: ./show
+        with:
+          auth-type: 'oidc'
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID || 'ms-devlabs' }}
+          extension-id: ${{ secrets.E2E_EXISTING_EXTENSION_ID || 'vsts-developer-tools' }}
+
+      - name: Success message
+        run: echo "✅ OIDC authentication validated"
+
+  # Job 5: Organization operations validation
+  validate-org-operations:
+    name: Validate Organization Operations
+    runs-on: ubuntu-latest
+    needs: [validate-package, validate-publish]
+    if: inputs.skip-org-tests != 'true' && inputs.test-organization != '' && secrets.MARKETPLACE_TOKEN != ''
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build and bundle
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: prerelease-packages
+          path: ./packages
+
+      # Test share
+      - name: Share extension (Main)
+        uses: ./
+        with:
+          operation: 'share'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-main'
+          share-with: ${{ inputs.test-organization }}
+
+      - name: Share extension (Composite)
+        uses: ./share
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-composite'
+          share-with: ${{ inputs.test-organization }}
+
+      # Test install
+      - name: Install extension (Main)
+        uses: ./
+        with:
+          operation: 'install'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-main'
+          accounts: ${{ inputs.test-organization }}
+
+      - name: Install extension (Composite)
+        uses: ./install
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-composite'
+          accounts: ${{ inputs.test-organization }}
+
+      # Test wait-for-installation
+      - name: Wait for installation (Main)
+        uses: ./
+        with:
+          operation: 'wait-for-installation'
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          service-url: ${{ inputs.test-organization }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-main'
+          vsix-path: ./packages/dist-main/*.vsix
+          timeout-minutes: '5'
+
+      - name: Wait for installation (Composite)
+        uses: ./wait-for-installation
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          service-url: ${{ inputs.test-organization }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-composite'
+          manifest-path: '.github/e2e-test-fixtures/sample-extension/vss-extension.json'
+          timeout-minutes: '5'
+
+      - name: Success message
+        run: echo "✅ Organization operations validated"
+
+  # Job 6: Cleanup
+  cleanup:
+    name: Cleanup Test Extensions
+    runs-on: ubuntu-latest
+    needs: [validate-publish, validate-org-operations]
+    if: always() && secrets.MARKETPLACE_TOKEN != '' && secrets.E2E_PUBLISHER_ID != ''
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build and bundle
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Unshare from organization
+        if: inputs.test-organization != ''
+        continue-on-error: true
+        uses: ./unshare
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-main'
+          unshare-with: ${{ inputs.test-organization }}
+
+      - name: Unpublish main extension
+        continue-on-error: true
+        uses: ./unpublish
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-main'
+
+      - name: Unpublish composite extension
+        continue-on-error: true
+        uses: ./unpublish
+        with:
+          auth-type: 'pat'
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          publisher-id: ${{ secrets.E2E_PUBLISHER_ID }}
+          extension-id: 'prerelease-test-composite'
+
+      - name: Cleanup complete
+        run: echo "✅ Cleanup completed (errors ignored)"
+
+  # Final report
+  report-results:
+    name: Final Validation Report
+    runs-on: ubuntu-latest
+    needs: [validate-package, validate-marketplace, validate-publish]
+    if: always()
+    
+    steps:
+      - name: Generate report
+        run: |
+          echo "========================================="
+          echo "  PRE-RELEASE VALIDATION REPORT"
+          echo "========================================="
+          echo ""
+          echo "Package:           ${{ needs.validate-package.result }}"
+          echo "Marketplace:       ${{ needs.validate-marketplace.result }}"
+          echo "Publish:           ${{ needs.validate-publish.result }}"
+          echo ""
+          
+          # Check if any required job failed
+          if [ "${{ needs.validate-package.result }}" != "success" ]; then
+            echo "❌ CRITICAL: Package validation failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.validate-marketplace.result }}" == "failure" ]; then
+            echo "❌ CRITICAL: Marketplace validation failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.validate-publish.result }}" == "failure" ]; then
+            echo "❌ CRITICAL: Publish validation failed"
+            exit 1
+          fi
+          
+          echo "========================================="
+          echo "✅ ALL VALIDATIONS PASSED"
+          echo "========================================="
+          echo ""
+          echo "The extension is ready for release!"

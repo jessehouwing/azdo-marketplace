@@ -1,0 +1,34 @@
+{
+  "id": "f6e5d4c3-b2a1-4f5e-9d8c-7b6a5e4d3c2b",
+  "name": "SampleTaskV2",
+  "friendlyName": "Sample Task V2",
+  "description": "A sample task for E2E testing (version 2)",
+  "helpMarkDown": "This task is used for end-to-end testing of extension operations",
+  "category": "Utility",
+  "author": "E2E Test Publisher",
+  "version": {
+    "Major": 2,
+    "Minor": 0,
+    "Patch": 0
+  },
+  "instanceNameFormat": "Sample Task V2",
+  "inputs": [
+    {
+      "name": "action",
+      "type": "pickList",
+      "label": "Action",
+      "defaultValue": "echo",
+      "required": true,
+      "helpMarkDown": "Action to perform",
+      "options": {
+        "echo": "Echo message",
+        "validate": "Validate input"
+      }
+    }
+  ],
+  "execution": {
+    "Node20_1": {
+      "target": "index.js"
+    }
+  }
+}

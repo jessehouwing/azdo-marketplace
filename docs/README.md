@@ -4,6 +4,8 @@ This folder contains implementation and usage documentation for the v6 architect
 
 ## Contents
 
+### Usage Documentation
+
 - [Azure Pipelines usage](./azure-pipelines.md)
   - How to use the unified `ExtensionTasks@6` task
   - All supported operations and operation-specific inputs
@@ -15,10 +17,22 @@ This folder contains implementation and usage documentation for the v6 architect
   - PAT, Basic Auth, Azure RM OIDC (Azure Pipelines), GitHub OIDC
   - Service principal setup in Azure
   - Granting service principal access to your Marketplace publisher
-- [Design and architecture](./design-and-architecture.md)
-  - v6 package architecture, adapters, command routing, manifest pipeline
+
+### Development and Testing
+
 - [Contributing](./contributing.md)
   - Local setup, build, debug, test, lint/format, and bundling workflow
+- [Design and architecture](./design-and-architecture.md)
+  - v6 package architecture, adapters, command routing, manifest pipeline
+- [End-to-End Testing Strategy](./e2e-testing.md)
+  - Comprehensive E2E testing for OIDC, marketplace, and organization operations
+  - Test workflows, setup instructions, and troubleshooting
+- [E2E Testing Quick Reference](./e2e-testing-quick-reference.md)
+  - Quick guide for running E2E tests before releases
+  - Secrets setup, test workflows, and common issues
+
+### Migration Guides
+
 - [Migrate Azure Pipelines from v5 to v6](./migrate-azure-pipelines-v5-to-v6.md)
   - Step-by-step migration from legacy v5 task usage to unified `ExtensionTasks@6`
 - [Migrate Azure Pipelines to GitHub Actions](./migrate-azure-pipelines-v6-to-github-actions.md)
