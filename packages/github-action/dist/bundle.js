@@ -767,380 +767,384 @@ var init_filesystem_manifest_reader = __esm({
 });
 
 // node_modules/fast-xml-parser/src/util.js
-var require_util = __commonJS({
-  "node_modules/fast-xml-parser/src/util.js"(exports) {
+function getAllMatches(string, regex) {
+  const matches = [];
+  let match2 = regex.exec(string);
+  while (match2) {
+    const allmatches = [];
+    allmatches.startIndex = regex.lastIndex - match2[0].length;
+    const len = match2.length;
+    for (let index = 0; index < len; index++) {
+      allmatches.push(match2[index]);
+    }
+    matches.push(allmatches);
+    match2 = regex.exec(string);
+  }
+  return matches;
+}
+function isExist(v) {
+  return typeof v !== "undefined";
+}
+var nameStartChar, nameChar, nameRegexp, regexName, isName;
+var init_util = __esm({
+  "node_modules/fast-xml-parser/src/util.js"() {
     "use strict";
-    var nameStartChar = ":A-Za-z_\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
-    var nameChar = nameStartChar + "\\-.\\d\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
-    var nameRegexp = "[" + nameStartChar + "][" + nameChar + "]*";
-    var regexName = new RegExp("^" + nameRegexp + "$");
-    var getAllMatches = function(string, regex) {
-      const matches = [];
-      let match2 = regex.exec(string);
-      while (match2) {
-        const allmatches = [];
-        allmatches.startIndex = regex.lastIndex - match2[0].length;
-        const len = match2.length;
-        for (let index = 0; index < len; index++) {
-          allmatches.push(match2[index]);
-        }
-        matches.push(allmatches);
-        match2 = regex.exec(string);
-      }
-      return matches;
-    };
-    var isName = function(string) {
+    nameStartChar = ":A-Za-z_\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
+    nameChar = nameStartChar + "\\-.\\d\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
+    nameRegexp = "[" + nameStartChar + "][" + nameChar + "]*";
+    regexName = new RegExp("^" + nameRegexp + "$");
+    isName = function(string) {
       const match2 = regexName.exec(string);
       return !(match2 === null || typeof match2 === "undefined");
     };
-    exports.isExist = function(v) {
-      return typeof v !== "undefined";
-    };
-    exports.isEmptyObject = function(obj) {
-      return Object.keys(obj).length === 0;
-    };
-    exports.merge = function(target, a, arrayMode) {
-      if (a) {
-        const keys = Object.keys(a);
-        const len = keys.length;
-        for (let i = 0; i < len; i++) {
-          if (arrayMode === "strict") {
-            target[keys[i]] = [a[keys[i]]];
-          } else {
-            target[keys[i]] = a[keys[i]];
-          }
-        }
-      }
-    };
-    exports.getValue = function(v) {
-      if (exports.isExist(v)) {
-        return v;
-      } else {
-        return "";
-      }
-    };
-    exports.isName = isName;
-    exports.getAllMatches = getAllMatches;
-    exports.nameRegexp = nameRegexp;
   }
 });
 
 // node_modules/fast-xml-parser/src/validator.js
-var require_validator = __commonJS({
-  "node_modules/fast-xml-parser/src/validator.js"(exports) {
+function validate2(xmlData, options) {
+  options = Object.assign({}, defaultOptions, options);
+  const tags = [];
+  let tagFound = false;
+  let reachedRoot = false;
+  if (xmlData[0] === "\uFEFF") {
+    xmlData = xmlData.substr(1);
+  }
+  for (let i = 0; i < xmlData.length; i++) {
+    if (xmlData[i] === "<" && xmlData[i + 1] === "?") {
+      i += 2;
+      i = readPI(xmlData, i);
+      if (i.err) return i;
+    } else if (xmlData[i] === "<") {
+      let tagStartPos = i;
+      i++;
+      if (xmlData[i] === "!") {
+        i = readCommentAndCDATA(xmlData, i);
+        continue;
+      } else {
+        let closingTag = false;
+        if (xmlData[i] === "/") {
+          closingTag = true;
+          i++;
+        }
+        let tagName = "";
+        for (; i < xmlData.length && xmlData[i] !== ">" && xmlData[i] !== " " && xmlData[i] !== "	" && xmlData[i] !== "\n" && xmlData[i] !== "\r"; i++) {
+          tagName += xmlData[i];
+        }
+        tagName = tagName.trim();
+        if (tagName[tagName.length - 1] === "/") {
+          tagName = tagName.substring(0, tagName.length - 1);
+          i--;
+        }
+        if (!validateTagName(tagName)) {
+          let msg;
+          if (tagName.trim().length === 0) {
+            msg = "Invalid space after '<'.";
+          } else {
+            msg = "Tag '" + tagName + "' is an invalid name.";
+          }
+          return getErrorObject("InvalidTag", msg, getLineNumberForPosition(xmlData, i));
+        }
+        const result = readAttributeStr(xmlData, i);
+        if (result === false) {
+          return getErrorObject("InvalidAttr", "Attributes for '" + tagName + "' have open quote.", getLineNumberForPosition(xmlData, i));
+        }
+        let attrStr = result.value;
+        i = result.index;
+        if (attrStr[attrStr.length - 1] === "/") {
+          const attrStrStart = i - attrStr.length;
+          attrStr = attrStr.substring(0, attrStr.length - 1);
+          const isValid = validateAttributeString(attrStr, options);
+          if (isValid === true) {
+            tagFound = true;
+          } else {
+            return getErrorObject(isValid.err.code, isValid.err.msg, getLineNumberForPosition(xmlData, attrStrStart + isValid.err.line));
+          }
+        } else if (closingTag) {
+          if (!result.tagClosed) {
+            return getErrorObject("InvalidTag", "Closing tag '" + tagName + "' doesn't have proper closing.", getLineNumberForPosition(xmlData, i));
+          } else if (attrStr.trim().length > 0) {
+            return getErrorObject("InvalidTag", "Closing tag '" + tagName + "' can't have attributes or invalid starting.", getLineNumberForPosition(xmlData, tagStartPos));
+          } else if (tags.length === 0) {
+            return getErrorObject("InvalidTag", "Closing tag '" + tagName + "' has not been opened.", getLineNumberForPosition(xmlData, tagStartPos));
+          } else {
+            const otg = tags.pop();
+            if (tagName !== otg.tagName) {
+              let openPos = getLineNumberForPosition(xmlData, otg.tagStartPos);
+              return getErrorObject(
+                "InvalidTag",
+                "Expected closing tag '" + otg.tagName + "' (opened in line " + openPos.line + ", col " + openPos.col + ") instead of closing tag '" + tagName + "'.",
+                getLineNumberForPosition(xmlData, tagStartPos)
+              );
+            }
+            if (tags.length == 0) {
+              reachedRoot = true;
+            }
+          }
+        } else {
+          const isValid = validateAttributeString(attrStr, options);
+          if (isValid !== true) {
+            return getErrorObject(isValid.err.code, isValid.err.msg, getLineNumberForPosition(xmlData, i - attrStr.length + isValid.err.line));
+          }
+          if (reachedRoot === true) {
+            return getErrorObject("InvalidXml", "Multiple possible root nodes found.", getLineNumberForPosition(xmlData, i));
+          } else if (options.unpairedTags.indexOf(tagName) !== -1) {
+          } else {
+            tags.push({ tagName, tagStartPos });
+          }
+          tagFound = true;
+        }
+        for (i++; i < xmlData.length; i++) {
+          if (xmlData[i] === "<") {
+            if (xmlData[i + 1] === "!") {
+              i++;
+              i = readCommentAndCDATA(xmlData, i);
+              continue;
+            } else if (xmlData[i + 1] === "?") {
+              i = readPI(xmlData, ++i);
+              if (i.err) return i;
+            } else {
+              break;
+            }
+          } else if (xmlData[i] === "&") {
+            const afterAmp = validateAmpersand(xmlData, i);
+            if (afterAmp == -1)
+              return getErrorObject("InvalidChar", "char '&' is not expected.", getLineNumberForPosition(xmlData, i));
+            i = afterAmp;
+          } else {
+            if (reachedRoot === true && !isWhiteSpace(xmlData[i])) {
+              return getErrorObject("InvalidXml", "Extra text at the end", getLineNumberForPosition(xmlData, i));
+            }
+          }
+        }
+        if (xmlData[i] === "<") {
+          i--;
+        }
+      }
+    } else {
+      if (isWhiteSpace(xmlData[i])) {
+        continue;
+      }
+      return getErrorObject("InvalidChar", "char '" + xmlData[i] + "' is not expected.", getLineNumberForPosition(xmlData, i));
+    }
+  }
+  if (!tagFound) {
+    return getErrorObject("InvalidXml", "Start tag expected.", 1);
+  } else if (tags.length == 1) {
+    return getErrorObject("InvalidTag", "Unclosed tag '" + tags[0].tagName + "'.", getLineNumberForPosition(xmlData, tags[0].tagStartPos));
+  } else if (tags.length > 0) {
+    return getErrorObject("InvalidXml", "Invalid '" + JSON.stringify(tags.map((t) => t.tagName), null, 4).replace(/\r?\n/g, "") + "' found.", { line: 1, col: 1 });
+  }
+  return true;
+}
+function isWhiteSpace(char) {
+  return char === " " || char === "	" || char === "\n" || char === "\r";
+}
+function readPI(xmlData, i) {
+  const start = i;
+  for (; i < xmlData.length; i++) {
+    if (xmlData[i] == "?" || xmlData[i] == " ") {
+      const tagname = xmlData.substr(start, i - start);
+      if (i > 5 && tagname === "xml") {
+        return getErrorObject("InvalidXml", "XML declaration allowed only at the start of the document.", getLineNumberForPosition(xmlData, i));
+      } else if (xmlData[i] == "?" && xmlData[i + 1] == ">") {
+        i++;
+        break;
+      } else {
+        continue;
+      }
+    }
+  }
+  return i;
+}
+function readCommentAndCDATA(xmlData, i) {
+  if (xmlData.length > i + 5 && xmlData[i + 1] === "-" && xmlData[i + 2] === "-") {
+    for (i += 3; i < xmlData.length; i++) {
+      if (xmlData[i] === "-" && xmlData[i + 1] === "-" && xmlData[i + 2] === ">") {
+        i += 2;
+        break;
+      }
+    }
+  } else if (xmlData.length > i + 8 && xmlData[i + 1] === "D" && xmlData[i + 2] === "O" && xmlData[i + 3] === "C" && xmlData[i + 4] === "T" && xmlData[i + 5] === "Y" && xmlData[i + 6] === "P" && xmlData[i + 7] === "E") {
+    let angleBracketsCount = 1;
+    for (i += 8; i < xmlData.length; i++) {
+      if (xmlData[i] === "<") {
+        angleBracketsCount++;
+      } else if (xmlData[i] === ">") {
+        angleBracketsCount--;
+        if (angleBracketsCount === 0) {
+          break;
+        }
+      }
+    }
+  } else if (xmlData.length > i + 9 && xmlData[i + 1] === "[" && xmlData[i + 2] === "C" && xmlData[i + 3] === "D" && xmlData[i + 4] === "A" && xmlData[i + 5] === "T" && xmlData[i + 6] === "A" && xmlData[i + 7] === "[") {
+    for (i += 8; i < xmlData.length; i++) {
+      if (xmlData[i] === "]" && xmlData[i + 1] === "]" && xmlData[i + 2] === ">") {
+        i += 2;
+        break;
+      }
+    }
+  }
+  return i;
+}
+function readAttributeStr(xmlData, i) {
+  let attrStr = "";
+  let startChar = "";
+  let tagClosed = false;
+  for (; i < xmlData.length; i++) {
+    if (xmlData[i] === doubleQuote || xmlData[i] === singleQuote) {
+      if (startChar === "") {
+        startChar = xmlData[i];
+      } else if (startChar !== xmlData[i]) {
+      } else {
+        startChar = "";
+      }
+    } else if (xmlData[i] === ">") {
+      if (startChar === "") {
+        tagClosed = true;
+        break;
+      }
+    }
+    attrStr += xmlData[i];
+  }
+  if (startChar !== "") {
+    return false;
+  }
+  return {
+    value: attrStr,
+    index: i,
+    tagClosed
+  };
+}
+function validateAttributeString(attrStr, options) {
+  const matches = getAllMatches(attrStr, validAttrStrRegxp);
+  const attrNames = {};
+  for (let i = 0; i < matches.length; i++) {
+    if (matches[i][1].length === 0) {
+      return getErrorObject("InvalidAttr", "Attribute '" + matches[i][2] + "' has no space in starting.", getPositionFromMatch(matches[i]));
+    } else if (matches[i][3] !== void 0 && matches[i][4] === void 0) {
+      return getErrorObject("InvalidAttr", "Attribute '" + matches[i][2] + "' is without value.", getPositionFromMatch(matches[i]));
+    } else if (matches[i][3] === void 0 && !options.allowBooleanAttributes) {
+      return getErrorObject("InvalidAttr", "boolean attribute '" + matches[i][2] + "' is not allowed.", getPositionFromMatch(matches[i]));
+    }
+    const attrName = matches[i][2];
+    if (!validateAttrName(attrName)) {
+      return getErrorObject("InvalidAttr", "Attribute '" + attrName + "' is an invalid name.", getPositionFromMatch(matches[i]));
+    }
+    if (!attrNames.hasOwnProperty(attrName)) {
+      attrNames[attrName] = 1;
+    } else {
+      return getErrorObject("InvalidAttr", "Attribute '" + attrName + "' is repeated.", getPositionFromMatch(matches[i]));
+    }
+  }
+  return true;
+}
+function validateNumberAmpersand(xmlData, i) {
+  let re = /\d/;
+  if (xmlData[i] === "x") {
+    i++;
+    re = /[\da-fA-F]/;
+  }
+  for (; i < xmlData.length; i++) {
+    if (xmlData[i] === ";")
+      return i;
+    if (!xmlData[i].match(re))
+      break;
+  }
+  return -1;
+}
+function validateAmpersand(xmlData, i) {
+  i++;
+  if (xmlData[i] === ";")
+    return -1;
+  if (xmlData[i] === "#") {
+    i++;
+    return validateNumberAmpersand(xmlData, i);
+  }
+  let count = 0;
+  for (; i < xmlData.length; i++, count++) {
+    if (xmlData[i].match(/\w/) && count < 20)
+      continue;
+    if (xmlData[i] === ";")
+      break;
+    return -1;
+  }
+  return i;
+}
+function getErrorObject(code, message, lineNumber) {
+  return {
+    err: {
+      code,
+      msg: message,
+      line: lineNumber.line || lineNumber,
+      col: lineNumber.col
+    }
+  };
+}
+function validateAttrName(attrName) {
+  return isName(attrName);
+}
+function validateTagName(tagname) {
+  return isName(tagname);
+}
+function getLineNumberForPosition(xmlData, index) {
+  const lines = xmlData.substring(0, index).split(/\r?\n/);
+  return {
+    line: lines.length,
+    // column number is last line's length + 1, because column numbering starts at 1:
+    col: lines[lines.length - 1].length + 1
+  };
+}
+function getPositionFromMatch(match2) {
+  return match2.startIndex + match2[1].length;
+}
+var defaultOptions, doubleQuote, singleQuote, validAttrStrRegxp;
+var init_validator = __esm({
+  "node_modules/fast-xml-parser/src/validator.js"() {
     "use strict";
-    var util = require_util();
-    var defaultOptions = {
+    init_util();
+    defaultOptions = {
       allowBooleanAttributes: false,
       //A tag can have attributes without any value
       unpairedTags: []
     };
-    exports.validate = function(xmlData, options) {
-      options = Object.assign({}, defaultOptions, options);
-      const tags = [];
-      let tagFound = false;
-      let reachedRoot = false;
-      if (xmlData[0] === "\uFEFF") {
-        xmlData = xmlData.substr(1);
-      }
-      for (let i = 0; i < xmlData.length; i++) {
-        if (xmlData[i] === "<" && xmlData[i + 1] === "?") {
-          i += 2;
-          i = readPI(xmlData, i);
-          if (i.err) return i;
-        } else if (xmlData[i] === "<") {
-          let tagStartPos = i;
-          i++;
-          if (xmlData[i] === "!") {
-            i = readCommentAndCDATA(xmlData, i);
-            continue;
-          } else {
-            let closingTag = false;
-            if (xmlData[i] === "/") {
-              closingTag = true;
-              i++;
-            }
-            let tagName = "";
-            for (; i < xmlData.length && xmlData[i] !== ">" && xmlData[i] !== " " && xmlData[i] !== "	" && xmlData[i] !== "\n" && xmlData[i] !== "\r"; i++) {
-              tagName += xmlData[i];
-            }
-            tagName = tagName.trim();
-            if (tagName[tagName.length - 1] === "/") {
-              tagName = tagName.substring(0, tagName.length - 1);
-              i--;
-            }
-            if (!validateTagName(tagName)) {
-              let msg;
-              if (tagName.trim().length === 0) {
-                msg = "Invalid space after '<'.";
-              } else {
-                msg = "Tag '" + tagName + "' is an invalid name.";
-              }
-              return getErrorObject("InvalidTag", msg, getLineNumberForPosition(xmlData, i));
-            }
-            const result = readAttributeStr(xmlData, i);
-            if (result === false) {
-              return getErrorObject("InvalidAttr", "Attributes for '" + tagName + "' have open quote.", getLineNumberForPosition(xmlData, i));
-            }
-            let attrStr = result.value;
-            i = result.index;
-            if (attrStr[attrStr.length - 1] === "/") {
-              const attrStrStart = i - attrStr.length;
-              attrStr = attrStr.substring(0, attrStr.length - 1);
-              const isValid = validateAttributeString(attrStr, options);
-              if (isValid === true) {
-                tagFound = true;
-              } else {
-                return getErrorObject(isValid.err.code, isValid.err.msg, getLineNumberForPosition(xmlData, attrStrStart + isValid.err.line));
-              }
-            } else if (closingTag) {
-              if (!result.tagClosed) {
-                return getErrorObject("InvalidTag", "Closing tag '" + tagName + "' doesn't have proper closing.", getLineNumberForPosition(xmlData, i));
-              } else if (attrStr.trim().length > 0) {
-                return getErrorObject("InvalidTag", "Closing tag '" + tagName + "' can't have attributes or invalid starting.", getLineNumberForPosition(xmlData, tagStartPos));
-              } else if (tags.length === 0) {
-                return getErrorObject("InvalidTag", "Closing tag '" + tagName + "' has not been opened.", getLineNumberForPosition(xmlData, tagStartPos));
-              } else {
-                const otg = tags.pop();
-                if (tagName !== otg.tagName) {
-                  let openPos = getLineNumberForPosition(xmlData, otg.tagStartPos);
-                  return getErrorObject(
-                    "InvalidTag",
-                    "Expected closing tag '" + otg.tagName + "' (opened in line " + openPos.line + ", col " + openPos.col + ") instead of closing tag '" + tagName + "'.",
-                    getLineNumberForPosition(xmlData, tagStartPos)
-                  );
-                }
-                if (tags.length == 0) {
-                  reachedRoot = true;
-                }
-              }
-            } else {
-              const isValid = validateAttributeString(attrStr, options);
-              if (isValid !== true) {
-                return getErrorObject(isValid.err.code, isValid.err.msg, getLineNumberForPosition(xmlData, i - attrStr.length + isValid.err.line));
-              }
-              if (reachedRoot === true) {
-                return getErrorObject("InvalidXml", "Multiple possible root nodes found.", getLineNumberForPosition(xmlData, i));
-              } else if (options.unpairedTags.indexOf(tagName) !== -1) {
-              } else {
-                tags.push({ tagName, tagStartPos });
-              }
-              tagFound = true;
-            }
-            for (i++; i < xmlData.length; i++) {
-              if (xmlData[i] === "<") {
-                if (xmlData[i + 1] === "!") {
-                  i++;
-                  i = readCommentAndCDATA(xmlData, i);
-                  continue;
-                } else if (xmlData[i + 1] === "?") {
-                  i = readPI(xmlData, ++i);
-                  if (i.err) return i;
-                } else {
-                  break;
-                }
-              } else if (xmlData[i] === "&") {
-                const afterAmp = validateAmpersand(xmlData, i);
-                if (afterAmp == -1)
-                  return getErrorObject("InvalidChar", "char '&' is not expected.", getLineNumberForPosition(xmlData, i));
-                i = afterAmp;
-              } else {
-                if (reachedRoot === true && !isWhiteSpace(xmlData[i])) {
-                  return getErrorObject("InvalidXml", "Extra text at the end", getLineNumberForPosition(xmlData, i));
-                }
-              }
-            }
-            if (xmlData[i] === "<") {
-              i--;
-            }
-          }
-        } else {
-          if (isWhiteSpace(xmlData[i])) {
-            continue;
-          }
-          return getErrorObject("InvalidChar", "char '" + xmlData[i] + "' is not expected.", getLineNumberForPosition(xmlData, i));
-        }
-      }
-      if (!tagFound) {
-        return getErrorObject("InvalidXml", "Start tag expected.", 1);
-      } else if (tags.length == 1) {
-        return getErrorObject("InvalidTag", "Unclosed tag '" + tags[0].tagName + "'.", getLineNumberForPosition(xmlData, tags[0].tagStartPos));
-      } else if (tags.length > 0) {
-        return getErrorObject("InvalidXml", "Invalid '" + JSON.stringify(tags.map((t) => t.tagName), null, 4).replace(/\r?\n/g, "") + "' found.", { line: 1, col: 1 });
-      }
-      return true;
-    };
-    function isWhiteSpace(char) {
-      return char === " " || char === "	" || char === "\n" || char === "\r";
-    }
-    function readPI(xmlData, i) {
-      const start = i;
-      for (; i < xmlData.length; i++) {
-        if (xmlData[i] == "?" || xmlData[i] == " ") {
-          const tagname = xmlData.substr(start, i - start);
-          if (i > 5 && tagname === "xml") {
-            return getErrorObject("InvalidXml", "XML declaration allowed only at the start of the document.", getLineNumberForPosition(xmlData, i));
-          } else if (xmlData[i] == "?" && xmlData[i + 1] == ">") {
-            i++;
-            break;
-          } else {
-            continue;
-          }
-        }
-      }
-      return i;
-    }
-    function readCommentAndCDATA(xmlData, i) {
-      if (xmlData.length > i + 5 && xmlData[i + 1] === "-" && xmlData[i + 2] === "-") {
-        for (i += 3; i < xmlData.length; i++) {
-          if (xmlData[i] === "-" && xmlData[i + 1] === "-" && xmlData[i + 2] === ">") {
-            i += 2;
-            break;
-          }
-        }
-      } else if (xmlData.length > i + 8 && xmlData[i + 1] === "D" && xmlData[i + 2] === "O" && xmlData[i + 3] === "C" && xmlData[i + 4] === "T" && xmlData[i + 5] === "Y" && xmlData[i + 6] === "P" && xmlData[i + 7] === "E") {
-        let angleBracketsCount = 1;
-        for (i += 8; i < xmlData.length; i++) {
-          if (xmlData[i] === "<") {
-            angleBracketsCount++;
-          } else if (xmlData[i] === ">") {
-            angleBracketsCount--;
-            if (angleBracketsCount === 0) {
-              break;
-            }
-          }
-        }
-      } else if (xmlData.length > i + 9 && xmlData[i + 1] === "[" && xmlData[i + 2] === "C" && xmlData[i + 3] === "D" && xmlData[i + 4] === "A" && xmlData[i + 5] === "T" && xmlData[i + 6] === "A" && xmlData[i + 7] === "[") {
-        for (i += 8; i < xmlData.length; i++) {
-          if (xmlData[i] === "]" && xmlData[i + 1] === "]" && xmlData[i + 2] === ">") {
-            i += 2;
-            break;
-          }
-        }
-      }
-      return i;
-    }
-    var doubleQuote = '"';
-    var singleQuote = "'";
-    function readAttributeStr(xmlData, i) {
-      let attrStr = "";
-      let startChar = "";
-      let tagClosed = false;
-      for (; i < xmlData.length; i++) {
-        if (xmlData[i] === doubleQuote || xmlData[i] === singleQuote) {
-          if (startChar === "") {
-            startChar = xmlData[i];
-          } else if (startChar !== xmlData[i]) {
-          } else {
-            startChar = "";
-          }
-        } else if (xmlData[i] === ">") {
-          if (startChar === "") {
-            tagClosed = true;
-            break;
-          }
-        }
-        attrStr += xmlData[i];
-      }
-      if (startChar !== "") {
-        return false;
-      }
-      return {
-        value: attrStr,
-        index: i,
-        tagClosed
-      };
-    }
-    var validAttrStrRegxp = new RegExp(`(\\s*)([^\\s=]+)(\\s*=)?(\\s*(['"])(([\\s\\S])*?)\\5)?`, "g");
-    function validateAttributeString(attrStr, options) {
-      const matches = util.getAllMatches(attrStr, validAttrStrRegxp);
-      const attrNames = {};
-      for (let i = 0; i < matches.length; i++) {
-        if (matches[i][1].length === 0) {
-          return getErrorObject("InvalidAttr", "Attribute '" + matches[i][2] + "' has no space in starting.", getPositionFromMatch(matches[i]));
-        } else if (matches[i][3] !== void 0 && matches[i][4] === void 0) {
-          return getErrorObject("InvalidAttr", "Attribute '" + matches[i][2] + "' is without value.", getPositionFromMatch(matches[i]));
-        } else if (matches[i][3] === void 0 && !options.allowBooleanAttributes) {
-          return getErrorObject("InvalidAttr", "boolean attribute '" + matches[i][2] + "' is not allowed.", getPositionFromMatch(matches[i]));
-        }
-        const attrName = matches[i][2];
-        if (!validateAttrName(attrName)) {
-          return getErrorObject("InvalidAttr", "Attribute '" + attrName + "' is an invalid name.", getPositionFromMatch(matches[i]));
-        }
-        if (!attrNames.hasOwnProperty(attrName)) {
-          attrNames[attrName] = 1;
-        } else {
-          return getErrorObject("InvalidAttr", "Attribute '" + attrName + "' is repeated.", getPositionFromMatch(matches[i]));
-        }
-      }
-      return true;
-    }
-    function validateNumberAmpersand(xmlData, i) {
-      let re = /\d/;
-      if (xmlData[i] === "x") {
-        i++;
-        re = /[\da-fA-F]/;
-      }
-      for (; i < xmlData.length; i++) {
-        if (xmlData[i] === ";")
-          return i;
-        if (!xmlData[i].match(re))
-          break;
-      }
-      return -1;
-    }
-    function validateAmpersand(xmlData, i) {
-      i++;
-      if (xmlData[i] === ";")
-        return -1;
-      if (xmlData[i] === "#") {
-        i++;
-        return validateNumberAmpersand(xmlData, i);
-      }
-      let count = 0;
-      for (; i < xmlData.length; i++, count++) {
-        if (xmlData[i].match(/\w/) && count < 20)
-          continue;
-        if (xmlData[i] === ";")
-          break;
-        return -1;
-      }
-      return i;
-    }
-    function getErrorObject(code, message, lineNumber) {
-      return {
-        err: {
-          code,
-          msg: message,
-          line: lineNumber.line || lineNumber,
-          col: lineNumber.col
-        }
-      };
-    }
-    function validateAttrName(attrName) {
-      return util.isName(attrName);
-    }
-    function validateTagName(tagname) {
-      return util.isName(tagname);
-    }
-    function getLineNumberForPosition(xmlData, index) {
-      const lines = xmlData.substring(0, index).split(/\r?\n/);
-      return {
-        line: lines.length,
-        // column number is last line's length + 1, because column numbering starts at 1:
-        col: lines[lines.length - 1].length + 1
-      };
-    }
-    function getPositionFromMatch(match2) {
-      return match2.startIndex + match2[1].length;
-    }
+    doubleQuote = '"';
+    singleQuote = "'";
+    validAttrStrRegxp = new RegExp(`(\\s*)([^\\s=]+)(\\s*=)?(\\s*(['"])(([\\s\\S])*?)\\5)?`, "g");
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlparser/OptionsBuilder.js
-var require_OptionsBuilder = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlparser/OptionsBuilder.js"(exports) {
-    var defaultOptions = {
+function normalizeProcessEntities(value) {
+  if (typeof value === "boolean") {
+    return {
+      enabled: value,
+      // true or false
+      maxEntitySize: 1e4,
+      maxExpansionDepth: 10,
+      maxTotalExpansions: 1e3,
+      maxExpandedLength: 1e5,
+      allowedTags: null,
+      tagFilter: null
+    };
+  }
+  if (typeof value === "object" && value !== null) {
+    return {
+      enabled: value.enabled !== false,
+      // default true if not specified
+      maxEntitySize: value.maxEntitySize ?? 1e4,
+      maxExpansionDepth: value.maxExpansionDepth ?? 10,
+      maxTotalExpansions: value.maxTotalExpansions ?? 1e3,
+      maxExpandedLength: value.maxExpandedLength ?? 1e5,
+      allowedTags: value.allowedTags ?? null,
+      tagFilter: value.tagFilter ?? null
+    };
+  }
+  return normalizeProcessEntities(true);
+}
+var defaultOptions2, buildOptions;
+var init_OptionsBuilder = __esm({
+  "node_modules/fast-xml-parser/src/xmlparser/OptionsBuilder.js"() {
+    defaultOptions2 = {
       preserveOrder: false,
       attributeNamePrefix: "@_",
       attributesGroupName: false,
@@ -1181,22 +1185,29 @@ var require_OptionsBuilder = __commonJS({
       transformAttributeName: false,
       updateTag: function(tagName, jPath, attrs) {
         return tagName;
-      }
+      },
       // skipEmptyListItem: false
+      captureMetaData: false
     };
-    var buildOptions = function(options) {
-      return Object.assign({}, defaultOptions, options);
+    buildOptions = function(options) {
+      const built = Object.assign({}, defaultOptions2, options);
+      built.processEntities = normalizeProcessEntities(built.processEntities);
+      return built;
     };
-    exports.buildOptions = buildOptions;
-    exports.defaultOptions = defaultOptions;
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlparser/xmlNode.js
-var require_xmlNode = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlparser/xmlNode.js"(exports, module) {
+var METADATA_SYMBOL, XmlNode;
+var init_xmlNode = __esm({
+  "node_modules/fast-xml-parser/src/xmlparser/xmlNode.js"() {
     "use strict";
-    var XmlNode = class {
+    if (typeof Symbol !== "function") {
+      METADATA_SYMBOL = "@@xmlMetadata";
+    } else {
+      METADATA_SYMBOL = /* @__PURE__ */ Symbol("XML Node Metadata");
+    }
+    XmlNode = class {
       constructor(tagname) {
         this.tagname = tagname;
         this.child = [];
@@ -1206,124 +1217,393 @@ var require_xmlNode = __commonJS({
         if (key === "__proto__") key = "#__proto__";
         this.child.push({ [key]: val });
       }
-      addChild(node) {
+      addChild(node, startIndex) {
         if (node.tagname === "__proto__") node.tagname = "#__proto__";
         if (node[":@"] && Object.keys(node[":@"]).length > 0) {
           this.child.push({ [node.tagname]: node.child, [":@"]: node[":@"] });
         } else {
           this.child.push({ [node.tagname]: node.child });
         }
+        if (startIndex !== void 0) {
+          this.child[this.child.length - 1][METADATA_SYMBOL] = { startIndex };
+        }
+      }
+      /** symbol used for metadata */
+      static getMetaDataSymbol() {
+        return METADATA_SYMBOL;
       }
     };
-    module.exports = XmlNode;
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlparser/DocTypeReader.js
-var require_DocTypeReader = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlparser/DocTypeReader.js"(exports, module) {
-    var util = require_util();
-    function readDocType(xmlData, i) {
-      const entities = {};
-      if (xmlData[i + 3] === "O" && xmlData[i + 4] === "C" && xmlData[i + 5] === "T" && xmlData[i + 6] === "Y" && xmlData[i + 7] === "P" && xmlData[i + 8] === "E") {
-        i = i + 9;
-        let angleBracketsCount = 1;
-        let hasBody = false, comment = false;
-        let exp = "";
-        for (; i < xmlData.length; i++) {
-          if (xmlData[i] === "<" && !comment) {
-            if (hasBody && isEntity(xmlData, i)) {
-              i += 7;
-              let entityName, val;
-              [entityName, val, i] = readEntityExp(xmlData, i + 1);
-              if (val.indexOf("&") === -1)
-                entities[validateEntityName(entityName)] = {
-                  regx: RegExp(`&${entityName};`, "g"),
-                  val
-                };
-            } else if (hasBody && isElement(xmlData, i)) i += 8;
-            else if (hasBody && isAttlist(xmlData, i)) i += 8;
-            else if (hasBody && isNotation(xmlData, i)) i += 9;
-            else if (isComment) comment = true;
-            else throw new Error("Invalid DOCTYPE");
-            angleBracketsCount++;
-            exp = "";
-          } else if (xmlData[i] === ">") {
-            if (comment) {
-              if (xmlData[i - 1] === "-" && xmlData[i - 2] === "-") {
-                comment = false;
+function hasSeq(data, seq, i) {
+  for (let j = 0; j < seq.length; j++) {
+    if (seq[j] !== data[i + j + 1]) return false;
+  }
+  return true;
+}
+function validateEntityName(name) {
+  if (isName(name))
+    return name;
+  else
+    throw new Error(`Invalid entity name ${name}`);
+}
+var DocTypeReader, skipWhitespace;
+var init_DocTypeReader = __esm({
+  "node_modules/fast-xml-parser/src/xmlparser/DocTypeReader.js"() {
+    init_util();
+    DocTypeReader = class {
+      constructor(options) {
+        this.suppressValidationErr = !options;
+        this.options = options;
+      }
+      readDocType(xmlData, i) {
+        const entities = {};
+        if (xmlData[i + 3] === "O" && xmlData[i + 4] === "C" && xmlData[i + 5] === "T" && xmlData[i + 6] === "Y" && xmlData[i + 7] === "P" && xmlData[i + 8] === "E") {
+          i = i + 9;
+          let angleBracketsCount = 1;
+          let hasBody = false, comment = false;
+          let exp = "";
+          for (; i < xmlData.length; i++) {
+            if (xmlData[i] === "<" && !comment) {
+              if (hasBody && hasSeq(xmlData, "!ENTITY", i)) {
+                i += 7;
+                let entityName, val;
+                [entityName, val, i] = this.readEntityExp(xmlData, i + 1, this.suppressValidationErr);
+                if (val.indexOf("&") === -1) {
+                  const escaped = entityName.replace(/[.\-+*:]/g, "\\.");
+                  entities[entityName] = {
+                    regx: RegExp(`&${escaped};`, "g"),
+                    val
+                  };
+                }
+              } else if (hasBody && hasSeq(xmlData, "!ELEMENT", i)) {
+                i += 8;
+                const { index } = this.readElementExp(xmlData, i + 1);
+                i = index;
+              } else if (hasBody && hasSeq(xmlData, "!ATTLIST", i)) {
+                i += 8;
+              } else if (hasBody && hasSeq(xmlData, "!NOTATION", i)) {
+                i += 9;
+                const { index } = this.readNotationExp(xmlData, i + 1, this.suppressValidationErr);
+                i = index;
+              } else if (hasSeq(xmlData, "!--", i)) comment = true;
+              else throw new Error(`Invalid DOCTYPE`);
+              angleBracketsCount++;
+              exp = "";
+            } else if (xmlData[i] === ">") {
+              if (comment) {
+                if (xmlData[i - 1] === "-" && xmlData[i - 2] === "-") {
+                  comment = false;
+                  angleBracketsCount--;
+                }
+              } else {
                 angleBracketsCount--;
               }
+              if (angleBracketsCount === 0) {
+                break;
+              }
+            } else if (xmlData[i] === "[") {
+              hasBody = true;
             } else {
-              angleBracketsCount--;
+              exp += xmlData[i];
             }
-            if (angleBracketsCount === 0) {
-              break;
-            }
-          } else if (xmlData[i] === "[") {
-            hasBody = true;
-          } else {
-            exp += xmlData[i];
+          }
+          if (angleBracketsCount !== 0) {
+            throw new Error(`Unclosed DOCTYPE`);
+          }
+        } else {
+          throw new Error(`Invalid Tag instead of DOCTYPE`);
+        }
+        return { entities, i };
+      }
+      readEntityExp(xmlData, i) {
+        i = skipWhitespace(xmlData, i);
+        let entityName = "";
+        while (i < xmlData.length && !/\s/.test(xmlData[i]) && xmlData[i] !== '"' && xmlData[i] !== "'") {
+          entityName += xmlData[i];
+          i++;
+        }
+        validateEntityName(entityName);
+        i = skipWhitespace(xmlData, i);
+        if (!this.suppressValidationErr) {
+          if (xmlData.substring(i, i + 6).toUpperCase() === "SYSTEM") {
+            throw new Error("External entities are not supported");
+          } else if (xmlData[i] === "%") {
+            throw new Error("Parameter entities are not supported");
           }
         }
-        if (angleBracketsCount !== 0) {
-          throw new Error(`Unclosed DOCTYPE`);
+        let entityValue = "";
+        [i, entityValue] = this.readIdentifierVal(xmlData, i, "entity");
+        if (this.options.enabled !== false && this.options.maxEntitySize && entityValue.length > this.options.maxEntitySize) {
+          throw new Error(
+            `Entity "${entityName}" size (${entityValue.length}) exceeds maximum allowed size (${this.options.maxEntitySize})`
+          );
         }
-      } else {
-        throw new Error(`Invalid Tag instead of DOCTYPE`);
+        i--;
+        return [entityName, entityValue, i];
       }
-      return { entities, i };
-    }
-    function readEntityExp(xmlData, i) {
-      let entityName = "";
-      for (; i < xmlData.length && (xmlData[i] !== "'" && xmlData[i] !== '"'); i++) {
-        entityName += xmlData[i];
+      readNotationExp(xmlData, i) {
+        i = skipWhitespace(xmlData, i);
+        let notationName = "";
+        while (i < xmlData.length && !/\s/.test(xmlData[i])) {
+          notationName += xmlData[i];
+          i++;
+        }
+        !this.suppressValidationErr && validateEntityName(notationName);
+        i = skipWhitespace(xmlData, i);
+        const identifierType = xmlData.substring(i, i + 6).toUpperCase();
+        if (!this.suppressValidationErr && identifierType !== "SYSTEM" && identifierType !== "PUBLIC") {
+          throw new Error(`Expected SYSTEM or PUBLIC, found "${identifierType}"`);
+        }
+        i += identifierType.length;
+        i = skipWhitespace(xmlData, i);
+        let publicIdentifier = null;
+        let systemIdentifier = null;
+        if (identifierType === "PUBLIC") {
+          [i, publicIdentifier] = this.readIdentifierVal(xmlData, i, "publicIdentifier");
+          i = skipWhitespace(xmlData, i);
+          if (xmlData[i] === '"' || xmlData[i] === "'") {
+            [i, systemIdentifier] = this.readIdentifierVal(xmlData, i, "systemIdentifier");
+          }
+        } else if (identifierType === "SYSTEM") {
+          [i, systemIdentifier] = this.readIdentifierVal(xmlData, i, "systemIdentifier");
+          if (!this.suppressValidationErr && !systemIdentifier) {
+            throw new Error("Missing mandatory system identifier for SYSTEM notation");
+          }
+        }
+        return { notationName, publicIdentifier, systemIdentifier, index: --i };
       }
-      entityName = entityName.trim();
-      if (entityName.indexOf(" ") !== -1) throw new Error("External entites are not supported");
-      const startChar = xmlData[i++];
-      let val = "";
-      for (; i < xmlData.length && xmlData[i] !== startChar; i++) {
-        val += xmlData[i];
+      readIdentifierVal(xmlData, i, type) {
+        let identifierVal = "";
+        const startChar = xmlData[i];
+        if (startChar !== '"' && startChar !== "'") {
+          throw new Error(`Expected quoted string, found "${startChar}"`);
+        }
+        i++;
+        while (i < xmlData.length && xmlData[i] !== startChar) {
+          identifierVal += xmlData[i];
+          i++;
+        }
+        if (xmlData[i] !== startChar) {
+          throw new Error(`Unterminated ${type} value`);
+        }
+        i++;
+        return [i, identifierVal];
       }
-      return [entityName, val, i];
-    }
-    function isComment(xmlData, i) {
-      if (xmlData[i + 1] === "!" && xmlData[i + 2] === "-" && xmlData[i + 3] === "-") return true;
-      return false;
-    }
-    function isEntity(xmlData, i) {
-      if (xmlData[i + 1] === "!" && xmlData[i + 2] === "E" && xmlData[i + 3] === "N" && xmlData[i + 4] === "T" && xmlData[i + 5] === "I" && xmlData[i + 6] === "T" && xmlData[i + 7] === "Y") return true;
-      return false;
-    }
-    function isElement(xmlData, i) {
-      if (xmlData[i + 1] === "!" && xmlData[i + 2] === "E" && xmlData[i + 3] === "L" && xmlData[i + 4] === "E" && xmlData[i + 5] === "M" && xmlData[i + 6] === "E" && xmlData[i + 7] === "N" && xmlData[i + 8] === "T") return true;
-      return false;
-    }
-    function isAttlist(xmlData, i) {
-      if (xmlData[i + 1] === "!" && xmlData[i + 2] === "A" && xmlData[i + 3] === "T" && xmlData[i + 4] === "T" && xmlData[i + 5] === "L" && xmlData[i + 6] === "I" && xmlData[i + 7] === "S" && xmlData[i + 8] === "T") return true;
-      return false;
-    }
-    function isNotation(xmlData, i) {
-      if (xmlData[i + 1] === "!" && xmlData[i + 2] === "N" && xmlData[i + 3] === "O" && xmlData[i + 4] === "T" && xmlData[i + 5] === "A" && xmlData[i + 6] === "T" && xmlData[i + 7] === "I" && xmlData[i + 8] === "O" && xmlData[i + 9] === "N") return true;
-      return false;
-    }
-    function validateEntityName(name) {
-      if (util.isName(name))
-        return name;
-      else
-        throw new Error(`Invalid entity name ${name}`);
-    }
-    module.exports = readDocType;
+      readElementExp(xmlData, i) {
+        i = skipWhitespace(xmlData, i);
+        let elementName = "";
+        while (i < xmlData.length && !/\s/.test(xmlData[i])) {
+          elementName += xmlData[i];
+          i++;
+        }
+        if (!this.suppressValidationErr && !isName(elementName)) {
+          throw new Error(`Invalid element name: "${elementName}"`);
+        }
+        i = skipWhitespace(xmlData, i);
+        let contentModel = "";
+        if (xmlData[i] === "E" && hasSeq(xmlData, "MPTY", i)) i += 4;
+        else if (xmlData[i] === "A" && hasSeq(xmlData, "NY", i)) i += 2;
+        else if (xmlData[i] === "(") {
+          i++;
+          while (i < xmlData.length && xmlData[i] !== ")") {
+            contentModel += xmlData[i];
+            i++;
+          }
+          if (xmlData[i] !== ")") {
+            throw new Error("Unterminated content model");
+          }
+        } else if (!this.suppressValidationErr) {
+          throw new Error(`Invalid Element Expression, found "${xmlData[i]}"`);
+        }
+        return {
+          elementName,
+          contentModel: contentModel.trim(),
+          index: i
+        };
+      }
+      readAttlistExp(xmlData, i) {
+        i = skipWhitespace(xmlData, i);
+        let elementName = "";
+        while (i < xmlData.length && !/\s/.test(xmlData[i])) {
+          elementName += xmlData[i];
+          i++;
+        }
+        validateEntityName(elementName);
+        i = skipWhitespace(xmlData, i);
+        let attributeName = "";
+        while (i < xmlData.length && !/\s/.test(xmlData[i])) {
+          attributeName += xmlData[i];
+          i++;
+        }
+        if (!validateEntityName(attributeName)) {
+          throw new Error(`Invalid attribute name: "${attributeName}"`);
+        }
+        i = skipWhitespace(xmlData, i);
+        let attributeType = "";
+        if (xmlData.substring(i, i + 8).toUpperCase() === "NOTATION") {
+          attributeType = "NOTATION";
+          i += 8;
+          i = skipWhitespace(xmlData, i);
+          if (xmlData[i] !== "(") {
+            throw new Error(`Expected '(', found "${xmlData[i]}"`);
+          }
+          i++;
+          let allowedNotations = [];
+          while (i < xmlData.length && xmlData[i] !== ")") {
+            let notation = "";
+            while (i < xmlData.length && xmlData[i] !== "|" && xmlData[i] !== ")") {
+              notation += xmlData[i];
+              i++;
+            }
+            notation = notation.trim();
+            if (!validateEntityName(notation)) {
+              throw new Error(`Invalid notation name: "${notation}"`);
+            }
+            allowedNotations.push(notation);
+            if (xmlData[i] === "|") {
+              i++;
+              i = skipWhitespace(xmlData, i);
+            }
+          }
+          if (xmlData[i] !== ")") {
+            throw new Error("Unterminated list of notations");
+          }
+          i++;
+          attributeType += " (" + allowedNotations.join("|") + ")";
+        } else {
+          while (i < xmlData.length && !/\s/.test(xmlData[i])) {
+            attributeType += xmlData[i];
+            i++;
+          }
+          const validTypes = ["CDATA", "ID", "IDREF", "IDREFS", "ENTITY", "ENTITIES", "NMTOKEN", "NMTOKENS"];
+          if (!this.suppressValidationErr && !validTypes.includes(attributeType.toUpperCase())) {
+            throw new Error(`Invalid attribute type: "${attributeType}"`);
+          }
+        }
+        i = skipWhitespace(xmlData, i);
+        let defaultValue = "";
+        if (xmlData.substring(i, i + 8).toUpperCase() === "#REQUIRED") {
+          defaultValue = "#REQUIRED";
+          i += 8;
+        } else if (xmlData.substring(i, i + 7).toUpperCase() === "#IMPLIED") {
+          defaultValue = "#IMPLIED";
+          i += 7;
+        } else {
+          [i, defaultValue] = this.readIdentifierVal(xmlData, i, "ATTLIST");
+        }
+        return {
+          elementName,
+          attributeName,
+          attributeType,
+          defaultValue,
+          index: i
+        };
+      }
+    };
+    skipWhitespace = (data, index) => {
+      while (index < data.length && /\s/.test(data[index])) {
+        index++;
+      }
+      return index;
+    };
   }
 });
 
 // node_modules/strnum/strnum.js
-var require_strnum = __commonJS({
-  "node_modules/strnum/strnum.js"(exports, module) {
-    var hexRegex = /^[-+]?0x[a-fA-F0-9]+$/;
-    var numRegex = /^([\-\+])?(0*)([0-9]*(\.[0-9]*)?)$/;
-    var consider = {
+function toNumber(str, options = {}) {
+  options = Object.assign({}, consider, options);
+  if (!str || typeof str !== "string") return str;
+  let trimmedStr = str.trim();
+  if (options.skipLike !== void 0 && options.skipLike.test(trimmedStr)) return str;
+  else if (str === "0") return 0;
+  else if (options.hex && hexRegex.test(trimmedStr)) {
+    return parse_int(trimmedStr, 16);
+  } else if (trimmedStr.includes("e") || trimmedStr.includes("E")) {
+    return resolveEnotation(str, trimmedStr, options);
+  } else {
+    const match2 = numRegex.exec(trimmedStr);
+    if (match2) {
+      const sign = match2[1] || "";
+      const leadingZeros = match2[2];
+      let numTrimmedByZeros = trimZeros(match2[3]);
+      const decimalAdjacentToLeadingZeros = sign ? (
+        // 0., -00., 000.
+        str[leadingZeros.length + 1] === "."
+      ) : str[leadingZeros.length] === ".";
+      if (!options.leadingZeros && (leadingZeros.length > 1 || leadingZeros.length === 1 && !decimalAdjacentToLeadingZeros)) {
+        return str;
+      } else {
+        const num = Number(trimmedStr);
+        const parsedStr = String(num);
+        if (num === 0) return num;
+        if (parsedStr.search(/[eE]/) !== -1) {
+          if (options.eNotation) return num;
+          else return str;
+        } else if (trimmedStr.indexOf(".") !== -1) {
+          if (parsedStr === "0") return num;
+          else if (parsedStr === numTrimmedByZeros) return num;
+          else if (parsedStr === `${sign}${numTrimmedByZeros}`) return num;
+          else return str;
+        }
+        let n = leadingZeros ? numTrimmedByZeros : trimmedStr;
+        if (leadingZeros) {
+          return n === parsedStr || sign + n === parsedStr ? num : str;
+        } else {
+          return n === parsedStr || n === sign + parsedStr ? num : str;
+        }
+      }
+    } else {
+      return str;
+    }
+  }
+}
+function resolveEnotation(str, trimmedStr, options) {
+  if (!options.eNotation) return str;
+  const notation = trimmedStr.match(eNotationRegx);
+  if (notation) {
+    let sign = notation[1] || "";
+    const eChar = notation[3].indexOf("e") === -1 ? "E" : "e";
+    const leadingZeros = notation[2];
+    const eAdjacentToLeadingZeros = sign ? (
+      // 0E.
+      str[leadingZeros.length + 1] === eChar
+    ) : str[leadingZeros.length] === eChar;
+    if (leadingZeros.length > 1 && eAdjacentToLeadingZeros) return str;
+    else if (leadingZeros.length === 1 && (notation[3].startsWith(`.${eChar}`) || notation[3][0] === eChar)) {
+      return Number(trimmedStr);
+    } else if (options.leadingZeros && !eAdjacentToLeadingZeros) {
+      trimmedStr = (notation[1] || "") + notation[3];
+      return Number(trimmedStr);
+    } else return str;
+  } else {
+    return str;
+  }
+}
+function trimZeros(numStr) {
+  if (numStr && numStr.indexOf(".") !== -1) {
+    numStr = numStr.replace(/0+$/, "");
+    if (numStr === ".") numStr = "0";
+    else if (numStr[0] === ".") numStr = "0" + numStr;
+    else if (numStr[numStr.length - 1] === ".") numStr = numStr.substring(0, numStr.length - 1);
+    return numStr;
+  }
+  return numStr;
+}
+function parse_int(numStr, base) {
+  if (parseInt) return parseInt(numStr, base);
+  else if (Number.parseInt) return Number.parseInt(numStr, base);
+  else if (window && window.parseInt) return window.parseInt(numStr, base);
+  else throw new Error("parseInt, Number.parseInt, window.parseInt are not supported");
+}
+var hexRegex, numRegex, consider, eNotationRegx;
+var init_strnum = __esm({
+  "node_modules/strnum/strnum.js"() {
+    hexRegex = /^[-+]?0x[a-fA-F0-9]+$/;
+    numRegex = /^([\-\+])?(0*)([0-9]*(\.[0-9]*)?)$/;
+    consider = {
       hex: true,
       // oct: false,
       leadingZeros: true,
@@ -1331,116 +1611,304 @@ var require_strnum = __commonJS({
       eNotation: true
       //skipLike: /regex/
     };
-    function toNumber(str, options = {}) {
-      options = Object.assign({}, consider, options);
-      if (!str || typeof str !== "string") return str;
-      let trimmedStr = str.trim();
-      if (options.skipLike !== void 0 && options.skipLike.test(trimmedStr)) return str;
-      else if (str === "0") return 0;
-      else if (options.hex && hexRegex.test(trimmedStr)) {
-        return parse_int(trimmedStr, 16);
-      } else if (trimmedStr.search(/[eE]/) !== -1) {
-        const notation = trimmedStr.match(/^([-\+])?(0*)([0-9]*(\.[0-9]*)?[eE][-\+]?[0-9]+)$/);
-        if (notation) {
-          if (options.leadingZeros) {
-            trimmedStr = (notation[1] || "") + notation[3];
-          } else {
-            if (notation[2] === "0" && notation[3][0] === ".") {
-            } else {
-              return str;
-            }
-          }
-          return options.eNotation ? Number(trimmedStr) : str;
-        } else {
-          return str;
-        }
-      } else {
-        const match2 = numRegex.exec(trimmedStr);
-        if (match2) {
-          const sign = match2[1];
-          const leadingZeros = match2[2];
-          let numTrimmedByZeros = trimZeros(match2[3]);
-          if (!options.leadingZeros && leadingZeros.length > 0 && sign && trimmedStr[2] !== ".") return str;
-          else if (!options.leadingZeros && leadingZeros.length > 0 && !sign && trimmedStr[1] !== ".") return str;
-          else if (options.leadingZeros && leadingZeros === str) return 0;
-          else {
-            const num = Number(trimmedStr);
-            const numStr = "" + num;
-            if (numStr.search(/[eE]/) !== -1) {
-              if (options.eNotation) return num;
-              else return str;
-            } else if (trimmedStr.indexOf(".") !== -1) {
-              if (numStr === "0" && numTrimmedByZeros === "") return num;
-              else if (numStr === numTrimmedByZeros) return num;
-              else if (sign && numStr === "-" + numTrimmedByZeros) return num;
-              else return str;
-            }
-            if (leadingZeros) {
-              return numTrimmedByZeros === numStr || sign + numTrimmedByZeros === numStr ? num : str;
-            } else {
-              return trimmedStr === numStr || trimmedStr === sign + numStr ? num : str;
-            }
-          }
-        } else {
-          return str;
-        }
-      }
-    }
-    function trimZeros(numStr) {
-      if (numStr && numStr.indexOf(".") !== -1) {
-        numStr = numStr.replace(/0+$/, "");
-        if (numStr === ".") numStr = "0";
-        else if (numStr[0] === ".") numStr = "0" + numStr;
-        else if (numStr[numStr.length - 1] === ".") numStr = numStr.substr(0, numStr.length - 1);
-        return numStr;
-      }
-      return numStr;
-    }
-    function parse_int(numStr, base) {
-      if (parseInt) return parseInt(numStr, base);
-      else if (Number.parseInt) return Number.parseInt(numStr, base);
-      else if (window && window.parseInt) return window.parseInt(numStr, base);
-      else throw new Error("parseInt, Number.parseInt, window.parseInt are not supported");
-    }
-    module.exports = toNumber;
+    eNotationRegx = /^([-+])?(0*)(\d*(\.\d*)?[eE][-\+]?\d+)$/;
   }
 });
 
 // node_modules/fast-xml-parser/src/ignoreAttributes.js
-var require_ignoreAttributes = __commonJS({
-  "node_modules/fast-xml-parser/src/ignoreAttributes.js"(exports, module) {
-    function getIgnoreAttributesFn(ignoreAttributes) {
-      if (typeof ignoreAttributes === "function") {
-        return ignoreAttributes;
+function getIgnoreAttributesFn(ignoreAttributes) {
+  if (typeof ignoreAttributes === "function") {
+    return ignoreAttributes;
+  }
+  if (Array.isArray(ignoreAttributes)) {
+    return (attrName) => {
+      for (const pattern of ignoreAttributes) {
+        if (typeof pattern === "string" && attrName === pattern) {
+          return true;
+        }
+        if (pattern instanceof RegExp && pattern.test(attrName)) {
+          return true;
+        }
       }
-      if (Array.isArray(ignoreAttributes)) {
-        return (attrName) => {
-          for (const pattern of ignoreAttributes) {
-            if (typeof pattern === "string" && attrName === pattern) {
-              return true;
-            }
-            if (pattern instanceof RegExp && pattern.test(attrName)) {
-              return true;
-            }
-          }
-        };
-      }
-      return () => false;
-    }
-    module.exports = getIgnoreAttributesFn;
+    };
+  }
+  return () => false;
+}
+var init_ignoreAttributes = __esm({
+  "node_modules/fast-xml-parser/src/ignoreAttributes.js"() {
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlparser/OrderedObjParser.js
-var require_OrderedObjParser = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlparser/OrderedObjParser.js"(exports, module) {
+function addExternalEntities(externalEntities) {
+  const entKeys = Object.keys(externalEntities);
+  for (let i = 0; i < entKeys.length; i++) {
+    const ent = entKeys[i];
+    const escaped = ent.replace(/[.\-+*:]/g, "\\.");
+    this.lastEntities[ent] = {
+      regex: new RegExp("&" + escaped + ";", "g"),
+      val: externalEntities[ent]
+    };
+  }
+}
+function parseTextData(val, tagName, jPath, dontTrim, hasAttributes, isLeafNode, escapeEntities) {
+  if (val !== void 0) {
+    if (this.options.trimValues && !dontTrim) {
+      val = val.trim();
+    }
+    if (val.length > 0) {
+      if (!escapeEntities) val = this.replaceEntitiesValue(val, tagName, jPath);
+      const newval = this.options.tagValueProcessor(tagName, val, jPath, hasAttributes, isLeafNode);
+      if (newval === null || newval === void 0) {
+        return val;
+      } else if (typeof newval !== typeof val || newval !== val) {
+        return newval;
+      } else if (this.options.trimValues) {
+        return parseValue(val, this.options.parseTagValue, this.options.numberParseOptions);
+      } else {
+        const trimmedVal = val.trim();
+        if (trimmedVal === val) {
+          return parseValue(val, this.options.parseTagValue, this.options.numberParseOptions);
+        } else {
+          return val;
+        }
+      }
+    }
+  }
+}
+function resolveNameSpace(tagname) {
+  if (this.options.removeNSPrefix) {
+    const tags = tagname.split(":");
+    const prefix = tagname.charAt(0) === "/" ? "/" : "";
+    if (tags[0] === "xmlns") {
+      return "";
+    }
+    if (tags.length === 2) {
+      tagname = prefix + tags[1];
+    }
+  }
+  return tagname;
+}
+function buildAttributesMap(attrStr, jPath, tagName) {
+  if (this.options.ignoreAttributes !== true && typeof attrStr === "string") {
+    const matches = getAllMatches(attrStr, attrsRegx);
+    const len = matches.length;
+    const attrs = {};
+    for (let i = 0; i < len; i++) {
+      const attrName = this.resolveNameSpace(matches[i][1]);
+      if (this.ignoreAttributesFn(attrName, jPath)) {
+        continue;
+      }
+      let oldVal = matches[i][4];
+      let aName = this.options.attributeNamePrefix + attrName;
+      if (attrName.length) {
+        if (this.options.transformAttributeName) {
+          aName = this.options.transformAttributeName(aName);
+        }
+        if (aName === "__proto__") aName = "#__proto__";
+        if (oldVal !== void 0) {
+          if (this.options.trimValues) {
+            oldVal = oldVal.trim();
+          }
+          oldVal = this.replaceEntitiesValue(oldVal, tagName, jPath);
+          const newVal = this.options.attributeValueProcessor(attrName, oldVal, jPath);
+          if (newVal === null || newVal === void 0) {
+            attrs[aName] = oldVal;
+          } else if (typeof newVal !== typeof oldVal || newVal !== oldVal) {
+            attrs[aName] = newVal;
+          } else {
+            attrs[aName] = parseValue(
+              oldVal,
+              this.options.parseAttributeValue,
+              this.options.numberParseOptions
+            );
+          }
+        } else if (this.options.allowBooleanAttributes) {
+          attrs[aName] = true;
+        }
+      }
+    }
+    if (!Object.keys(attrs).length) {
+      return;
+    }
+    if (this.options.attributesGroupName) {
+      const attrCollection = {};
+      attrCollection[this.options.attributesGroupName] = attrs;
+      return attrCollection;
+    }
+    return attrs;
+  }
+}
+function addChild(currentNode, childNode, jPath, startIndex) {
+  if (!this.options.captureMetaData) startIndex = void 0;
+  const result = this.options.updateTag(childNode.tagname, jPath, childNode[":@"]);
+  if (result === false) {
+  } else if (typeof result === "string") {
+    childNode.tagname = result;
+    currentNode.addChild(childNode, startIndex);
+  } else {
+    currentNode.addChild(childNode, startIndex);
+  }
+}
+function saveTextToParentTag(textData, currentNode, jPath, isLeafNode) {
+  if (textData) {
+    if (isLeafNode === void 0) isLeafNode = currentNode.child.length === 0;
+    textData = this.parseTextData(
+      textData,
+      currentNode.tagname,
+      jPath,
+      false,
+      currentNode[":@"] ? Object.keys(currentNode[":@"]).length !== 0 : false,
+      isLeafNode
+    );
+    if (textData !== void 0 && textData !== "")
+      currentNode.add(this.options.textNodeName, textData);
+    textData = "";
+  }
+  return textData;
+}
+function isItStopNode(stopNodesExact, stopNodesWildcard, jPath, currentTagName) {
+  if (stopNodesWildcard && stopNodesWildcard.has(currentTagName)) return true;
+  if (stopNodesExact && stopNodesExact.has(jPath)) return true;
+  return false;
+}
+function tagExpWithClosingIndex(xmlData, i, closingChar = ">") {
+  let attrBoundary;
+  let tagExp = "";
+  for (let index = i; index < xmlData.length; index++) {
+    let ch = xmlData[index];
+    if (attrBoundary) {
+      if (ch === attrBoundary) attrBoundary = "";
+    } else if (ch === '"' || ch === "'") {
+      attrBoundary = ch;
+    } else if (ch === closingChar[0]) {
+      if (closingChar[1]) {
+        if (xmlData[index + 1] === closingChar[1]) {
+          return {
+            data: tagExp,
+            index
+          };
+        }
+      } else {
+        return {
+          data: tagExp,
+          index
+        };
+      }
+    } else if (ch === "	") {
+      ch = " ";
+    }
+    tagExp += ch;
+  }
+}
+function findClosingIndex(xmlData, str, i, errMsg) {
+  const closingIndex = xmlData.indexOf(str, i);
+  if (closingIndex === -1) {
+    throw new Error(errMsg);
+  } else {
+    return closingIndex + str.length - 1;
+  }
+}
+function readTagExp(xmlData, i, removeNSPrefix, closingChar = ">") {
+  const result = tagExpWithClosingIndex(xmlData, i + 1, closingChar);
+  if (!result) return;
+  let tagExp = result.data;
+  const closeIndex = result.index;
+  const separatorIndex = tagExp.search(/\s/);
+  let tagName = tagExp;
+  let attrExpPresent = true;
+  if (separatorIndex !== -1) {
+    tagName = tagExp.substring(0, separatorIndex);
+    tagExp = tagExp.substring(separatorIndex + 1).trimStart();
+  }
+  const rawTagName = tagName;
+  if (removeNSPrefix) {
+    const colonIndex = tagName.indexOf(":");
+    if (colonIndex !== -1) {
+      tagName = tagName.substr(colonIndex + 1);
+      attrExpPresent = tagName !== result.data.substr(colonIndex + 1);
+    }
+  }
+  return {
+    tagName,
+    tagExp,
+    closeIndex,
+    attrExpPresent,
+    rawTagName
+  };
+}
+function readStopNodeData(xmlData, tagName, i) {
+  const startIndex = i;
+  let openTagCount = 1;
+  for (; i < xmlData.length; i++) {
+    if (xmlData[i] === "<") {
+      if (xmlData[i + 1] === "/") {
+        const closeIndex = findClosingIndex(xmlData, ">", i, `${tagName} is not closed`);
+        let closeTagName = xmlData.substring(i + 2, closeIndex).trim();
+        if (closeTagName === tagName) {
+          openTagCount--;
+          if (openTagCount === 0) {
+            return {
+              tagContent: xmlData.substring(startIndex, i),
+              i: closeIndex
+            };
+          }
+        }
+        i = closeIndex;
+      } else if (xmlData[i + 1] === "?") {
+        const closeIndex = findClosingIndex(xmlData, "?>", i + 1, "StopNode is not closed.");
+        i = closeIndex;
+      } else if (xmlData.substr(i + 1, 3) === "!--") {
+        const closeIndex = findClosingIndex(xmlData, "-->", i + 3, "StopNode is not closed.");
+        i = closeIndex;
+      } else if (xmlData.substr(i + 1, 2) === "![") {
+        const closeIndex = findClosingIndex(xmlData, "]]>", i, "StopNode is not closed.") - 2;
+        i = closeIndex;
+      } else {
+        const tagData = readTagExp(xmlData, i, ">");
+        if (tagData) {
+          const openTagName = tagData && tagData.tagName;
+          if (openTagName === tagName && tagData.tagExp[tagData.tagExp.length - 1] !== "/") {
+            openTagCount++;
+          }
+          i = tagData.closeIndex;
+        }
+      }
+    }
+  }
+}
+function parseValue(val, shouldParse, options) {
+  if (shouldParse && typeof val === "string") {
+    const newval = val.trim();
+    if (newval === "true") return true;
+    else if (newval === "false") return false;
+    else return toNumber(val, options);
+  } else {
+    if (isExist(val)) {
+      return val;
+    } else {
+      return "";
+    }
+  }
+}
+function fromCodePoint(str, base, prefix) {
+  const codePoint = Number.parseInt(str, base);
+  if (codePoint >= 0 && codePoint <= 1114111) {
+    return String.fromCodePoint(codePoint);
+  } else {
+    return prefix + str + ";";
+  }
+}
+var OrderedObjParser, attrsRegx, parseXml, replaceEntitiesValue;
+var init_OrderedObjParser = __esm({
+  "node_modules/fast-xml-parser/src/xmlparser/OrderedObjParser.js"() {
     "use strict";
-    var util = require_util();
-    var xmlNode = require_xmlNode();
-    var readDocType = require_DocTypeReader();
-    var toNumber = require_strnum();
-    var getIgnoreAttributesFn = require_ignoreAttributes();
-    var OrderedObjParser = class {
+    init_util();
+    init_xmlNode();
+    init_DocTypeReader();
+    init_strnum();
+    init_ignoreAttributes();
+    OrderedObjParser = class {
       constructor(options) {
         this.options = options;
         this.currentNode = null;
@@ -1467,8 +1935,8 @@ var require_OrderedObjParser = __commonJS({
           "copyright": { regex: /&(copy|#169);/g, val: "\xA9" },
           "reg": { regex: /&(reg|#174);/g, val: "\xAE" },
           "inr": { regex: /&(inr|#8377);/g, val: "\u20B9" },
-          "num_dec": { regex: /&#([0-9]{1,7});/g, val: (_, str) => String.fromCharCode(Number.parseInt(str, 10)) },
-          "num_hex": { regex: /&#x([0-9a-fA-F]{1,6});/g, val: (_, str) => String.fromCharCode(Number.parseInt(str, 16)) }
+          "num_dec": { regex: /&#([0-9]{1,7});/g, val: (_, str) => fromCodePoint(str, 10, "&#") },
+          "num_hex": { regex: /&#x([0-9a-fA-F]{1,6});/g, val: (_, str) => fromCodePoint(str, 16, "&#x") }
         };
         this.addExternalEntities = addExternalEntities;
         this.parseXml = parseXml;
@@ -1481,113 +1949,33 @@ var require_OrderedObjParser = __commonJS({
         this.saveTextToParentTag = saveTextToParentTag;
         this.addChild = addChild;
         this.ignoreAttributesFn = getIgnoreAttributesFn(this.options.ignoreAttributes);
+        this.entityExpansionCount = 0;
+        this.currentExpandedLength = 0;
+        if (this.options.stopNodes && this.options.stopNodes.length > 0) {
+          this.stopNodesExact = /* @__PURE__ */ new Set();
+          this.stopNodesWildcard = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.options.stopNodes.length; i++) {
+            const stopNodeExp = this.options.stopNodes[i];
+            if (typeof stopNodeExp !== "string") continue;
+            if (stopNodeExp.startsWith("*.")) {
+              this.stopNodesWildcard.add(stopNodeExp.substring(2));
+            } else {
+              this.stopNodesExact.add(stopNodeExp);
+            }
+          }
+        }
       }
     };
-    function addExternalEntities(externalEntities) {
-      const entKeys = Object.keys(externalEntities);
-      for (let i = 0; i < entKeys.length; i++) {
-        const ent = entKeys[i];
-        this.lastEntities[ent] = {
-          regex: new RegExp("&" + ent + ";", "g"),
-          val: externalEntities[ent]
-        };
-      }
-    }
-    function parseTextData(val, tagName, jPath, dontTrim, hasAttributes, isLeafNode, escapeEntities) {
-      if (val !== void 0) {
-        if (this.options.trimValues && !dontTrim) {
-          val = val.trim();
-        }
-        if (val.length > 0) {
-          if (!escapeEntities) val = this.replaceEntitiesValue(val);
-          const newval = this.options.tagValueProcessor(tagName, val, jPath, hasAttributes, isLeafNode);
-          if (newval === null || newval === void 0) {
-            return val;
-          } else if (typeof newval !== typeof val || newval !== val) {
-            return newval;
-          } else if (this.options.trimValues) {
-            return parseValue(val, this.options.parseTagValue, this.options.numberParseOptions);
-          } else {
-            const trimmedVal = val.trim();
-            if (trimmedVal === val) {
-              return parseValue(val, this.options.parseTagValue, this.options.numberParseOptions);
-            } else {
-              return val;
-            }
-          }
-        }
-      }
-    }
-    function resolveNameSpace(tagname) {
-      if (this.options.removeNSPrefix) {
-        const tags = tagname.split(":");
-        const prefix = tagname.charAt(0) === "/" ? "/" : "";
-        if (tags[0] === "xmlns") {
-          return "";
-        }
-        if (tags.length === 2) {
-          tagname = prefix + tags[1];
-        }
-      }
-      return tagname;
-    }
-    var attrsRegx = new RegExp(`([^\\s=]+)\\s*(=\\s*(['"])([\\s\\S]*?)\\3)?`, "gm");
-    function buildAttributesMap(attrStr, jPath, tagName) {
-      if (this.options.ignoreAttributes !== true && typeof attrStr === "string") {
-        const matches = util.getAllMatches(attrStr, attrsRegx);
-        const len = matches.length;
-        const attrs = {};
-        for (let i = 0; i < len; i++) {
-          const attrName = this.resolveNameSpace(matches[i][1]);
-          if (this.ignoreAttributesFn(attrName, jPath)) {
-            continue;
-          }
-          let oldVal = matches[i][4];
-          let aName = this.options.attributeNamePrefix + attrName;
-          if (attrName.length) {
-            if (this.options.transformAttributeName) {
-              aName = this.options.transformAttributeName(aName);
-            }
-            if (aName === "__proto__") aName = "#__proto__";
-            if (oldVal !== void 0) {
-              if (this.options.trimValues) {
-                oldVal = oldVal.trim();
-              }
-              oldVal = this.replaceEntitiesValue(oldVal);
-              const newVal = this.options.attributeValueProcessor(attrName, oldVal, jPath);
-              if (newVal === null || newVal === void 0) {
-                attrs[aName] = oldVal;
-              } else if (typeof newVal !== typeof oldVal || newVal !== oldVal) {
-                attrs[aName] = newVal;
-              } else {
-                attrs[aName] = parseValue(
-                  oldVal,
-                  this.options.parseAttributeValue,
-                  this.options.numberParseOptions
-                );
-              }
-            } else if (this.options.allowBooleanAttributes) {
-              attrs[aName] = true;
-            }
-          }
-        }
-        if (!Object.keys(attrs).length) {
-          return;
-        }
-        if (this.options.attributesGroupName) {
-          const attrCollection = {};
-          attrCollection[this.options.attributesGroupName] = attrs;
-          return attrCollection;
-        }
-        return attrs;
-      }
-    }
-    var parseXml = function(xmlData) {
+    attrsRegx = new RegExp(`([^\\s=]+)\\s*(=\\s*(['"])([\\s\\S]*?)\\3)?`, "gm");
+    parseXml = function(xmlData) {
       xmlData = xmlData.replace(/\r\n?/g, "\n");
-      const xmlObj = new xmlNode("!xml");
+      const xmlObj = new XmlNode("!xml");
       let currentNode = xmlObj;
       let textData = "";
       let jPath = "";
+      this.entityExpansionCount = 0;
+      this.currentExpandedLength = 0;
+      const docTypeReader = new DocTypeReader(this.options.processEntities);
       for (let i = 0; i < xmlData.length; i++) {
         const ch = xmlData[i];
         if (ch === "<") {
@@ -1627,12 +2015,12 @@ var require_OrderedObjParser = __commonJS({
             textData = this.saveTextToParentTag(textData, currentNode, jPath);
             if (this.options.ignoreDeclaration && tagData.tagName === "?xml" || this.options.ignorePiTags) {
             } else {
-              const childNode = new xmlNode(tagData.tagName);
+              const childNode = new XmlNode(tagData.tagName);
               childNode.add(this.options.textNodeName, "");
               if (tagData.tagName !== tagData.tagExp && tagData.attrExpPresent) {
                 childNode[":@"] = this.buildAttributesMap(tagData.tagExp, jPath, tagData.tagName);
               }
-              this.addChild(currentNode, childNode, jPath);
+              this.addChild(currentNode, childNode, jPath, i);
             }
             i = tagData.closeIndex + 1;
           } else if (xmlData.substr(i + 1, 3) === "!--") {
@@ -1644,7 +2032,7 @@ var require_OrderedObjParser = __commonJS({
             }
             i = endIndex;
           } else if (xmlData.substr(i + 1, 2) === "!D") {
-            const result = readDocType(xmlData, i);
+            const result = docTypeReader.readDocType(xmlData, i);
             this.docTypeEntities = result.entities;
             i = result.i;
           } else if (xmlData.substr(i + 1, 2) === "![") {
@@ -1667,7 +2055,11 @@ var require_OrderedObjParser = __commonJS({
             let attrExpPresent = result.attrExpPresent;
             let closeIndex = result.closeIndex;
             if (this.options.transformTagName) {
-              tagName = this.options.transformTagName(tagName);
+              const newTagName = this.options.transformTagName(tagName);
+              if (tagExp === tagName) {
+                tagExp = newTagName;
+              }
+              tagName = newTagName;
             }
             if (currentNode && textData) {
               if (currentNode.tagname !== "!xml") {
@@ -1682,7 +2074,8 @@ var require_OrderedObjParser = __commonJS({
             if (tagName !== xmlObj.tagname) {
               jPath += jPath ? "." + tagName : tagName;
             }
-            if (this.isItStopNode(this.options.stopNodes, jPath, tagName)) {
+            const startIndex = i;
+            if (this.isItStopNode(this.stopNodesExact, this.stopNodesWildcard, jPath, tagName)) {
               let tagContent = "";
               if (tagExp.length > 0 && tagExp.lastIndexOf("/") === tagExp.length - 1) {
                 if (tagName[tagName.length - 1] === "/") {
@@ -1701,7 +2094,7 @@ var require_OrderedObjParser = __commonJS({
                 i = result2.i;
                 tagContent = result2.tagContent;
               }
-              const childNode = new xmlNode(tagName);
+              const childNode = new XmlNode(tagName);
               if (tagName !== tagExp && attrExpPresent) {
                 childNode[":@"] = this.buildAttributesMap(tagExp, jPath, tagName);
               }
@@ -1710,7 +2103,7 @@ var require_OrderedObjParser = __commonJS({
               }
               jPath = jPath.substr(0, jPath.lastIndexOf("."));
               childNode.add(this.options.textNodeName, tagContent);
-              this.addChild(currentNode, childNode, jPath);
+              this.addChild(currentNode, childNode, jPath, startIndex);
             } else {
               if (tagExp.length > 0 && tagExp.lastIndexOf("/") === tagExp.length - 1) {
                 if (tagName[tagName.length - 1] === "/") {
@@ -1721,21 +2114,25 @@ var require_OrderedObjParser = __commonJS({
                   tagExp = tagExp.substr(0, tagExp.length - 1);
                 }
                 if (this.options.transformTagName) {
-                  tagName = this.options.transformTagName(tagName);
+                  const newTagName = this.options.transformTagName(tagName);
+                  if (tagExp === tagName) {
+                    tagExp = newTagName;
+                  }
+                  tagName = newTagName;
                 }
-                const childNode = new xmlNode(tagName);
+                const childNode = new XmlNode(tagName);
                 if (tagName !== tagExp && attrExpPresent) {
                   childNode[":@"] = this.buildAttributesMap(tagExp, jPath, tagName);
                 }
-                this.addChild(currentNode, childNode, jPath);
+                this.addChild(currentNode, childNode, jPath, startIndex);
                 jPath = jPath.substr(0, jPath.lastIndexOf("."));
               } else {
-                const childNode = new xmlNode(tagName);
+                const childNode = new XmlNode(tagName);
                 this.tagsNodeStack.push(currentNode);
                 if (tagName !== tagExp && attrExpPresent) {
                   childNode[":@"] = this.buildAttributesMap(tagExp, jPath, tagName);
                 }
-                this.addChild(currentNode, childNode, jPath);
+                this.addChild(currentNode, childNode, jPath, startIndex);
                 currentNode = childNode;
               }
               textData = "";
@@ -1748,298 +2145,184 @@ var require_OrderedObjParser = __commonJS({
       }
       return xmlObj.child;
     };
-    function addChild(currentNode, childNode, jPath) {
-      const result = this.options.updateTag(childNode.tagname, jPath, childNode[":@"]);
-      if (result === false) {
-      } else if (typeof result === "string") {
-        childNode.tagname = result;
-        currentNode.addChild(childNode);
-      } else {
-        currentNode.addChild(childNode);
+    replaceEntitiesValue = function(val, tagName, jPath) {
+      if (val.indexOf("&") === -1) {
+        return val;
       }
-    }
-    var replaceEntitiesValue = function(val) {
-      if (this.options.processEntities) {
-        for (let entityName in this.docTypeEntities) {
-          const entity = this.docTypeEntities[entityName];
-          val = val.replace(entity.regx, entity.val);
+      const entityConfig = this.options.processEntities;
+      if (!entityConfig.enabled) {
+        return val;
+      }
+      if (entityConfig.allowedTags) {
+        if (!entityConfig.allowedTags.includes(tagName)) {
+          return val;
         }
-        for (let entityName in this.lastEntities) {
-          const entity = this.lastEntities[entityName];
+      }
+      if (entityConfig.tagFilter) {
+        if (!entityConfig.tagFilter(tagName, jPath)) {
+          return val;
+        }
+      }
+      for (let entityName in this.docTypeEntities) {
+        const entity = this.docTypeEntities[entityName];
+        const matches = val.match(entity.regx);
+        if (matches) {
+          this.entityExpansionCount += matches.length;
+          if (entityConfig.maxTotalExpansions && this.entityExpansionCount > entityConfig.maxTotalExpansions) {
+            throw new Error(
+              `Entity expansion limit exceeded: ${this.entityExpansionCount} > ${entityConfig.maxTotalExpansions}`
+            );
+          }
+          const lengthBefore = val.length;
+          val = val.replace(entity.regx, entity.val);
+          if (entityConfig.maxExpandedLength) {
+            this.currentExpandedLength += val.length - lengthBefore;
+            if (this.currentExpandedLength > entityConfig.maxExpandedLength) {
+              throw new Error(
+                `Total expanded content size exceeded: ${this.currentExpandedLength} > ${entityConfig.maxExpandedLength}`
+              );
+            }
+          }
+        }
+      }
+      if (val.indexOf("&") === -1) return val;
+      for (let entityName in this.lastEntities) {
+        const entity = this.lastEntities[entityName];
+        val = val.replace(entity.regex, entity.val);
+      }
+      if (val.indexOf("&") === -1) return val;
+      if (this.options.htmlEntities) {
+        for (let entityName in this.htmlEntities) {
+          const entity = this.htmlEntities[entityName];
           val = val.replace(entity.regex, entity.val);
         }
-        if (this.options.htmlEntities) {
-          for (let entityName in this.htmlEntities) {
-            const entity = this.htmlEntities[entityName];
-            val = val.replace(entity.regex, entity.val);
-          }
-        }
-        val = val.replace(this.ampEntity.regex, this.ampEntity.val);
       }
+      val = val.replace(this.ampEntity.regex, this.ampEntity.val);
       return val;
     };
-    function saveTextToParentTag(textData, currentNode, jPath, isLeafNode) {
-      if (textData) {
-        if (isLeafNode === void 0) isLeafNode = currentNode.child.length === 0;
-        textData = this.parseTextData(
-          textData,
-          currentNode.tagname,
-          jPath,
-          false,
-          currentNode[":@"] ? Object.keys(currentNode[":@"]).length !== 0 : false,
-          isLeafNode
-        );
-        if (textData !== void 0 && textData !== "")
-          currentNode.add(this.options.textNodeName, textData);
-        textData = "";
-      }
-      return textData;
-    }
-    function isItStopNode(stopNodes, jPath, currentTagName) {
-      const allNodesExp = "*." + currentTagName;
-      for (const stopNodePath in stopNodes) {
-        const stopNodeExp = stopNodes[stopNodePath];
-        if (allNodesExp === stopNodeExp || jPath === stopNodeExp) return true;
-      }
-      return false;
-    }
-    function tagExpWithClosingIndex(xmlData, i, closingChar = ">") {
-      let attrBoundary;
-      let tagExp = "";
-      for (let index = i; index < xmlData.length; index++) {
-        let ch = xmlData[index];
-        if (attrBoundary) {
-          if (ch === attrBoundary) attrBoundary = "";
-        } else if (ch === '"' || ch === "'") {
-          attrBoundary = ch;
-        } else if (ch === closingChar[0]) {
-          if (closingChar[1]) {
-            if (xmlData[index + 1] === closingChar[1]) {
-              return {
-                data: tagExp,
-                index
-              };
-            }
-          } else {
-            return {
-              data: tagExp,
-              index
-            };
-          }
-        } else if (ch === "	") {
-          ch = " ";
-        }
-        tagExp += ch;
-      }
-    }
-    function findClosingIndex(xmlData, str, i, errMsg) {
-      const closingIndex = xmlData.indexOf(str, i);
-      if (closingIndex === -1) {
-        throw new Error(errMsg);
-      } else {
-        return closingIndex + str.length - 1;
-      }
-    }
-    function readTagExp(xmlData, i, removeNSPrefix, closingChar = ">") {
-      const result = tagExpWithClosingIndex(xmlData, i + 1, closingChar);
-      if (!result) return;
-      let tagExp = result.data;
-      const closeIndex = result.index;
-      const separatorIndex = tagExp.search(/\s/);
-      let tagName = tagExp;
-      let attrExpPresent = true;
-      if (separatorIndex !== -1) {
-        tagName = tagExp.substring(0, separatorIndex);
-        tagExp = tagExp.substring(separatorIndex + 1).trimStart();
-      }
-      const rawTagName = tagName;
-      if (removeNSPrefix) {
-        const colonIndex = tagName.indexOf(":");
-        if (colonIndex !== -1) {
-          tagName = tagName.substr(colonIndex + 1);
-          attrExpPresent = tagName !== result.data.substr(colonIndex + 1);
-        }
-      }
-      return {
-        tagName,
-        tagExp,
-        closeIndex,
-        attrExpPresent,
-        rawTagName
-      };
-    }
-    function readStopNodeData(xmlData, tagName, i) {
-      const startIndex = i;
-      let openTagCount = 1;
-      for (; i < xmlData.length; i++) {
-        if (xmlData[i] === "<") {
-          if (xmlData[i + 1] === "/") {
-            const closeIndex = findClosingIndex(xmlData, ">", i, `${tagName} is not closed`);
-            let closeTagName = xmlData.substring(i + 2, closeIndex).trim();
-            if (closeTagName === tagName) {
-              openTagCount--;
-              if (openTagCount === 0) {
-                return {
-                  tagContent: xmlData.substring(startIndex, i),
-                  i: closeIndex
-                };
-              }
-            }
-            i = closeIndex;
-          } else if (xmlData[i + 1] === "?") {
-            const closeIndex = findClosingIndex(xmlData, "?>", i + 1, "StopNode is not closed.");
-            i = closeIndex;
-          } else if (xmlData.substr(i + 1, 3) === "!--") {
-            const closeIndex = findClosingIndex(xmlData, "-->", i + 3, "StopNode is not closed.");
-            i = closeIndex;
-          } else if (xmlData.substr(i + 1, 2) === "![") {
-            const closeIndex = findClosingIndex(xmlData, "]]>", i, "StopNode is not closed.") - 2;
-            i = closeIndex;
-          } else {
-            const tagData = readTagExp(xmlData, i, ">");
-            if (tagData) {
-              const openTagName = tagData && tagData.tagName;
-              if (openTagName === tagName && tagData.tagExp[tagData.tagExp.length - 1] !== "/") {
-                openTagCount++;
-              }
-              i = tagData.closeIndex;
-            }
-          }
-        }
-      }
-    }
-    function parseValue(val, shouldParse, options) {
-      if (shouldParse && typeof val === "string") {
-        const newval = val.trim();
-        if (newval === "true") return true;
-        else if (newval === "false") return false;
-        else return toNumber(val, options);
-      } else {
-        if (util.isExist(val)) {
-          return val;
-        } else {
-          return "";
-        }
-      }
-    }
-    module.exports = OrderedObjParser;
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlparser/node2json.js
-var require_node2json = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlparser/node2json.js"(exports) {
+function prettify(node, options) {
+  return compress(node, options);
+}
+function compress(arr, options, jPath) {
+  let text;
+  const compressedObj = {};
+  for (let i = 0; i < arr.length; i++) {
+    const tagObj = arr[i];
+    const property = propName(tagObj);
+    let newJpath = "";
+    if (jPath === void 0) newJpath = property;
+    else newJpath = jPath + "." + property;
+    if (property === options.textNodeName) {
+      if (text === void 0) text = tagObj[property];
+      else text += "" + tagObj[property];
+    } else if (property === void 0) {
+      continue;
+    } else if (tagObj[property]) {
+      let val = compress(tagObj[property], options, newJpath);
+      const isLeaf = isLeafTag(val, options);
+      if (tagObj[METADATA_SYMBOL2] !== void 0) {
+        val[METADATA_SYMBOL2] = tagObj[METADATA_SYMBOL2];
+      }
+      if (tagObj[":@"]) {
+        assignAttributes(val, tagObj[":@"], newJpath, options);
+      } else if (Object.keys(val).length === 1 && val[options.textNodeName] !== void 0 && !options.alwaysCreateTextNode) {
+        val = val[options.textNodeName];
+      } else if (Object.keys(val).length === 0) {
+        if (options.alwaysCreateTextNode) val[options.textNodeName] = "";
+        else val = "";
+      }
+      if (compressedObj[property] !== void 0 && compressedObj.hasOwnProperty(property)) {
+        if (!Array.isArray(compressedObj[property])) {
+          compressedObj[property] = [compressedObj[property]];
+        }
+        compressedObj[property].push(val);
+      } else {
+        if (options.isArray(property, newJpath, isLeaf)) {
+          compressedObj[property] = [val];
+        } else {
+          compressedObj[property] = val;
+        }
+      }
+    }
+  }
+  if (typeof text === "string") {
+    if (text.length > 0) compressedObj[options.textNodeName] = text;
+  } else if (text !== void 0) compressedObj[options.textNodeName] = text;
+  return compressedObj;
+}
+function propName(obj) {
+  const keys = Object.keys(obj);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (key !== ":@") return key;
+  }
+}
+function assignAttributes(obj, attrMap, jpath, options) {
+  if (attrMap) {
+    const keys = Object.keys(attrMap);
+    const len = keys.length;
+    for (let i = 0; i < len; i++) {
+      const atrrName = keys[i];
+      if (options.isArray(atrrName, jpath + "." + atrrName, true, true)) {
+        obj[atrrName] = [attrMap[atrrName]];
+      } else {
+        obj[atrrName] = attrMap[atrrName];
+      }
+    }
+  }
+}
+function isLeafTag(obj, options) {
+  const { textNodeName } = options;
+  const propCount = Object.keys(obj).length;
+  if (propCount === 0) {
+    return true;
+  }
+  if (propCount === 1 && (obj[textNodeName] || typeof obj[textNodeName] === "boolean" || obj[textNodeName] === 0)) {
+    return true;
+  }
+  return false;
+}
+var METADATA_SYMBOL2;
+var init_node2json = __esm({
+  "node_modules/fast-xml-parser/src/xmlparser/node2json.js"() {
     "use strict";
-    function prettify(node, options) {
-      return compress(node, options);
-    }
-    function compress(arr, options, jPath) {
-      let text;
-      const compressedObj = {};
-      for (let i = 0; i < arr.length; i++) {
-        const tagObj = arr[i];
-        const property = propName(tagObj);
-        let newJpath = "";
-        if (jPath === void 0) newJpath = property;
-        else newJpath = jPath + "." + property;
-        if (property === options.textNodeName) {
-          if (text === void 0) text = tagObj[property];
-          else text += "" + tagObj[property];
-        } else if (property === void 0) {
-          continue;
-        } else if (tagObj[property]) {
-          let val = compress(tagObj[property], options, newJpath);
-          const isLeaf = isLeafTag(val, options);
-          if (tagObj[":@"]) {
-            assignAttributes(val, tagObj[":@"], newJpath, options);
-          } else if (Object.keys(val).length === 1 && val[options.textNodeName] !== void 0 && !options.alwaysCreateTextNode) {
-            val = val[options.textNodeName];
-          } else if (Object.keys(val).length === 0) {
-            if (options.alwaysCreateTextNode) val[options.textNodeName] = "";
-            else val = "";
-          }
-          if (compressedObj[property] !== void 0 && compressedObj.hasOwnProperty(property)) {
-            if (!Array.isArray(compressedObj[property])) {
-              compressedObj[property] = [compressedObj[property]];
-            }
-            compressedObj[property].push(val);
-          } else {
-            if (options.isArray(property, newJpath, isLeaf)) {
-              compressedObj[property] = [val];
-            } else {
-              compressedObj[property] = val;
-            }
-          }
-        }
-      }
-      if (typeof text === "string") {
-        if (text.length > 0) compressedObj[options.textNodeName] = text;
-      } else if (text !== void 0) compressedObj[options.textNodeName] = text;
-      return compressedObj;
-    }
-    function propName(obj) {
-      const keys = Object.keys(obj);
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        if (key !== ":@") return key;
-      }
-    }
-    function assignAttributes(obj, attrMap, jpath, options) {
-      if (attrMap) {
-        const keys = Object.keys(attrMap);
-        const len = keys.length;
-        for (let i = 0; i < len; i++) {
-          const atrrName = keys[i];
-          if (options.isArray(atrrName, jpath + "." + atrrName, true, true)) {
-            obj[atrrName] = [attrMap[atrrName]];
-          } else {
-            obj[atrrName] = attrMap[atrrName];
-          }
-        }
-      }
-    }
-    function isLeafTag(obj, options) {
-      const { textNodeName } = options;
-      const propCount = Object.keys(obj).length;
-      if (propCount === 0) {
-        return true;
-      }
-      if (propCount === 1 && (obj[textNodeName] || typeof obj[textNodeName] === "boolean" || obj[textNodeName] === 0)) {
-        return true;
-      }
-      return false;
-    }
-    exports.prettify = prettify;
+    init_xmlNode();
+    METADATA_SYMBOL2 = XmlNode.getMetaDataSymbol();
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlparser/XMLParser.js
-var require_XMLParser = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlparser/XMLParser.js"(exports, module) {
-    var { buildOptions } = require_OptionsBuilder();
-    var OrderedObjParser = require_OrderedObjParser();
-    var { prettify } = require_node2json();
-    var validator = require_validator();
-    var XMLParser2 = class {
+var XMLParser;
+var init_XMLParser = __esm({
+  "node_modules/fast-xml-parser/src/xmlparser/XMLParser.js"() {
+    init_OptionsBuilder();
+    init_OrderedObjParser();
+    init_node2json();
+    init_validator();
+    init_xmlNode();
+    XMLParser = class {
       constructor(options) {
         this.externalEntities = {};
         this.options = buildOptions(options);
       }
       /**
        * Parse XML dats to JS object 
-       * @param {string|Buffer} xmlData 
+       * @param {string|Uint8Array} xmlData 
        * @param {boolean|Object} validationOption 
        */
       parse(xmlData, validationOption) {
-        if (typeof xmlData === "string") {
-        } else if (xmlData.toString) {
+        if (typeof xmlData !== "string" && xmlData.toString) {
           xmlData = xmlData.toString();
-        } else {
+        } else if (typeof xmlData !== "string") {
           throw new Error("XML data is accepted in String or Bytes[] form.");
         }
         if (validationOption) {
           if (validationOption === true) validationOption = {};
-          const result = validator.validate(xmlData, validationOption);
+          const result = validate2(xmlData, validationOption);
           if (result !== true) {
             throw Error(`${result.err.msg}:${result.err.line}:${result.err.col}`);
           }
@@ -2066,143 +2349,198 @@ var require_XMLParser = __commonJS({
           this.externalEntities[key] = value;
         }
       }
+      /**
+       * Returns a Symbol that can be used to access the metadata
+       * property on a node.
+       * 
+       * If Symbol is not available in the environment, an ordinary property is used
+       * and the name of the property is here returned.
+       * 
+       * The XMLMetaData property is only present when `captureMetaData`
+       * is true in the options.
+       */
+      static getMetaDataSymbol() {
+        return XmlNode.getMetaDataSymbol();
+      }
     };
-    module.exports = XMLParser2;
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlbuilder/orderedJs2Xml.js
-var require_orderedJs2Xml = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlbuilder/orderedJs2Xml.js"(exports, module) {
-    var EOL = "\n";
-    function toXml(jArray, options) {
-      let indentation = "";
-      if (options.format && options.indentBy.length > 0) {
-        indentation = EOL;
+function toXml(jArray, options) {
+  let indentation = "";
+  if (options.format && options.indentBy.length > 0) {
+    indentation = EOL;
+  }
+  return arrToStr(jArray, options, "", indentation);
+}
+function arrToStr(arr, options, jPath, indentation) {
+  let xmlStr = "";
+  let isPreviousElementTag = false;
+  for (let i = 0; i < arr.length; i++) {
+    const tagObj = arr[i];
+    const tagName = propName2(tagObj);
+    if (tagName === void 0) continue;
+    let newJPath = "";
+    if (jPath.length === 0) newJPath = tagName;
+    else newJPath = `${jPath}.${tagName}`;
+    if (tagName === options.textNodeName) {
+      let tagText = tagObj[tagName];
+      if (!isStopNode(newJPath, options)) {
+        tagText = options.tagValueProcessor(tagName, tagText);
+        tagText = replaceEntitiesValue2(tagText, options);
       }
-      return arrToStr(jArray, options, "", indentation);
-    }
-    function arrToStr(arr, options, jPath, indentation) {
-      let xmlStr = "";
-      let isPreviousElementTag = false;
-      for (let i = 0; i < arr.length; i++) {
-        const tagObj = arr[i];
-        const tagName = propName(tagObj);
-        if (tagName === void 0) continue;
-        let newJPath = "";
-        if (jPath.length === 0) newJPath = tagName;
-        else newJPath = `${jPath}.${tagName}`;
-        if (tagName === options.textNodeName) {
-          let tagText = tagObj[tagName];
-          if (!isStopNode(newJPath, options)) {
-            tagText = options.tagValueProcessor(tagName, tagText);
-            tagText = replaceEntitiesValue(tagText, options);
-          }
-          if (isPreviousElementTag) {
-            xmlStr += indentation;
-          }
-          xmlStr += tagText;
-          isPreviousElementTag = false;
-          continue;
-        } else if (tagName === options.cdataPropName) {
-          if (isPreviousElementTag) {
-            xmlStr += indentation;
-          }
-          xmlStr += `<![CDATA[${tagObj[tagName][0][options.textNodeName]}]]>`;
-          isPreviousElementTag = false;
-          continue;
-        } else if (tagName === options.commentPropName) {
-          xmlStr += indentation + `<!--${tagObj[tagName][0][options.textNodeName]}-->`;
-          isPreviousElementTag = true;
-          continue;
-        } else if (tagName[0] === "?") {
-          const attStr2 = attr_to_str(tagObj[":@"], options);
-          const tempInd = tagName === "?xml" ? "" : indentation;
-          let piTextNodeName = tagObj[tagName][0][options.textNodeName];
-          piTextNodeName = piTextNodeName.length !== 0 ? " " + piTextNodeName : "";
-          xmlStr += tempInd + `<${tagName}${piTextNodeName}${attStr2}?>`;
-          isPreviousElementTag = true;
-          continue;
-        }
-        let newIdentation = indentation;
-        if (newIdentation !== "") {
-          newIdentation += options.indentBy;
-        }
-        const attStr = attr_to_str(tagObj[":@"], options);
-        const tagStart = indentation + `<${tagName}${attStr}`;
-        const tagValue = arrToStr(tagObj[tagName], options, newJPath, newIdentation);
-        if (options.unpairedTags.indexOf(tagName) !== -1) {
-          if (options.suppressUnpairedNode) xmlStr += tagStart + ">";
-          else xmlStr += tagStart + "/>";
-        } else if ((!tagValue || tagValue.length === 0) && options.suppressEmptyNode) {
-          xmlStr += tagStart + "/>";
-        } else if (tagValue && tagValue.endsWith(">")) {
-          xmlStr += tagStart + `>${tagValue}${indentation}</${tagName}>`;
-        } else {
-          xmlStr += tagStart + ">";
-          if (tagValue && indentation !== "" && (tagValue.includes("/>") || tagValue.includes("</"))) {
-            xmlStr += indentation + options.indentBy + tagValue + indentation;
-          } else {
-            xmlStr += tagValue;
-          }
-          xmlStr += `</${tagName}>`;
-        }
-        isPreviousElementTag = true;
+      if (isPreviousElementTag) {
+        xmlStr += indentation;
       }
-      return xmlStr;
+      xmlStr += tagText;
+      isPreviousElementTag = false;
+      continue;
+    } else if (tagName === options.cdataPropName) {
+      if (isPreviousElementTag) {
+        xmlStr += indentation;
+      }
+      xmlStr += `<![CDATA[${tagObj[tagName][0][options.textNodeName]}]]>`;
+      isPreviousElementTag = false;
+      continue;
+    } else if (tagName === options.commentPropName) {
+      xmlStr += indentation + `<!--${tagObj[tagName][0][options.textNodeName]}-->`;
+      isPreviousElementTag = true;
+      continue;
+    } else if (tagName[0] === "?") {
+      const attStr2 = attr_to_str(tagObj[":@"], options);
+      const tempInd = tagName === "?xml" ? "" : indentation;
+      let piTextNodeName = tagObj[tagName][0][options.textNodeName];
+      piTextNodeName = piTextNodeName.length !== 0 ? " " + piTextNodeName : "";
+      xmlStr += tempInd + `<${tagName}${piTextNodeName}${attStr2}?>`;
+      isPreviousElementTag = true;
+      continue;
     }
-    function propName(obj) {
-      const keys = Object.keys(obj);
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        if (!obj.hasOwnProperty(key)) continue;
-        if (key !== ":@") return key;
+    let newIdentation = indentation;
+    if (newIdentation !== "") {
+      newIdentation += options.indentBy;
+    }
+    const attStr = attr_to_str(tagObj[":@"], options);
+    const tagStart = indentation + `<${tagName}${attStr}`;
+    const tagValue = arrToStr(tagObj[tagName], options, newJPath, newIdentation);
+    if (options.unpairedTags.indexOf(tagName) !== -1) {
+      if (options.suppressUnpairedNode) xmlStr += tagStart + ">";
+      else xmlStr += tagStart + "/>";
+    } else if ((!tagValue || tagValue.length === 0) && options.suppressEmptyNode) {
+      xmlStr += tagStart + "/>";
+    } else if (tagValue && tagValue.endsWith(">")) {
+      xmlStr += tagStart + `>${tagValue}${indentation}</${tagName}>`;
+    } else {
+      xmlStr += tagStart + ">";
+      if (tagValue && indentation !== "" && (tagValue.includes("/>") || tagValue.includes("</"))) {
+        xmlStr += indentation + options.indentBy + tagValue + indentation;
+      } else {
+        xmlStr += tagValue;
+      }
+      xmlStr += `</${tagName}>`;
+    }
+    isPreviousElementTag = true;
+  }
+  return xmlStr;
+}
+function propName2(obj) {
+  const keys = Object.keys(obj);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (!obj.hasOwnProperty(key)) continue;
+    if (key !== ":@") return key;
+  }
+}
+function attr_to_str(attrMap, options) {
+  let attrStr = "";
+  if (attrMap && !options.ignoreAttributes) {
+    for (let attr in attrMap) {
+      if (!attrMap.hasOwnProperty(attr)) continue;
+      let attrVal = options.attributeValueProcessor(attr, attrMap[attr]);
+      attrVal = replaceEntitiesValue2(attrVal, options);
+      if (attrVal === true && options.suppressBooleanAttributes) {
+        attrStr += ` ${attr.substr(options.attributeNamePrefix.length)}`;
+      } else {
+        attrStr += ` ${attr.substr(options.attributeNamePrefix.length)}="${attrVal}"`;
       }
     }
-    function attr_to_str(attrMap, options) {
-      let attrStr = "";
-      if (attrMap && !options.ignoreAttributes) {
-        for (let attr in attrMap) {
-          if (!attrMap.hasOwnProperty(attr)) continue;
-          let attrVal = options.attributeValueProcessor(attr, attrMap[attr]);
-          attrVal = replaceEntitiesValue(attrVal, options);
-          if (attrVal === true && options.suppressBooleanAttributes) {
-            attrStr += ` ${attr.substr(options.attributeNamePrefix.length)}`;
-          } else {
-            attrStr += ` ${attr.substr(options.attributeNamePrefix.length)}="${attrVal}"`;
-          }
-        }
-      }
-      return attrStr;
+  }
+  return attrStr;
+}
+function isStopNode(jPath, options) {
+  jPath = jPath.substr(0, jPath.length - options.textNodeName.length - 1);
+  let tagName = jPath.substr(jPath.lastIndexOf(".") + 1);
+  for (let index in options.stopNodes) {
+    if (options.stopNodes[index] === jPath || options.stopNodes[index] === "*." + tagName) return true;
+  }
+  return false;
+}
+function replaceEntitiesValue2(textValue, options) {
+  if (textValue && textValue.length > 0 && options.processEntities) {
+    for (let i = 0; i < options.entities.length; i++) {
+      const entity = options.entities[i];
+      textValue = textValue.replace(entity.regex, entity.val);
     }
-    function isStopNode(jPath, options) {
-      jPath = jPath.substr(0, jPath.length - options.textNodeName.length - 1);
-      let tagName = jPath.substr(jPath.lastIndexOf(".") + 1);
-      for (let index in options.stopNodes) {
-        if (options.stopNodes[index] === jPath || options.stopNodes[index] === "*." + tagName) return true;
-      }
-      return false;
-    }
-    function replaceEntitiesValue(textValue, options) {
-      if (textValue && textValue.length > 0 && options.processEntities) {
-        for (let i = 0; i < options.entities.length; i++) {
-          const entity = options.entities[i];
-          textValue = textValue.replace(entity.regex, entity.val);
-        }
-      }
-      return textValue;
-    }
-    module.exports = toXml;
+  }
+  return textValue;
+}
+var EOL;
+var init_orderedJs2Xml = __esm({
+  "node_modules/fast-xml-parser/src/xmlbuilder/orderedJs2Xml.js"() {
+    EOL = "\n";
   }
 });
 
 // node_modules/fast-xml-parser/src/xmlbuilder/json2xml.js
-var require_json2xml = __commonJS({
-  "node_modules/fast-xml-parser/src/xmlbuilder/json2xml.js"(exports, module) {
+function Builder(options) {
+  this.options = Object.assign({}, defaultOptions3, options);
+  if (this.options.ignoreAttributes === true || this.options.attributesGroupName) {
+    this.isAttribute = function() {
+      return false;
+    };
+  } else {
+    this.ignoreAttributesFn = getIgnoreAttributesFn(this.options.ignoreAttributes);
+    this.attrPrefixLen = this.options.attributeNamePrefix.length;
+    this.isAttribute = isAttribute;
+  }
+  this.processTextOrObjNode = processTextOrObjNode;
+  if (this.options.format) {
+    this.indentate = indentate;
+    this.tagEndChar = ">\n";
+    this.newLine = "\n";
+  } else {
+    this.indentate = function() {
+      return "";
+    };
+    this.tagEndChar = ">";
+    this.newLine = "";
+  }
+}
+function processTextOrObjNode(object, key, level, ajPath) {
+  const result = this.j2x(object, level + 1, ajPath.concat(key));
+  if (object[this.options.textNodeName] !== void 0 && Object.keys(object).length === 1) {
+    return this.buildTextValNode(object[this.options.textNodeName], key, result.attrStr, level);
+  } else {
+    return this.buildObjectNode(result.val, key, result.attrStr, level);
+  }
+}
+function indentate(level) {
+  return this.options.indentBy.repeat(level);
+}
+function isAttribute(name) {
+  if (name.startsWith(this.options.attributeNamePrefix) && name !== this.options.textNodeName) {
+    return name.substr(this.attrPrefixLen);
+  } else {
+    return false;
+  }
+}
+var defaultOptions3;
+var init_json2xml = __esm({
+  "node_modules/fast-xml-parser/src/xmlbuilder/json2xml.js"() {
     "use strict";
-    var buildFromOrderedJs = require_orderedJs2Xml();
-    var getIgnoreAttributesFn = require_ignoreAttributes();
-    var defaultOptions = {
+    init_orderedJs2Xml();
+    init_ignoreAttributes();
+    defaultOptions3 = {
       attributeNamePrefix: "@_",
       attributesGroupName: false,
       textNodeName: "#text",
@@ -2236,33 +2574,9 @@ var require_json2xml = __commonJS({
       // transformAttributeName: false,
       oneListGroup: false
     };
-    function Builder(options) {
-      this.options = Object.assign({}, defaultOptions, options);
-      if (this.options.ignoreAttributes === true || this.options.attributesGroupName) {
-        this.isAttribute = function() {
-          return false;
-        };
-      } else {
-        this.ignoreAttributesFn = getIgnoreAttributesFn(this.options.ignoreAttributes);
-        this.attrPrefixLen = this.options.attributeNamePrefix.length;
-        this.isAttribute = isAttribute;
-      }
-      this.processTextOrObjNode = processTextOrObjNode;
-      if (this.options.format) {
-        this.indentate = indentate;
-        this.tagEndChar = ">\n";
-        this.newLine = "\n";
-      } else {
-        this.indentate = function() {
-          return "";
-        };
-        this.tagEndChar = ">";
-        this.newLine = "";
-      }
-    }
     Builder.prototype.build = function(jObj) {
       if (this.options.preserveOrder) {
-        return buildFromOrderedJs(jObj, this.options);
+        return toXml(jObj, this.options);
       } else {
         if (Array.isArray(jObj) && this.options.arrayNodeName && this.options.arrayNodeName.length > 1) {
           jObj = {
@@ -2361,14 +2675,6 @@ var require_json2xml = __commonJS({
         return " " + attrName;
       } else return " " + attrName + '="' + val + '"';
     };
-    function processTextOrObjNode(object, key, level, ajPath) {
-      const result = this.j2x(object, level + 1, ajPath.concat(key));
-      if (object[this.options.textNodeName] !== void 0 && Object.keys(object).length === 1) {
-        return this.buildTextValNode(object[this.options.textNodeName], key, result.attrStr, level);
-      } else {
-        return this.buildObjectNode(result.val, key, result.attrStr, level);
-      }
-    }
     Builder.prototype.buildObjectNode = function(val, key, attrStr, level) {
       if (val === "") {
         if (key[0] === "?") return this.indentate(level) + "<" + key + attrStr + "?" + this.tagEndChar;
@@ -2428,32 +2734,15 @@ var require_json2xml = __commonJS({
       }
       return textValue;
     };
-    function indentate(level) {
-      return this.options.indentBy.repeat(level);
-    }
-    function isAttribute(name) {
-      if (name.startsWith(this.options.attributeNamePrefix) && name !== this.options.textNodeName) {
-        return name.substr(this.attrPrefixLen);
-      } else {
-        return false;
-      }
-    }
-    module.exports = Builder;
   }
 });
 
 // node_modules/fast-xml-parser/src/fxp.js
-var require_fxp = __commonJS({
-  "node_modules/fast-xml-parser/src/fxp.js"(exports, module) {
+var init_fxp = __esm({
+  "node_modules/fast-xml-parser/src/fxp.js"() {
     "use strict";
-    var validator = require_validator();
-    var XMLParser2 = require_XMLParser();
-    var XMLBuilder2 = require_json2xml();
-    module.exports = {
-      XMLParser: XMLParser2,
-      XMLValidator: validator,
-      XMLBuilder: XMLBuilder2
-    };
+    init_XMLParser();
+    init_json2xml();
   }
 });
 
@@ -2554,19 +2843,19 @@ function validateZipPath2(filePath) {
     throw new Error(`Security: Null byte detected in path: ${filePath}`);
   }
 }
-var import_fast_xml_parser, xmlParser, xmlBuilder, VsixWriter;
+var xmlParser, xmlBuilder, VsixWriter;
 var init_vsix_writer = __esm({
   "packages/core/dist/vsix-writer.js"() {
     "use strict";
-    import_fast_xml_parser = __toESM(require_fxp(), 1);
-    xmlParser = new import_fast_xml_parser.XMLParser({
+    init_fxp();
+    xmlParser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
       trimValues: false,
       parseTagValue: false,
       parseAttributeValue: false
     });
-    xmlBuilder = new import_fast_xml_parser.XMLBuilder({
+    xmlBuilder = new Builder({
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
       format: true,
@@ -3520,7 +3809,7 @@ var init_manifest_editor = __esm({
 
 // node_modules/concat-map/index.js
 var require_concat_map = __commonJS({
-  "node_modules/concat-map/index.js"(exports, module) {
+  "node_modules/concat-map/index.js"(exports2, module) {
     module.exports = function(xs, fn) {
       var res = [];
       for (var i = 0; i < xs.length; i++) {
@@ -3538,7 +3827,7 @@ var require_concat_map = __commonJS({
 
 // node_modules/balanced-match/index.js
 var require_balanced_match = __commonJS({
-  "node_modules/balanced-match/index.js"(exports, module) {
+  "node_modules/balanced-match/index.js"(exports2, module) {
     "use strict";
     module.exports = balanced;
     function balanced(a, b, str) {
@@ -3596,7 +3885,7 @@ var require_balanced_match = __commonJS({
 
 // node_modules/brace-expansion/index.js
 var require_brace_expansion = __commonJS({
-  "node_modules/brace-expansion/index.js"(exports, module) {
+  "node_modules/brace-expansion/index.js"(exports2, module) {
     var concatMap = require_concat_map();
     var balanced = require_balanced_match();
     module.exports = expandTop;
@@ -3740,7 +4029,7 @@ var require_brace_expansion = __commonJS({
 
 // node_modules/minimatch/minimatch.js
 var require_minimatch = __commonJS({
-  "node_modules/minimatch/minimatch.js"(exports, module) {
+  "node_modules/minimatch/minimatch.js"(exports2, module) {
     module.exports = minimatch2;
     minimatch2.Minimatch = Minimatch2;
     var path10 = (function() {
