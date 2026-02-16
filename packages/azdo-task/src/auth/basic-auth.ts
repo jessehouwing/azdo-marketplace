@@ -4,7 +4,10 @@ import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 /**
  * Get basic authentication from service connection
  */
-export function getBasicAuth(connectionName: string, platform: IPlatformAdapter): AuthCredentials {
+export async function getBasicAuth(
+  connectionName: string,
+  platform: IPlatformAdapter
+): Promise<AuthCredentials> {
   const endpoint = tl.getEndpointAuthorization(connectionName, false);
   if (!endpoint) {
     throw new Error(`Service connection '${connectionName}' not found`);

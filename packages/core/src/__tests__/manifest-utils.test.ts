@@ -101,7 +101,7 @@ describe('manifest-utils', () => {
             properties: { name: 'PublishTask' },
           },
         ],
-      };
+      } as any;
 
       const paths = resolveTaskManifestPaths(manifest, '/root/vss-extension.json', platform);
 
@@ -112,7 +112,7 @@ describe('manifest-utils', () => {
     });
 
     it('should return empty array if no contributions', () => {
-      const manifest = {};
+      const manifest = {} as any;
       const paths = resolveTaskManifestPaths(manifest, '/root/vss-extension.json', platform);
       expect(paths).toEqual([]);
     });
@@ -129,7 +129,7 @@ describe('manifest-utils', () => {
             properties: { name: 'MyHub' },
           },
         ],
-      };
+      } as any;
 
       const paths = resolveTaskManifestPaths(manifest, '/root/vss-extension.json', platform);
 
@@ -144,7 +144,7 @@ describe('manifest-utils', () => {
             properties: {},
           },
         ],
-      };
+      } as any;
 
       const paths = resolveTaskManifestPaths(manifest, '/root/vss-extension.json', platform);
       expect(paths).toEqual([]);
