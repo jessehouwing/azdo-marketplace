@@ -2,6 +2,7 @@ import { WebApi, getPersonalAccessTokenHandler } from 'azure-devops-node-api';
 import type { ITaskAgentApi } from 'azure-devops-node-api/TaskAgentApi.js';
 import type { TaskDefinition } from 'azure-devops-node-api/interfaces/TaskAgentInterfaces.js';
 import type { AuthCredentials } from '../auth.js';
+import type { ExtensionManifest } from '../manifest-reader.js';
 import { readManifest, resolveTaskManifestPaths } from '../manifest-utils.js';
 import { normalizeAccountsToServiceUrls } from '../organization-utils.js';
 import type { IPlatformAdapter } from '../platform.js';
@@ -90,7 +91,7 @@ async function resolveExpectedTasks(
   if (options.manifestPath) {
     try {
       platform.debug(`Reading task versions from manifest: ${options.manifestPath}`);
-      const manifest = await readManifest(options.manifestPath, platform);
+      const manifest = (await readManifest(options.manifestPath, platform)) as ExtensionManifest;
       const taskPaths = resolveTaskManifestPaths(manifest, options.manifestPath, platform);
 
       const tasks: ExpectedTask[] = [];

@@ -3048,8 +3048,9 @@ var init_vsix_writer = __esm({
       /**
        * Close and cleanup resources
        */
-      async close() {
+      close() {
         this.zipFile = null;
+        return Promise.resolve();
       }
     };
   }
@@ -5380,7 +5381,8 @@ async function executeTfxPublish(tfx, args, platform, options, publishedVsixPath
         extensionVersion = metadata.version;
         publisherId = metadata.publisher;
       } catch (error2) {
-        platform.debug(`Could not read VSIX metadata from ${metadataVsixPath}: ${error2 instanceof Error ? error2.message : String(error2)}`);
+        const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+        platform.debug(`Could not read VSIX metadata from ${metadataVsixPath}: ${errorMessage}`);
       }
     }
   } else {
@@ -5705,13 +5707,14 @@ async function installExtension(options, auth, tfx, platform) {
         }
       }
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       accountResults.push({
         account,
         success: false,
         alreadyInstalled: false,
-        error: String(err)
+        error: errorMessage
       });
-      platform.error(`\u2717 Failed to install to ${account}: ${err}`);
+      platform.error(`\u2717 Failed to install to ${account}: ${errorMessage}`);
       overallExitCode = 1;
     }
   }
@@ -5910,7 +5913,8 @@ async function waitForValidation(options, auth, tfx, platform) {
         platform.warning("No status in validation response");
       }
     } catch (err) {
-      platform.error(`Validation attempt ${attempts} failed: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      platform.error(`Validation attempt ${attempts} failed: ${errorMessage}`);
       if (attempts >= maxRetries) {
         throw err;
       }
@@ -5976,7 +5980,8 @@ async function resolveExpectedTasks(options, platform) {
             platform.debug(`Found task ${taskManifest.name} v${version}`);
           }
         } catch (error2) {
-          platform.warning(`Failed to read task manifest ${taskPath}: ${error2 instanceof Error ? error2.message : String(error2)}`);
+          const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+          platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
         }
       }
       if (tasks.length > 0) {
@@ -5984,7 +5989,8 @@ async function resolveExpectedTasks(options, platform) {
         return tasks;
       }
     } catch (error2) {
-      platform.warning(`Failed to read manifest ${options.manifestPath}: ${error2 instanceof Error ? error2.message : String(error2)}`);
+      const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+      platform.warning(`Failed to read manifest ${options.manifestPath}: ${errorMessage}`);
     }
   }
   if (options.vsixPath) {
@@ -6003,7 +6009,8 @@ async function resolveExpectedTasks(options, platform) {
         await reader.close();
       }
     } catch (error2) {
-      platform.warning(`Failed to read VSIX ${options.vsixPath}: ${error2 instanceof Error ? error2.message : String(error2)}`);
+      const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+      platform.warning(`Failed to read VSIX ${options.vsixPath}: ${errorMessage}`);
     }
   }
   return [];
@@ -6295,7 +6302,7 @@ async function getAuth(authType, platform, options) {
     case "oidc":
       return getOidcAuth(finalServiceUrl, platform);
     default:
-      throw new Error(`Unsupported auth type: ${authType}`);
+      throw new Error(`Unsupported auth type: ${String(authType)}`);
   }
 }
 
@@ -7418,9 +7425,8 @@ async function runWaitForInstallation(platform, auth) {
     try {
       expectedTasks = JSON.parse(expectedTasksInput);
     } catch (error2) {
-      const wrappedError = new Error(
-        `Failed to parse expected-tasks: ${error2 instanceof Error ? error2.message : String(error2)}`
-      );
+      const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+      const wrappedError = new Error(`Failed to parse expected-tasks: ${errorMessage}`);
       wrappedError.cause = error2;
       throw wrappedError;
     }
