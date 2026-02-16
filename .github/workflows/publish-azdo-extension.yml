@@ -23,6 +23,8 @@ jobs:
   publish_oidc:
     name: Publish private (OIDC)
     runs-on: ubuntu-latest
+    environment: publisher-jessehouwing
+
     steps:
       - uses: actions/checkout@v6
 
