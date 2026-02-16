@@ -161,14 +161,15 @@ export async function installExtension(
           overallExitCode = result.exitCode;
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       accountResults.push({
         account,
         success: false,
         alreadyInstalled: false,
-        error: String(err),
+        error: errorMessage,
       });
-      platform.error(`✗ Failed to install to ${account}: ${err}`);
+      platform.error(`✗ Failed to install to ${account}: ${errorMessage}`);
       overallExitCode = 1;
     }
   }

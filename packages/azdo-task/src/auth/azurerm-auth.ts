@@ -35,9 +35,10 @@ export async function getAzureRmAuth(
       serviceUrl,
       token: token,
     };
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     const wrappedError = new Error(
-      `Failed to get Azure RM authentication: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to get Azure RM authentication: ${errorMessage}`
     ) as Error & { cause?: unknown };
     wrappedError.cause = error;
     throw wrappedError;

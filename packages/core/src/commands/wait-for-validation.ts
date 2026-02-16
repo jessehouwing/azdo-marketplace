@@ -165,8 +165,9 @@ export async function waitForValidation(
       } else {
         platform.warning('No status in validation response');
       }
-    } catch (err) {
-      platform.error(`Validation attempt ${attempts} failed: ${err}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      platform.error(`Validation attempt ${attempts} failed: ${errorMessage}`);
       if (attempts >= maxRetries) {
         throw err;
       }

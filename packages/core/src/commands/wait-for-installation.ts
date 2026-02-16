@@ -105,10 +105,9 @@ async function resolveExpectedTasks(
             });
             platform.debug(`Found task ${taskManifest.name} v${version}`);
           }
-        } catch (error) {
-          platform.warning(
-            `Failed to read task manifest ${taskPath}: ${error instanceof Error ? error.message : String(error)}`
-          );
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
         }
       }
 
@@ -116,10 +115,9 @@ async function resolveExpectedTasks(
         platform.debug(`Resolved ${tasks.length} tasks from manifest`);
         return tasks;
       }
-    } catch (error) {
-      platform.warning(
-        `Failed to read manifest ${options.manifestPath}: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      platform.warning(`Failed to read manifest ${options.manifestPath}: ${errorMessage}`);
     }
   }
 
@@ -141,10 +139,9 @@ async function resolveExpectedTasks(
       } finally {
         await reader.close();
       }
-    } catch (error) {
-      platform.warning(
-        `Failed to read VSIX ${options.vsixPath}: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      platform.warning(`Failed to read VSIX ${options.vsixPath}: ${errorMessage}`);
     }
   }
 
@@ -317,7 +314,7 @@ export async function waitForInstallation(
             platform.debug(`Waiting ${pollingIntervalMs / 1000}s before next poll...`);
             await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
           }
-        } catch (error) {
+        } catch (error: unknown) {
           lastError = error instanceof Error ? error : new Error(String(error));
           platform.debug(`Error polling for tasks: ${lastError.message}. Retrying...`);
 
@@ -359,7 +356,7 @@ export async function waitForInstallation(
           error: errorMsg,
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       platform.error(`Failed to verify installation in ${accountUrl}: ${errorMsg}`);
 

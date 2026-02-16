@@ -458,8 +458,9 @@ export class VsixWriter {
   /**
    * Close and cleanup resources
    */
-  async close(): Promise<void> {
+  close(): Promise<void> {
     // ZIP file is automatically closed after end()
     this.zipFile = null;
+    return Promise.resolve();
   }
 }

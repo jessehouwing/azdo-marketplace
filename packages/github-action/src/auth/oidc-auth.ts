@@ -93,7 +93,7 @@ export async function getOidcAuth(
       serviceUrl: finalServiceUrl,
       token: token,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const wrappedError = new Error(
       `Failed to get Azure AD token via Azure CLI: ${message}\n\n` +
