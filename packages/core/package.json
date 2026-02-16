@@ -1,0 +1,30 @@
+{
+  "name": "@extension-tasks/core",
+  "version": "6.0.0-alpha.1",
+  "description": "Platform-agnostic core library for Azure DevOps extension tasks",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "azure-devops-node-api": "^15.1.2",
+    "fast-xml-parser": "^4.5.1",
+    "tfx-cli": "^0.23.1",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24"
+  }
+}

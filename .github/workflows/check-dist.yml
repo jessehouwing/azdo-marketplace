@@ -1,0 +1,51 @@
+name: Check Dist
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check-dist:
+    name: Check bundled dist/ is up-to-date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build and bundle
+        run: |
+          npm run build
+          npm run bundle
+
+      - name: Verify runtime dependency manifests
+        run: |
+          test -f packages/azdo-task/dist/runtime-dependencies.json
+          test -f packages/github-action/dist/runtime-dependencies.json
+
+      - name: Compare the expected and actual dist/ directories
+        run: |
+          if [ "$(git diff --ignore-space-at-eol packages/*/dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff
+            exit 1
+          fi
+        id: diff
+
+      - name: Upload diff
+        uses: actions/upload-artifact@v6
+        if: ${{ failure() && steps.diff.conclusion == 'failure' }}
+        with:
+          name: dist-diff
+          path: |
+            packages/azdo-task/dist/
+            packages/github-action/dist/

@@ -1,6 +1,32 @@
 {
-    "cSpell.words": [
-        "uuidv"
-    ],
-    "eslint.useFlatConfig": true
+  "cSpell.words": ["uuidv"],
+  "eslint.useFlatConfig": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "jest.autoRun": "off",
+  "search.exclude": {
+    "**/dist": true,
+    "**/*.vsix": true,
+    "**/coverage": true
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^node --experimental-vm-modules \\./node_modules/jest/bin/jest\\.js packages/core/src/__tests__/filesystem-manifest-writer\\.test\\.ts --no-coverage$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

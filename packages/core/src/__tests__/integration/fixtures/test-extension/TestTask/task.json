@@ -1,0 +1,21 @@
+{
+  "id": "12345678-1234-1234-1234-123456789012",
+  "name": "TestTask",
+  "friendlyName": "Test Task",
+  "description": "A test task for integration testing",
+  "helpMarkDown": "This is a test task",
+  "category": "Utility",
+  "author": "Test Publisher",
+  "version": {
+    "Major": 1,
+    "Minor": 0,
+    "Patch": 0
+  },
+  "instanceNameFormat": "Test Task",
+  "inputs": [],
+  "execution": {
+    "Node20_1": {
+      "target": "index.js"
+    }
+  }
+}

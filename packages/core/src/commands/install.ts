@@ -1,0 +1,188 @@
+/**
+ * Install command - Installs an extension to organization(s)
+ */
+
+import { ArgBuilder } from '../arg-builder.js';
+import type { AuthCredentials } from '../auth.js';
+import { normalizeAccountsToServiceUrls } from '../organization-utils.js';
+import type { IPlatformAdapter } from '../platform.js';
+import type { TfxManager } from '../tfx-manager.js';
+
+/**
+ * Options for install command
+ */
+export interface InstallOptions {
+  /** Publisher ID */
+  publisherId: string;
+  /** Extension ID */
+  extensionId: string;
+  /** Target organization names or URLs to install to */
+  accounts: string[];
+  /**
+   * Extension version input (not supported for install).
+   * Kept for backward compatibility so we can emit a clear error.
+   */
+  extensionVersion?: string;
+}
+
+/**
+ * Result from install command for a single account
+ */
+export interface InstallAccountResult {
+  /** Account URL */
+  account: string;
+  /** Whether installation succeeded */
+  success: boolean;
+  /** Whether extension was already installed */
+  alreadyInstalled: boolean;
+  /** Error message if failed */
+  error?: string;
+}
+
+/**
+ * Result from install command
+ */
+export interface InstallResult {
+  /** Extension ID that was installed */
+  extensionId: string;
+  /** Publisher ID */
+  publisherId: string;
+  /** Results per account */
+  accountResults: InstallAccountResult[];
+  /** Overall success (all accounts succeeded) */
+  allSuccess: boolean;
+  /** Exit code from tfx */
+  exitCode: number;
+}
+
+/**
+ * Install an extension to one or more organizations
+ * @param options Install options
+ * @param auth Authentication credentials
+ * @param tfx TfxManager instance
+ * @param platform Platform adapter
+ * @returns Install result
+ */
+export async function installExtension(
+  options: InstallOptions,
+  auth: AuthCredentials,
+  tfx: TfxManager,
+  platform: IPlatformAdapter
+): Promise<InstallResult> {
+  if (!options.accounts || options.accounts.length === 0) {
+    throw new Error('accounts must contain at least one organization URL');
+  }
+
+  if (options.extensionVersion) {
+    throw new Error(
+      'install does not support extension-version. Remove this input and install from marketplace latest, or provide a VSIX path when you need a specific package version.'
+    );
+  }
+
+  const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
+
+  platform.info(
+    `Installing extension ${options.publisherId}.${options.extensionId} to ${accountUrls.length} organization(s)...`
+  );
+
+  const extensionId = options.extensionId;
+
+  const accountResults: InstallAccountResult[] = [];
+  let overallExitCode = 0;
+
+  // Install to each account
+  for (const account of accountUrls) {
+    platform.info(`Installing to ${account}...`);
+
+    // Build tfx arguments for this account
+    const args = new ArgBuilder()
+      .arg(['extension', 'install'])
+      .flag('--json')
+      .flag('--no-color')
+      .option('--publisher', options.publisherId)
+      .option('--extension-id', extensionId)
+      .option('--service-url', account);
+
+    // Authentication (using marketplace auth, not account-specific)
+    args.option('--auth-type', auth.authType);
+
+    if (auth.authType === 'pat') {
+      args.option('--token', auth.token);
+      platform.setSecret(auth.token);
+    } else if (auth.authType === 'basic') {
+      args.option('--username', auth.username);
+      args.option('--password', auth.password);
+      platform.setSecret(auth.password);
+    }
+
+    try {
+      // Execute tfx
+      const result = await tfx.execute(args.build(), { captureJson: true });
+
+      if (result.exitCode === 0 && result.json !== undefined) {
+        accountResults.push({
+          account,
+          success: true,
+          alreadyInstalled: false,
+        });
+        platform.info(`✓ Successfully installed to ${account}`);
+      } else if (result.exitCode === 0 && result.json === undefined) {
+        const message =
+          'tfx returned exit code 0 but no JSON output for install; command likely showed help or invalid arguments';
+
+        accountResults.push({
+          account,
+          success: false,
+          alreadyInstalled: false,
+          error: message,
+        });
+        platform.error(`✗ Failed to install to ${account}: ${message}`);
+        overallExitCode = 1;
+      } else {
+        // Check if error is "already installed" (TF1590010)
+        const stderr = result.stderr || '';
+        const alreadyInstalled = stderr.includes('TF1590010');
+
+        if (alreadyInstalled) {
+          accountResults.push({
+            account,
+            success: true,
+            alreadyInstalled: true,
+          });
+          platform.warning(`Extension already installed in ${account} - continuing`);
+        } else {
+          accountResults.push({
+            account,
+            success: false,
+            alreadyInstalled: false,
+            error: `Exit code ${result.exitCode}`,
+          });
+          platform.error(`✗ Failed to install to ${account}: exit code ${result.exitCode}`);
+          overallExitCode = result.exitCode;
+        }
+      }
+    } catch (err) {
+      accountResults.push({
+        account,
+        success: false,
+        alreadyInstalled: false,
+        error: String(err),
+      });
+      platform.error(`✗ Failed to install to ${account}: ${err}`);
+      overallExitCode = 1;
+    }
+  }
+
+  const allSuccess = accountResults.every((r) => r.success);
+  const successCount = accountResults.filter((r) => r.success).length;
+
+  platform.info(`Installation complete: ${successCount}/${accountUrls.length} succeeded`);
+
+  return {
+    extensionId,
+    publisherId: options.publisherId,
+    accountResults,
+    allSuccess,
+    exitCode: overallExitCode,
+  };
+}

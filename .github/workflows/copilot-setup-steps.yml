@@ -1,0 +1,104 @@
+name: Copilot setup steps
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - refactor/v6
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  id-token: write
+  packages: read
+
+env:
+  NODE_VERSION: '24'
+  AZDO_ORG_URL: 'https://dev.azure.com/jessehouwing-dev'
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - name: Ensure Azure CLI is installed
+        run: |
+          set -euo pipefail
+          if command -v az >/dev/null 2>&1; then
+            echo "Azure CLI already present"
+          else
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          fi
+          az version
+          az extension add --name azure-devops
+
+      - name: Ensure tfx-cli is installed
+        run: |
+          set -euo pipefail
+          npm install --global tfx-cli
+          tfx --version
+
+      - name: Ensure jest is installed globally
+        run: |
+          set -euo pipefail
+          npm install --global jest
+          jest --version
+
+      - name: Ensure pre-commit is installed
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user pre-commit
+          python3 -m pre_commit --version
+
+      - name: Ensure actionlint is installed
+        run: |
+          set -euo pipefail
+          go install github.com/rhysd/actionlint/cmd/actionlint@latest
+          "$(go env GOPATH)/bin/actionlint" -version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install pre-commit hooks
+        run: python3 -m pre_commit install --install-hooks
+
+      - name: Build v6 packages
+        run: npm run build
+
+      - name: Setup summary
+        run: |
+          actionlint_version="$("$(go env GOPATH)/bin/actionlint" -version | head -n 1)"
+          {
+            echo "## Copilot setup summary"
+            echo "- Node: ${NODE_VERSION}"
+            echo "- Azure CLI: $(az version --query '"azure-cli"' -o tsv)"
+            echo "- tfx-cli: $(tfx --version)"
+            echo "- jest: $(jest --version)"
+            echo "- pre-commit: $(python3 -m pre_commit --version)"
+            echo "- actionlint: ${actionlint_version}"
+            echo "- Dependencies: ✅ Installed"
+            echo "- Git hooks: ✅ Installed"
+            echo "- Build: ✅ Successful"
+          } >> "$GITHUB_STEP_SUMMARY"

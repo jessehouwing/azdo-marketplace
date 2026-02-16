@@ -5,20 +5,19 @@
 
 version: 2
 updates:
-- package-ecosystem: "github-actions"
-  directory: "/"
-  schedule:
-    interval: "weekly"
-- package-ecosystem: "npm"
-  directory: "/"
-  schedule:
-    interval: "weekly"
-  groups:
-    ESLint:
-      patterns:
-      - esbuild
-      - eslint
-      - "@typescript-eslint/*"
-      - "@eslint/*"
-      - typescript-eslint
-
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    groups:
+      ESLint:
+        patterns:
+          - esbuild
+          - eslint
+          - '@typescript-eslint/*'
+          - '@eslint/*'
+          - typescript-eslint
