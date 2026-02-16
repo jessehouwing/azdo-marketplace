@@ -131,10 +131,9 @@ async function executeTfxPublish(
         extensionId = metadata.extensionId;
         extensionVersion = metadata.version;
         publisherId = metadata.publisher;
-      } catch (error) {
-        platform.debug(
-          `Could not read VSIX metadata from ${metadataVsixPath}: ${error instanceof Error ? error.message : String(error)}`
-        );
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        platform.debug(`Could not read VSIX metadata from ${metadataVsixPath}: ${errorMessage}`);
       }
     }
   } else {
@@ -306,7 +305,7 @@ export async function publishExtension(
         };
 
         platform.info('Task manifests updated successfully');
-      } catch (err) {
+      } catch (err: unknown) {
         platform.error(`Failed to update task manifests: ${(err as Error).message}`);
         throw err;
       }

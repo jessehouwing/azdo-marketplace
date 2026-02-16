@@ -27,7 +27,7 @@ export async function getAuth(
       return getBasicAuth(connectionName, platform);
 
     default:
-      throw new Error(`Unsupported connection type: ${connectionType}`);
+      throw new Error(`Unsupported connection type: ${String(connectionType)}`);
   }
 }
 

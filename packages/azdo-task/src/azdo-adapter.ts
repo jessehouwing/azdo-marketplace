@@ -3,6 +3,7 @@ import * as tl from 'azure-pipelines-task-lib/task.js';
 import * as tr from 'azure-pipelines-task-lib/toolrunner.js';
 import * as ttl from 'azure-pipelines-tool-lib/tool.js';
 import { promises as fs } from 'fs';
+import { tmpdir } from 'os';
 
 /**
  * Azure Pipelines platform adapter
@@ -72,11 +73,11 @@ export class AzdoAdapter implements IPlatformAdapter {
 
   // ===== Execution =====
 
-  async which(tool: string, check?: boolean): Promise<string> {
-    return tl.which(tool, check);
+  which(tool: string, check?: boolean): Promise<string> {
+    return Promise.resolve(tl.which(tool, check));
   }
 
-  async exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
+  exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
     const toolRunner = tl.tool(tool);
     toolRunner.arg(args);
 
@@ -100,8 +101,8 @@ export class AzdoAdapter implements IPlatformAdapter {
 
   // ===== Filesystem =====
 
-  async findMatch(root: string, patterns: string[]): Promise<string[]> {
-    return tl.findMatch(root, patterns);
+  findMatch(root: string, patterns: string[]): Promise<string[]> {
+    return Promise.resolve(tl.findMatch(root, patterns));
   }
 
   async fileExists(filePath: string): Promise<boolean> {
@@ -137,7 +138,7 @@ export class AzdoAdapter implements IPlatformAdapter {
 
   getTempDir(): string {
     const agentTemp = tl.getVariable('Agent.TempDirectory');
-    return agentTemp || require('os').tmpdir();
+    return agentTemp || tmpdir();
   }
 
   // ===== Tool Management =====

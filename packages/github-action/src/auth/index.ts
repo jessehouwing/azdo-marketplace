@@ -39,7 +39,7 @@ export async function getAuth(
       return getOidcAuth(finalServiceUrl, platform);
 
     default:
-      throw new Error(`Unsupported auth type: ${authType}`);
+      throw new Error(`Unsupported auth type: ${String(authType)}`);
   }
 }
 

@@ -2,6 +2,7 @@ import { WebApi, getPersonalAccessTokenHandler } from 'azure-devops-node-api';
 import type { ITaskAgentApi } from 'azure-devops-node-api/TaskAgentApi.js';
 import type { TaskDefinition } from 'azure-devops-node-api/interfaces/TaskAgentInterfaces.js';
 import type { AuthCredentials } from '../auth.js';
+import type { ExtensionManifest } from '../manifest-reader.js';
 import { readManifest, resolveTaskManifestPaths } from '../manifest-utils.js';
 import { normalizeAccountsToServiceUrls } from '../organization-utils.js';
 import type { IPlatformAdapter } from '../platform.js';
@@ -90,7 +91,7 @@ async function resolveExpectedTasks(
   if (options.manifestPath) {
     try {
       platform.debug(`Reading task versions from manifest: ${options.manifestPath}`);
-      const manifest = await readManifest(options.manifestPath, platform);
+      const manifest = (await readManifest(options.manifestPath, platform)) as ExtensionManifest;
       const taskPaths = resolveTaskManifestPaths(manifest, options.manifestPath, platform);
 
       const tasks: ExpectedTask[] = [];
@@ -105,10 +106,9 @@ async function resolveExpectedTasks(
             });
             platform.debug(`Found task ${taskManifest.name} v${version}`);
           }
-        } catch (error) {
-          platform.warning(
-            `Failed to read task manifest ${taskPath}: ${error instanceof Error ? error.message : String(error)}`
-          );
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
         }
       }
 
@@ -116,10 +116,9 @@ async function resolveExpectedTasks(
         platform.debug(`Resolved ${tasks.length} tasks from manifest`);
         return tasks;
       }
-    } catch (error) {
-      platform.warning(
-        `Failed to read manifest ${options.manifestPath}: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      platform.warning(`Failed to read manifest ${options.manifestPath}: ${errorMessage}`);
     }
   }
 
@@ -141,10 +140,9 @@ async function resolveExpectedTasks(
       } finally {
         await reader.close();
       }
-    } catch (error) {
-      platform.warning(
-        `Failed to read VSIX ${options.vsixPath}: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      platform.warning(`Failed to read VSIX ${options.vsixPath}: ${errorMessage}`);
     }
   }
 
@@ -317,7 +315,7 @@ export async function waitForInstallation(
             platform.debug(`Waiting ${pollingIntervalMs / 1000}s before next poll...`);
             await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
           }
-        } catch (error) {
+        } catch (error: unknown) {
           lastError = error instanceof Error ? error : new Error(String(error));
           platform.debug(`Error polling for tasks: ${lastError.message}. Retrying...`);
 
@@ -359,7 +357,7 @@ export async function waitForInstallation(
           error: errorMsg,
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       platform.error(`Failed to verify installation in ${accountUrl}: ${errorMsg}`);
 

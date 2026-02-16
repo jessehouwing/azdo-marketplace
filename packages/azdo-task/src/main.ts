@@ -19,6 +19,7 @@ import {
   waitForInstallation,
   waitForValidation,
   normalizeAccountToServiceUrl,
+  AuthCredentials,
 } from '@extension-tasks/core';
 import * as tl from 'azure-pipelines-task-lib/task.js';
 import { ConnectionType, getAuth } from './auth/index.js';
@@ -157,7 +158,7 @@ async function run(): Promise<void> {
 
     platform.info('✅ Operation completed successfully');
     platform.setResult(TaskResult.Succeeded, `${operation} completed successfully`);
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     tl.error(message);
     tl.setResult(tl.TaskResult.Failed, message);
@@ -174,13 +175,22 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
     extensionId: platform.getInput('extensionId'),
     extensionVersion: platform.getInput('extensionVersion'),
     extensionName: platform.getInput('extensionName'),
-    extensionVisibility: platform.getInput('extensionVisibility') as any,
+    extensionVisibility: platform.getInput('extensionVisibility') as
+      | 'private'
+      | 'public'
+      | 'private_preview'
+      | 'public_preview'
+      | undefined,
     extensionPricing:
       extensionPricingInput && extensionPricingInput !== 'default'
         ? (extensionPricingInput as 'free' | 'paid' | 'trial')
         : undefined,
     updateTasksVersion: platform.getBoolInput('updateTasksVersion'),
-    updateTasksVersionType: platform.getInput('updateTasksVersionType') as any,
+    updateTasksVersionType: platform.getInput('updateTasksVersionType') as
+      | 'major'
+      | 'minor'
+      | 'patch'
+      | undefined,
     updateTasksId: platform.getBoolInput('updateTasksId'),
     outputPath: platform.getInput('outputPath'),
     bypassValidation: platform.getBoolInput('bypassValidation'),
@@ -194,7 +204,11 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
   }
 }
 
-async function runPublish(platform: AzdoAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runPublish(
+  platform: AzdoAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   const publishSource = platform.getInput('publishSource', true) as 'manifest' | 'vsix';
   const extensionPricingInput = platform.getInput('extensionPricing');
 
@@ -211,7 +225,12 @@ async function runPublish(platform: AzdoAdapter, tfxManager: TfxManager, auth: a
       extensionId: platform.getInput('extensionId'),
       extensionVersion: platform.getInput('extensionVersion'),
       extensionName: platform.getInput('extensionName'),
-      extensionVisibility: platform.getInput('extensionVisibility') as any,
+      extensionVisibility: platform.getInput('extensionVisibility') as
+        | 'private'
+        | 'public'
+        | 'private_preview'
+        | 'public_preview'
+        | undefined,
       extensionPricing:
         extensionPricingInput && extensionPricingInput !== 'default'
           ? (extensionPricingInput as 'free' | 'paid' | 'trial')
@@ -220,7 +239,11 @@ async function runPublish(platform: AzdoAdapter, tfxManager: TfxManager, auth: a
       noWaitValidation: platform.getBoolInput('noWaitValidation'),
       bypassValidation: platform.getBoolInput('bypassValidation'),
       updateTasksVersion: platform.getBoolInput('updateTasksVersion'),
-      updateTasksVersionType: platform.getInput('updateTasksVersionType') as any,
+      updateTasksVersionType: platform.getInput('updateTasksVersionType') as
+        | 'major'
+        | 'minor'
+        | 'patch'
+        | undefined,
       updateTasksId: platform.getBoolInput('updateTasksId'),
     },
     auth,
@@ -236,7 +259,7 @@ async function runPublish(platform: AzdoAdapter, tfxManager: TfxManager, auth: a
 async function runUnpublish(
   platform: AzdoAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   await unpublishExtension(
     {
@@ -249,7 +272,11 @@ async function runUnpublish(
   );
 }
 
-async function runShare(platform: AzdoAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runShare(
+  platform: AzdoAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   await shareExtension(
     {
       publisherId: platform.getInput('publisherId', true),
@@ -264,7 +291,11 @@ async function runShare(platform: AzdoAdapter, tfxManager: TfxManager, auth: any
   platform.setOutput('shared', 'true');
 }
 
-async function runUnshare(platform: AzdoAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runUnshare(
+  platform: AzdoAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   await unshareExtension(
     {
       publisherId: platform.getInput('publisherId', true),
@@ -279,7 +310,11 @@ async function runUnshare(platform: AzdoAdapter, tfxManager: TfxManager, auth: a
   platform.setOutput('unshared', 'true');
 }
 
-async function runInstall(platform: AzdoAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runInstall(
+  platform: AzdoAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   const result = await installExtension(
     {
       publisherId: platform.getInput('publisherId', true),
@@ -298,7 +333,11 @@ async function runInstall(platform: AzdoAdapter, tfxManager: TfxManager, auth: a
   platform.setOutput('installed', 'true');
 }
 
-async function runShow(platform: AzdoAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runShow(
+  platform: AzdoAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   const options = {
     publisherId: platform.getInput('publisherId', true),
     extensionId: platform.getInput('extensionId', true),
@@ -357,7 +396,7 @@ async function runQueryVersion(
 async function runWaitForValidation(
   platform: AzdoAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   const result = await waitForValidation(
     {
@@ -381,16 +420,17 @@ async function runWaitForValidation(
   platform.setOutput('waitForValidation', 'true');
 }
 
-async function runWaitForInstallation(platform: AzdoAdapter, auth: any): Promise<void> {
+async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentials): Promise<void> {
   const expectedTasksInput = platform.getInput('expectedTasks');
   let expectedTasks;
   if (expectedTasksInput) {
     try {
       expectedTasks = JSON.parse(expectedTasksInput);
-    } catch (error) {
-      const wrappedError = new Error(
-        `Failed to parse expectedTasks: ${error instanceof Error ? error.message : String(error)}`
-      ) as Error & { cause?: unknown };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const wrappedError = new Error(`Failed to parse expectedTasks: ${errorMessage}`) as Error & {
+        cause?: unknown;
+      };
       wrappedError.cause = error;
       throw wrappedError;
     }

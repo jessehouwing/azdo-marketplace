@@ -21,6 +21,7 @@ import {
   waitForInstallation,
   waitForValidation,
   normalizeAccountToServiceUrl,
+  AuthCredentials,
 } from '@extension-tasks/core';
 import { AuthType, getAuth } from './auth/index.js';
 import { GitHubAdapter } from './github-adapter.js';
@@ -172,7 +173,7 @@ async function run(): Promise<void> {
 
     platform.info('✅ Operation completed successfully');
     platform.setResult(TaskResult.Succeeded, `${operation} completed successfully`);
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
   }
@@ -186,7 +187,12 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
     extensionId: platform.getInput('extension-id'),
     extensionVersion: platform.getInput('extension-version'),
     extensionName: platform.getInput('extension-name'),
-    extensionVisibility: platform.getInput('extension-visibility') as any,
+    extensionVisibility: platform.getInput('extension-visibility') as
+      | 'private'
+      | 'public'
+      | 'private_preview'
+      | 'public_preview'
+      | undefined,
     updateTasksVersion: platform.getBoolInput('update-tasks-version'),
     updateTasksId: platform.getBoolInput('update-tasks-id'),
     outputPath: platform.getInput('output-path'),
@@ -204,7 +210,7 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
 async function runPublish(
   platform: GitHubAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   const publishSource = platform.getInput('publish-source', true) as 'manifest' | 'vsix';
 
@@ -243,7 +249,7 @@ async function runPublish(
 async function runUnpublish(
   platform: GitHubAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   await unpublishExtension(
     {
@@ -256,7 +262,11 @@ async function runUnpublish(
   );
 }
 
-async function runShare(platform: GitHubAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runShare(
+  platform: GitHubAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   await shareExtension(
     {
       publisherId: platform.getInput('publisher-id', true),
@@ -272,7 +282,7 @@ async function runShare(platform: GitHubAdapter, tfxManager: TfxManager, auth: a
 async function runUnshare(
   platform: GitHubAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   await unshareExtension(
     {
@@ -289,7 +299,7 @@ async function runUnshare(
 async function runInstall(
   platform: GitHubAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   const result = await installExtension(
     {
@@ -307,7 +317,11 @@ async function runInstall(
   }
 }
 
-async function runShow(platform: GitHubAdapter, tfxManager: TfxManager, auth: any): Promise<void> {
+async function runShow(
+  platform: GitHubAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
   const options = {
     publisherId: platform.getInput('publisher-id', true),
     extensionId: platform.getInput('extension-id', true),
@@ -345,7 +359,7 @@ async function runQueryVersion(
 async function runWaitForValidation(
   platform: GitHubAdapter,
   tfxManager: TfxManager,
-  auth: any
+  auth: AuthCredentials
 ): Promise<void> {
   const result = await waitForValidation(
     {
@@ -367,16 +381,20 @@ async function runWaitForValidation(
   }
 }
 
-async function runWaitForInstallation(platform: GitHubAdapter, auth: any): Promise<void> {
+async function runWaitForInstallation(
+  platform: GitHubAdapter,
+  auth: AuthCredentials
+): Promise<void> {
   const expectedTasksInput = platform.getInput('expected-tasks');
   let expectedTasks;
   if (expectedTasksInput) {
     try {
       expectedTasks = JSON.parse(expectedTasksInput);
-    } catch (error) {
-      const wrappedError = new Error(
-        `Failed to parse expected-tasks: ${error instanceof Error ? error.message : String(error)}`
-      ) as Error & { cause?: unknown };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const wrappedError = new Error(`Failed to parse expected-tasks: ${errorMessage}`) as Error & {
+        cause?: unknown;
+      };
       wrappedError.cause = error;
       throw wrappedError;
     }

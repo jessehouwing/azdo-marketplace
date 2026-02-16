@@ -20,7 +20,7 @@ export async function getAuth(authType, platform, options) {
         case 'oidc':
             return getOidcAuth(finalServiceUrl, platform);
         default:
-            throw new Error(`Unsupported auth type: ${authType}`);
+            throw new Error(`Unsupported auth type: ${String(authType)}`);
     }
 }
 export { getBasicAuth, getOidcAuth, getPatAuth };

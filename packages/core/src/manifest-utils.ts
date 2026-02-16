@@ -4,6 +4,7 @@
 
 import path from 'path';
 import type { IPlatformAdapter } from './platform.js';
+import type { ExtensionManifest } from './manifest-reader.js';
 
 /**
  * Resolve manifest file paths from root folder and glob patterns
@@ -64,7 +65,7 @@ export async function writeManifest(
  * @returns Array of task manifest file paths
  */
 export function resolveTaskManifestPaths(
-  extensionManifest: any,
+  extensionManifest: ExtensionManifest,
   extensionManifestPath: string,
   _platform: IPlatformAdapter
 ): string[] {

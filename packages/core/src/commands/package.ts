@@ -170,7 +170,7 @@ export async function packageExtension(
       };
 
       platform.info('Task manifests updated successfully');
-    } catch (err) {
+    } catch (err: unknown) {
       platform.error(`Failed to update task manifests: ${(err as Error).message}`);
       throw err;
     }
