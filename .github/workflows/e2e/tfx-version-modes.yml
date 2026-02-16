@@ -1,0 +1,266 @@
+name: E2E - TFX Version Modes
+
+# This workflow tests different tfx-cli version modes
+# Tests built-in, path, and version-spec modes
+
+on:
+  workflow_dispatch:
+
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-tfx-builtin:
+    name: Test TFX Built-in Mode
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build extension tasks
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Package with built-in tfx (Main Action)
+        id: package-main
+        uses: ./
+        with:
+          operation: 'package'
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-builtin-main'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-tfx-builtin-main'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: 'built-in'
+
+      - name: Verify package (Main)
+        run: |
+          if [ ! -f "${{ steps.package-main.outputs.vsix-path }}" ]; then
+            echo "❌ Package with built-in tfx (main) failed"
+            exit 1
+          fi
+          echo "✅ Built-in tfx (main action) works"
+
+      - name: Package with built-in tfx (Composite)
+        id: package-composite
+        uses: ./package
+        with:
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-builtin-composite'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-tfx-builtin-composite'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: 'built-in'
+
+      - name: Verify package (Composite)
+        run: |
+          if [ ! -f "${{ steps.package-composite.outputs.vsix-path }}" ]; then
+            echo "❌ Package with built-in tfx (composite) failed"
+            exit 1
+          fi
+          echo "✅ Built-in tfx (composite) works"
+
+  test-tfx-path:
+    name: Test TFX Path Mode
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Install tfx-cli globally
+        run: npm install -g tfx-cli
+
+      - name: Verify tfx-cli in PATH
+        run: |
+          which tfx
+          tfx version || echo "tfx version command failed (expected)"
+
+      - name: Build extension tasks
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Package with tfx from PATH (Main Action)
+        id: package-main
+        uses: ./
+        with:
+          operation: 'package'
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-path-main'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-tfx-path-main'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: 'path'
+
+      - name: Verify package (Main)
+        run: |
+          if [ ! -f "${{ steps.package-main.outputs.vsix-path }}" ]; then
+            echo "❌ Package with PATH tfx (main) failed"
+            exit 1
+          fi
+          echo "✅ PATH tfx (main action) works"
+
+      - name: Package with tfx from PATH (Composite)
+        id: package-composite
+        uses: ./package
+        with:
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-path-composite'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-tfx-path-composite'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: 'path'
+
+      - name: Verify package (Composite)
+        run: |
+          if [ ! -f "${{ steps.package-composite.outputs.vsix-path }}" ]; then
+            echo "❌ Package with PATH tfx (composite) failed"
+            exit 1
+          fi
+          echo "✅ PATH tfx (composite) works"
+
+  test-tfx-version-spec:
+    name: Test TFX Version Spec Mode
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build extension tasks
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Package with specific tfx version (Main Action)
+        id: package-main
+        uses: ./
+        with:
+          operation: 'package'
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-version-main'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-tfx-version-main'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: '^0.17.0'
+
+      - name: Verify package (Main)
+        run: |
+          if [ ! -f "${{ steps.package-main.outputs.vsix-path }}" ]; then
+            echo "❌ Package with version spec tfx (main) failed"
+            exit 1
+          fi
+          echo "✅ Version spec tfx (main action) works"
+
+      - name: Package with latest tfx version (Composite)
+        id: package-composite
+        uses: ./package
+        with:
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-version-composite'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-tfx-version-composite'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: 'latest'
+
+      - name: Verify package (Composite)
+        run: |
+          if [ ! -f "${{ steps.package-composite.outputs.vsix-path }}" ]; then
+            echo "❌ Package with version spec tfx (composite) failed"
+            exit 1
+          fi
+          echo "✅ Version spec tfx (composite) works"
+
+  test-cross-platform:
+    name: Test TFX on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Build extension tasks
+        run: |
+          npm install
+          npm run build
+          npm run bundle
+
+      - name: Package extension
+        uses: ./package
+        with:
+          root-folder: '.github/e2e-test-fixtures/sample-extension'
+          output-path: './dist-${{ matrix.os }}'
+          publisher-id: 'e2e-test'
+          extension-id: 'test-cross-platform'
+          extension-version: '0.0.${{ github.run_number }}'
+          tfx-version: 'built-in'
+
+      - name: Verify package
+        shell: bash
+        run: |
+          ls -lh ./dist-${{ matrix.os }}/
+          if [ $(ls ./dist-${{ matrix.os }}/*.vsix 2>/dev/null | wc -l) -eq 0 ]; then
+            echo "❌ Package failed on ${{ matrix.os }}"
+            exit 1
+          fi
+          echo "✅ Package works on ${{ matrix.os }}"
+
+  report-results:
+    name: Report Test Results
+    runs-on: ubuntu-latest
+    needs: [test-tfx-builtin, test-tfx-path, test-tfx-version-spec, test-cross-platform]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo "=== TFX Version Modes E2E Test Results ==="
+          echo "Built-in mode:    ${{ needs.test-tfx-builtin.result }}"
+          echo "PATH mode:        ${{ needs.test-tfx-path.result }}"
+          echo "Version spec:     ${{ needs.test-tfx-version-spec.result }}"
+          echo "Cross-platform:   ${{ needs.test-cross-platform.result }}"
+          
+          if [ "${{ needs.test-tfx-builtin.result }}" != "success" ] || \
+             [ "${{ needs.test-tfx-path.result }}" != "success" ] || \
+             [ "${{ needs.test-tfx-version-spec.result }}" != "success" ] || \
+             [ "${{ needs.test-cross-platform.result }}" != "success" ]; then
+            echo "❌ FAILED: One or more tfx modes failed"
+            exit 1
+          fi
+          
+          echo "✅ All tfx version modes work correctly"
