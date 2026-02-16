@@ -41,7 +41,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^10",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24",
+    "@types/node": "^25",
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.0",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
