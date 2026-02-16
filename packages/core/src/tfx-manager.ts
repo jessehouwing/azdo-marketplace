@@ -217,7 +217,13 @@ export class TfxManager {
       this.platform.debug(`Resolved '${versionSpec}' to exact version '${exactVersion}'`);
       return exactVersion;
     } catch (error) {
-      throw new Error(`Failed to resolve tfx-cli version spec '${versionSpec}': ${error}`);
+      const wrappedError = new Error(
+        `Failed to resolve tfx-cli version spec '${versionSpec}': ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 

@@ -95,7 +95,7 @@ export async function getOidcAuth(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
+    const wrappedError = new Error(
       `Failed to get Azure AD token via Azure CLI: ${message}\n\n` +
         'Make sure you have run the azure/login action before this action:\n' +
         '  - uses: azure/login@v2\n' +
@@ -104,6 +104,8 @@ export async function getOidcAuth(
         '      tenant-id: ${{ secrets.AZURE_TENANT_ID }}\n' +
         '      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}\n\n' +
         'See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/'
-    );
+    ) as Error & { cause?: unknown };
+    wrappedError.cause = error;
+    throw wrappedError;
   }
 }

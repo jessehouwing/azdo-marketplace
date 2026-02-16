@@ -148,12 +148,10 @@ async function executeTfxPublish(
   publisherId = publisherId || options.publisherId || '';
 
   // Determine vsix path
-  let vsixPath = '';
-  if (options.publishSource === 'manifest') {
-    vsixPath = json.packaged || '';
-  } else {
-    vsixPath = publishedVsixPath || options.vsixFile || '';
-  }
+  const vsixPath =
+    options.publishSource === 'manifest'
+      ? (json.packaged ?? '')
+      : (publishedVsixPath ?? options.vsixFile ?? '');
 
   platform.info(
     `Published extension: ${extensionId || '(unknown id)'} v${extensionVersion || '(unknown version)'}`

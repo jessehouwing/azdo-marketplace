@@ -219,11 +219,13 @@ export async function validateBinaryAvailable(
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(
+    const wrappedError = new Error(
       `Required binary '${binary}' is not available. ` +
         `Please ensure ${binary} is installed and in your PATH. ` +
         `Error: ${errorMessage}`
-    );
+    ) as Error & { cause?: unknown };
+    wrappedError.cause = error;
+    throw wrappedError;
   }
 }
 

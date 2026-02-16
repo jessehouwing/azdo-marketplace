@@ -374,7 +374,11 @@ async function runWaitForInstallation(platform: GitHubAdapter, auth: any): Promi
     try {
       expectedTasks = JSON.parse(expectedTasksInput);
     } catch (error) {
-      throw new Error(`Failed to parse expected-tasks: ${error}`);
+      const wrappedError = new Error(
+        `Failed to parse expected-tasks: ${error instanceof Error ? error.message : String(error)}`
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 

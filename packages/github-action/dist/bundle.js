@@ -4670,7 +4670,9 @@ var TfxManager = class {
       this.platform.debug(`Resolved '${versionSpec}' to exact version '${exactVersion}'`);
       return exactVersion;
     } catch (error2) {
-      throw new Error(`Failed to resolve tfx-cli version spec '${versionSpec}': ${error2}`);
+      const wrappedError = new Error(`Failed to resolve tfx-cli version spec '${versionSpec}': ${error2 instanceof Error ? error2.message : String(error2)}`);
+      wrappedError.cause = error2;
+      throw wrappedError;
     }
   }
   /**
@@ -4928,7 +4930,9 @@ async function validateBinaryAvailable(binary, platform, logVersion = true) {
     }
   } catch (error2) {
     const errorMessage = error2 instanceof Error ? error2.message : String(error2);
-    throw new Error(`Required binary '${binary}' is not available. Please ensure ${binary} is installed and in your PATH. Error: ${errorMessage}`);
+    const wrappedError = new Error(`Required binary '${binary}' is not available. Please ensure ${binary} is installed and in your PATH. Error: ${errorMessage}`);
+    wrappedError.cause = error2;
+    throw wrappedError;
   }
 }
 async function validateNodeAvailable(platform, logVersion = true) {
@@ -5098,12 +5102,7 @@ async function executeTfxPublish(tfx, args, platform, options, publishedVsixPath
   extensionId = extensionId || options.extensionId || "";
   extensionVersion = extensionVersion || options.extensionVersion || "";
   publisherId = publisherId || options.publisherId || "";
-  let vsixPath = "";
-  if (options.publishSource === "manifest") {
-    vsixPath = json.packaged || "";
-  } else {
-    vsixPath = publishedVsixPath || options.vsixFile || "";
-  }
+  const vsixPath = options.publishSource === "manifest" ? json.packaged ?? "" : publishedVsixPath ?? options.vsixFile ?? "";
   platform.info(`Published extension: ${extensionId || "(unknown id)"} v${extensionVersion || "(unknown version)"}`);
   return {
     published: json.published === true,
@@ -5959,7 +5958,7 @@ async function getOidcAuth(serviceUrl, platform) {
     };
   } catch (error2) {
     const message = error2 instanceof Error ? error2.message : String(error2);
-    throw new Error(
+    const wrappedError = new Error(
       `Failed to get Azure AD token via Azure CLI: ${message}
 
 Make sure you have run the azure/login action before this action:
@@ -5971,6 +5970,8 @@ Make sure you have run the azure/login action before this action:
 
 See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/`
     );
+    wrappedError.cause = error2;
+    throw wrappedError;
   }
 }
 
@@ -7128,7 +7129,11 @@ async function runWaitForInstallation(platform, auth) {
     try {
       expectedTasks = JSON.parse(expectedTasksInput);
     } catch (error2) {
-      throw new Error(`Failed to parse expected-tasks: ${error2}`);
+      const wrappedError = new Error(
+        `Failed to parse expected-tasks: ${error2 instanceof Error ? error2.message : String(error2)}`
+      );
+      wrappedError.cause = error2;
+      throw wrappedError;
     }
   }
   const result = await waitForInstallation(

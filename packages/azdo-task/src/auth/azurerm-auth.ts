@@ -36,8 +36,10 @@ export async function getAzureRmAuth(
       token: token,
     };
   } catch (error) {
-    throw new Error(
+    const wrappedError = new Error(
       `Failed to get Azure RM authentication: ${error instanceof Error ? error.message : String(error)}`
-    );
+    ) as Error & { cause?: unknown };
+    wrappedError.cause = error;
+    throw wrappedError;
   }
 }

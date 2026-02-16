@@ -244,7 +244,9 @@ async function runWaitForInstallation(platform, auth) {
             expectedTasks = JSON.parse(expectedTasksInput);
         }
         catch (error) {
-            throw new Error(`Failed to parse expected-tasks: ${error}`);
+            const wrappedError = new Error(`Failed to parse expected-tasks: ${error instanceof Error ? error.message : String(error)}`);
+            wrappedError.cause = error;
+            throw wrappedError;
         }
     }
     const result = await waitForInstallation({

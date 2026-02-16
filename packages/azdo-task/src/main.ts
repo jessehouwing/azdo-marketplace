@@ -388,7 +388,11 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: any): Promise
     try {
       expectedTasks = JSON.parse(expectedTasksInput);
     } catch (error) {
-      throw new Error(`Failed to parse expectedTasks: ${error}`);
+      const wrappedError = new Error(
+        `Failed to parse expectedTasks: ${error instanceof Error ? error.message : String(error)}`
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 
