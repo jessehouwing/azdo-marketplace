@@ -95,8 +95,8 @@
       "type": "ms.vss-endpoint.service-endpoint-type",
       "targets": ["ms.vss-endpoint.endpoint-types"],
       "properties": {
-        "name": "cloud-marketplace-endpoint",
-        "displayName": "Visual Studio Marketplace",
+        "name": "CloudMarketplaceEndpoint",
+        "displayName": "Azdo Extensions - Visual Studio Marketplace",
         "url": {
           "displayName": "Marketplace URL",
           "value": "https://marketplace.visualstudio.com"
@@ -145,8 +145,8 @@
       "type": "ms.vss-endpoint.service-endpoint-type",
       "targets": ["ms.vss-endpoint.endpoint-types"],
       "properties": {
-        "name": "server-marketplace-endpoint",
-        "displayName": "Azure DevOps Server Extension Local Gallery",
+        "name": "ServerMarketplaceEndpoint",
+        "displayName": "Azdo Extensions - Azure DevOps Server Extension Local Gallery",
         "helpMarkDown": "",
         "url": {
           "displayName": "Azure DevOps Server Url",

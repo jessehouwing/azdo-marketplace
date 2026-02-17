@@ -53,7 +53,7 @@
     },
     {
       "name": "connectionNamePAT",
-      "type": "connectedService:cloud-marketplace-endpoint",
+      "type": "connectedService:CloudMarketplaceEndpoint",
       "label": "Service Connection",
       "required": true,
       "helpMarkDown": "**Visual Studio Team Services service connection** configured with a Personal Access Token (PAT).\n\n**Required scopes**: Marketplace (Publish)\n\nCreate a PAT at: https://dev.azure.com/_usersSettings/tokens",
@@ -81,7 +81,7 @@
     },
     {
       "name": "connectionNameBasic",
-      "type": "connectedService:server-marketplace-endpoint",
+      "type": "connectedService:ServerMarketplaceEndpoint",
       "label": "Basic Connection",
       "required": true,
       "helpMarkDown": "**Basic service connection** for basic authentication (username/password).\n\n**Use case**: On-premises TFS or Azure DevOps Server deployments\n\n**Note**: Not recommended for cloud-hosted Azure DevOps - use PAT authentication instead",

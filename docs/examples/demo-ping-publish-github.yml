@@ -1,0 +1,147 @@
+name: Publish demo ping extension (PAT)
+
+on:
+  workflow_dispatch:
+    inputs:
+      publisher_id:
+        description: Marketplace publisher ID
+        required: true
+        default: jessehouwing
+      extension_id:
+        description: Extension ID
+        required: true
+        default: azure-pipelines-demo-ping-task
+      initial_version:
+        description: Initial version when extension does not yet exist
+        required: true
+        default: 1.0.0
+      organization_urls:
+        description: |
+          Optional newline-separated Azure DevOps organization URLs for share/install.
+          Leave empty to skip share/install.
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  PUBLISHER_ID: ${{ inputs.publisher_id }}
+  EXTENSION_ID: ${{ inputs.extension_id }}
+
+jobs:
+  publish_pat:
+    name: Publish private (PAT)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 #v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        shell: bash
+        run: |
+          stop_marker="$(uuidgen)"
+          echo "::stop-commands::$stop_marker"
+          npm run test
+          echo "::$stop_marker::"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Bundle
+        run: npm run bundle
+
+      - id: query
+        name: Query next patch version
+        continue-on-error: true
+        uses: jessehouwing/azdo-marketplace/query-version@main
+        with:
+          auth-type: pat
+          token: ${{ secrets.MARKETPLACE_PAT }}
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          version-action: Patch
+
+      - id: version
+        name: Resolve version (query or initial)
+        shell: bash
+        run: |
+          if [[ "${{ steps.query.outcome }}" == "success" && -n "${{ steps.query.outputs.proposed-version }}" ]]; then
+            echo "value=${{ steps.query.outputs.proposed-version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ inputs.initial_version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: package
+        name: Package VSIX
+        uses: jessehouwing/azdo-marketplace/package@main
+        with:
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          extension-version: ${{ steps.version.outputs.value }}
+          extension-visibility: private
+          update-tasks-version: patch
+          update-tasks-id: true
+          output-path: ${{ runner.temp }}
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f #v6.0.0
+        with:
+          name: vsix-${{ env.EXTENSION_ID }}-${{ steps.version.outputs.value }}
+          path: ${{ steps.package.outputs.vsix-path }}
+          if-no-files-found: error
+
+      - name: Publish from VSIX
+        uses: jessehouwing/azdo-marketplace/publish@main
+        with:
+          auth-type: pat
+          token: ${{ secrets.MARKETPLACE_PAT }}
+          publish-source: vsix
+          vsix-file: ${{ steps.package.outputs.vsix-path }}
+          no-wait-validation: true
+
+      - name: Wait for validation
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@main
+        with:
+          auth-type: pat
+          token: ${{ secrets.MARKETPLACE_PAT }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
+
+      - name: Share extension
+        if: ${{ inputs.organization_urls != '' }}
+        uses: jessehouwing/azdo-marketplace/share@main
+        with:
+          auth-type: pat
+          token: ${{ secrets.MARKETPLACE_PAT }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
+          accounts: ${{ inputs.organization_urls }}
+
+      - name: Install extension
+        if: ${{ inputs.organization_urls != '' }}
+        uses: jessehouwing/azdo-marketplace/install@main
+        with:
+          auth-type: pat
+          token: ${{ secrets.MARKETPLACE_PAT }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
+          accounts: ${{ inputs.organization_urls }}
+
+      - name: Wait for installation
+        if: ${{ inputs.organization_urls != '' }}
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@main
+        with:
+          auth-type: pat
+          token: ${{ secrets.MARKETPLACE_PAT }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
+          accounts: ${{ inputs.organization_urls }}
