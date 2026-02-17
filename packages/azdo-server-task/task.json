@@ -1,9 +1,10 @@
 {
-  "id": "231decda-22cb-4e83-b2f4-31fc86a0de1f",
-  "name": "IsAzureDevOpsExtensionValidServer",
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "814aff9c-f5e4-4ae1-b61c-5f83aa4f4935",
+  "name": "azdo-marketplace-validation",
   "friendlyName": "Is valid Extension",
   "description": "Check Marketplace validation status.",
-  "author": "Microsoft Corporation",
+  "author": "Jesse Houwing",
   "helpMarkDown": "",
   "category": "Deploy",
   "version": {

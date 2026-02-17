@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
-  "id": "e91b4815-8c09-45d9-9f97-b4b5e1e5c4f2",
-  "name": "ExtensionTasks",
+  "id": "a55bd3a0-30c6-463d-885e-851b7f663580",
+  "name": "azdo-marketplace",
   "friendlyName": "Azure DevOps Extension Tasks",
   "description": "Package, publish, and manage Azure DevOps extensions and Visual Studio Marketplace extensions",
   "helpMarkDown": "[More Information](https://github.com/jessehouwing/azdo-marketplace)",
