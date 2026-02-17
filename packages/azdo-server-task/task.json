@@ -30,7 +30,6 @@
       "required": true,
       "defaultValue": "wait-for-validation",
       "helpMarkDown": "Operation to perform.",
-      "groupName": "operationConfig",
       "aliases": ["method"],
       "options": {
         "wait-for-validation": "Wait for Validation"
@@ -43,7 +42,6 @@
       "required": true,
       "defaultValue": "VsTeam",
       "helpMarkDown": "Authentication method for marketplace operations.",
-      "groupName": "operationConfig",
       "aliases": ["connectTo"],
       "options": {
         "VsTeam": "Visual Studio Marketplace"
@@ -56,7 +54,6 @@
       "label": "Visual Studio Marketplace",
       "required": true,
       "helpMarkDown": "Service endpoint connection to install the extension.",
-      "groupName": "operationConfig",
       "aliases": ["connectedServiceName"],
       "visibleRule": "operation = wait-for-validation && connectionType = VsTeam"
     },
@@ -67,7 +64,6 @@
       "defaultValue": "",
       "required": true,
       "helpMarkDown": "Publisher ID of the extension to be installed.",
-      "groupName": "operationConfig",
       "aliases": ["publisher-id", "publisher"],
       "visibleRule": "operation = wait-for-validation"
     },
@@ -78,7 +74,6 @@
       "defaultValue": "",
       "helpMarkDown": "Extension ID of the extension to be installed",
       "required": true,
-      "groupName": "operationConfig",
       "aliases": ["extension-id", "extension"],
       "visibleRule": "operation = wait-for-validation"
     },
@@ -89,7 +84,6 @@
       "defaultValue": "latest",
       "helpMarkDown": "Extension version (enter 'latest' or leave the value empty to check the last submitted version).",
       "required": false,
-      "groupName": "operationConfig",
       "aliases": ["extension-version", "version"],
       "visibleRule": "operation = wait-for-validation"
     }
