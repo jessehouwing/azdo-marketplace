@@ -21,7 +21,7 @@ describe('GitHubAdapter', () => {
   let originalInputItems: string | undefined;
   let originalInputBypassValidation: string | undefined;
   let originalToken: string | undefined;
-  let originalExitCode: number | undefined;
+  let originalExitCode: string | number | undefined;
   let originalActionsStepDebug: string | undefined;
   let originalActionsRunnerDebug: string | undefined;
   let originalRunnerDebug: string | undefined;
@@ -43,7 +43,7 @@ describe('GitHubAdapter', () => {
     restoreEnvVar('INPUT_ITEMS', originalInputItems);
     restoreEnvVar('INPUT_BYPASS-VALIDATION', originalInputBypassValidation);
     restoreEnvVar('TOKEN', originalToken);
-    process.exitCode = originalExitCode;
+    process.exitCode = typeof originalExitCode === 'number' ? originalExitCode : undefined;
     restoreEnvVar('ACTIONS_STEP_DEBUG', originalActionsStepDebug);
     restoreEnvVar('ACTIONS_RUNNER_DEBUG', originalActionsRunnerDebug);
     restoreEnvVar('RUNNER_DEBUG', originalRunnerDebug);

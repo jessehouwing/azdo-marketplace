@@ -5162,7 +5162,11 @@ var TfxManager = class {
     let executable = tfxPath;
     let executableArgs = [...finalArgs];
     if (tfxPath.endsWith(".js")) {
-      const nodePath = await this.platform.which("node", true);
+      const discoveredNodePath = await this.platform.which("node", false);
+      const nodePath = discoveredNodePath || process.execPath;
+      if (!nodePath) {
+        throw new Error("Unable to locate Node.js runtime to execute built-in tfx-cli");
+      }
       executable = nodePath;
       executableArgs = [tfxPath, ...finalArgs];
     }
