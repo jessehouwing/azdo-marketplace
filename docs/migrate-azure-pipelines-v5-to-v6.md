@@ -24,9 +24,9 @@ Supported v6 operations:
 - `unshare`
 - `install`
 - `show`
-- `query-version`
-- `wait-for-validation`
-- `wait-for-installation`
+- `queryVersion`
+- `waitForValidation`
+- `waitForInstallation`
 
 ## Migration checklist
 
@@ -51,20 +51,20 @@ Use this mapping when converting existing YAML:
 - Unpublish Extension task → `azdo-marketplace@6` with `operation: unpublish`
 - Share Extension task → `azdo-marketplace@6` with `operation: share`
 - Install Extension task → `azdo-marketplace@6` with `operation: install`
-- Query Version task → `azdo-marketplace@6` with `operation: query-version`
-- Wait for Validation task → `azdo-marketplace@6` with `operation: wait-for-validation`
+- Query Version task → `azdo-marketplace@6` with `operation: queryVersion`
+- Wait for Validation task → `azdo-marketplace@6` with `operation: waitForValidation`
 
 Additional commands now available in v6:
 
 - `unshare`
 - `show`
-- `wait-for-installation`
+- `waitForInstallation`
 
 ## Input contract changes
 
 When migrating to v6, update account-related inputs as follows:
 
-- `install` and `wait-for-installation` no longer use `service-url`.
+- `install` and `waitForInstallation` no longer use `service-url`.
 - Use `accounts` (multi-line) for target organizations/collections.
 - For Azure DevOps Services, `accounts` supports org names and URLs:
   - `ORG` (automatically expanded to `https://dev.azure.com/ORG`)
@@ -76,19 +76,19 @@ When migrating to v6, update account-related inputs as follows:
 
 Use this mapping carefully when updating YAML:
 
-| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                    |
-| ------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `wait-for-installation`.                      |
-| `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, and wait-for-installation.                    |
-| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                         |
-| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `wait-for-installation` no longer take `serviceUrl`; each account resolves to service URL. |
-| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                          |
-| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                              |
+| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                  |
+| ------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `waitForInstallation`.                      |
+| `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, and waitForInstallation.                    |
+| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                       |
+| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `waitForInstallation` no longer take `serviceUrl`; each account resolves to service URL. |
+| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                        |
+| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                            |
 
 Additional source selection behavior in v6:
 
-- `use` is shown for `package`, `publish`, and `wait-for-installation`.
-- `wait-for-validation` is VSIX-based; provide `vsixFile` when inferring identity from package metadata.
+- `use` is shown for `package`, `publish`, and `waitForInstallation`.
+- `waitForValidation` is VSIX-based; provide `vsixFile` when inferring identity from package metadata.
 
 Additional v6 package/publish inputs:
 

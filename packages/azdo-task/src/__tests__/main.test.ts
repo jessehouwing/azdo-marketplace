@@ -422,10 +422,10 @@ describe('Azure DevOps main entrypoint', () => {
     );
   });
 
-  it('fails wait-for-installation when expectedTasks is invalid JSON', async () => {
+  it('fails waitForInstallation when expectedTasks is invalid JSON', async () => {
     const platform = createPlatformMock({
       inputs: {
-        operation: 'wait-for-installation',
+        operation: 'waitForInstallation',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
         publisherId: 'publisher',
@@ -446,7 +446,7 @@ describe('Azure DevOps main entrypoint', () => {
     expect(String(tlSetResultMock.mock.calls[0][1])).toContain('Failed to parse expectedTasks');
   });
 
-  it('executes query-version and updates build number when requested', async () => {
+  it('executes queryVersion and updates build number when requested', async () => {
     queryVersionMock.mockImplementation(async () => ({
       proposedVersion: '2.0.0',
       currentVersion: '1.0.0',
@@ -454,7 +454,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     const platform = createPlatformMock({
       inputs: {
-        operation: 'query-version',
+        operation: 'queryVersion',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
         publisherId: 'publisher',
@@ -483,7 +483,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     const platform = createPlatformMock({
       inputs: {
-        operation: 'wait-for-installation',
+        operation: 'waitForInstallation',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
         publisherId: 'publisher',
@@ -503,12 +503,12 @@ describe('Azure DevOps main entrypoint', () => {
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org1');
   });
 
-  it('fails wait-for-validation when status is not success', async () => {
+  it('fails waitForValidation when status is not success', async () => {
     waitForValidationMock.mockImplementation(async () => ({ status: 'failed' }));
 
     const platform = createPlatformMock({
       inputs: {
-        operation: 'wait-for-validation',
+        operation: 'waitForValidation',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
         publisherId: 'publisher',
@@ -531,7 +531,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     const platform = createPlatformMock({
       inputs: {
-        operation: 'wait-for-validation',
+        operation: 'waitForValidation',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
         publisherId: 'publisher',

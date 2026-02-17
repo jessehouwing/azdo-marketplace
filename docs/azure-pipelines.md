@@ -25,9 +25,9 @@ Most non-package operations require a service connection (`connectionType` + cor
 - `unshare`
 - `install`
 - `show`
-- `query-version`
-- `wait-for-validation`
-- `wait-for-installation`
+- `queryVersion`
+- `waitForValidation`
+- `waitForInstallation`
 
 ## Common inputs
 
@@ -51,7 +51,7 @@ These appear across multiple operations.
 
 - `manifestFile`
 - `localizationRoot`
-- `use` (`manifest` or `vsix`) for `package`, `publish`, and `wait-for-installation`
+- `use` (`manifest` or `vsix`) for `package`, `publish`, and `waitForInstallation`
 - `vsixFile` (publish from VSIX)
 
 ### Overrides and behavior
@@ -161,12 +161,12 @@ Fetches extension metadata.
   - none
   - `tfxVersion`
 
-### `query-version`
+### `queryVersion`
 
 Queries current Marketplace version and optionally increments it.
 
 - Required:
-  - `operation: query-version`
+  - `operation: queryVersion`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
@@ -175,12 +175,12 @@ Queries current Marketplace version and optionally increments it.
   - `setBuildNumber`
   - `tfxVersion`
 
-### `wait-for-validation`
+### `waitForValidation`
 
 Polls Marketplace validation result.
 
 - Required:
-  - `operation: wait-for-validation`
+  - `operation: waitForValidation`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
@@ -188,12 +188,12 @@ Polls Marketplace validation result.
   - `maxRetries`, `minTimeout`, `maxTimeout`
   - `tfxVersion`
 
-### `wait-for-installation`
+### `waitForInstallation`
 
 Verifies tasks are available after install.
 
 - Required:
-  - `operation: wait-for-installation`
+  - `operation: waitForInstallation`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
   - `accounts`

@@ -25,6 +25,19 @@ import * as tl from 'azure-pipelines-task-lib/task.js';
 import { getAuth } from './auth/index.js';
 import { AzdoAdapter } from './azdo-adapter.js';
 
+function normalizeOperation(operation: string): string {
+  switch (operation.trim()) {
+    case 'query-version':
+      return 'queryVersion';
+    case 'wait-for-validation':
+      return 'waitForValidation';
+    case 'wait-for-installation':
+      return 'waitForInstallation';
+    default:
+      return operation;
+  }
+}
+
 async function run(): Promise<void> {
   try {
     const platform = new AzdoAdapter();
@@ -33,10 +46,11 @@ async function run(): Promise<void> {
     await validateNodeAvailable(platform);
 
     // Get the operation to perform
-    const operation = platform.getInput('operation', true);
-    if (!operation) {
+    const rawOperation = platform.getInput('operation', true);
+    if (!rawOperation) {
       throw new Error('Operation is required');
     }
+    const operation = normalizeOperation(rawOperation);
 
     platform.debug(`Starting operation: ${operation}`);
 
@@ -98,13 +112,13 @@ async function run(): Promise<void> {
       auth = await getAuth(connectionType, connectionName, platform);
 
       // Validate service URL if present
-      if (operation !== 'install' && operation !== 'wait-for-installation' && auth.serviceUrl) {
+      if (operation !== 'install' && operation !== 'waitForInstallation' && auth.serviceUrl) {
         validateAccountUrl(auth.serviceUrl);
       }
     }
 
     // Validate account URLs for operations that need them
-    if (operation === 'install' || operation === 'wait-for-installation') {
+    if (operation === 'install' || operation === 'waitForInstallation') {
       const accounts = platform.getDelimitedInput('accounts', ';', false);
       accounts.forEach((account) => {
         if (account) {
@@ -143,15 +157,15 @@ async function run(): Promise<void> {
         await runShow(platform, tfxManager, auth);
         break;
 
-      case 'query-version':
+      case 'queryVersion':
         await runQueryVersion(platform, tfxManager, auth);
         break;
 
-      case 'wait-for-validation':
+      case 'waitForValidation':
         await runWaitForValidation(platform, tfxManager, auth);
         break;
 
-      case 'wait-for-installation':
+      case 'waitForInstallation':
         await runWaitForInstallation(platform, auth);
         break;
 

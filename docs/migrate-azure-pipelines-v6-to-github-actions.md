@@ -11,7 +11,7 @@ This guide explains how to move an extension-publishing pipeline from Azure Pipe
 
 ## Command/operation equivalence
 
-The same marketplace operations are available on both platforms:
+The same marketplace operations are available on both platforms, but 3 operation values differ by platform naming.
 
 - `package`
 - `publish`
@@ -20,9 +20,9 @@ The same marketplace operations are available on both platforms:
 - `unshare`
 - `install`
 - `show`
-- `query-version`
-- `wait-for-validation`
-- `wait-for-installation`
+- Azure Pipelines: `queryVersion`, GitHub Actions: `query-version`
+- Azure Pipelines: `waitForValidation`, GitHub Actions: `wait-for-validation`
+- Azure Pipelines: `waitForInstallation`, GitHub Actions: `wait-for-installation`
 
 Azure Pipelines uses:
 
@@ -56,16 +56,16 @@ Common input mappings:
 
 ### Consolidated inputs
 
-- Use `accounts` for `install`, `share`, `unshare`, and `wait-for-installation` on both platforms.
+- Use `accounts` for `install`, `share`, `unshare`, and wait operations on both platforms.
 - Do not map any publish sharing input; publish-time sharing was removed. Use a dedicated `share` step with `accounts`.
-- Azure Pipelines `wait-for-validation` uses VSIX input (`vsixFile`) instead of manifest selection.
+- Azure Pipelines `waitForValidation` uses VSIX input (`vsixFile`) instead of manifest selection.
 
 ## Account input mapping
 
 When moving account-targeted operations to GitHub Actions:
 
-- Use `accounts` for `install`, `wait-for-installation`, `share`, and `unshare`.
-- `install` and `wait-for-installation` do not use `service-url`.
+- Use `accounts` for `install`, `waitForInstallation` (Azure Pipelines) / `wait-for-installation` (GitHub Actions), `share`, and `unshare`.
+- `install` and wait-for-installation flows do not use `service-url`.
 - Azure DevOps Services values may be either:
   - `ORG` (automatically expanded to `https://dev.azure.com/ORG`)
   - `https://dev.azure.com/ORG`
@@ -101,7 +101,7 @@ Use standard step outputs only:
 - package: `vsix-path`
 - publish: `vsix-path`
 - show: `extension-metadata`
-- query-version: `proposed-version`, `current-version`
+- queryVersion/query-version: `proposed-version`, `current-version`
 
 ## Authentication migration
 

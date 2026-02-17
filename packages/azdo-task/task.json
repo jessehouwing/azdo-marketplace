@@ -22,7 +22,7 @@
       "label": "Operation",
       "defaultValue": "package",
       "required": true,
-      "helpMarkDown": "**Operation to perform:**\n\n- **Package**: Create a .vsix package file from manifest\n- **Publish**: Publish extension to Visual Studio Marketplace\n- **Unpublish**: Remove extension from marketplace\n- **Share**: Share private extension with specific organizations\n- **Unshare**: Unshare extension from organizations\n- **Install**: Install extension to Azure DevOps organizations\n- **Show**: Query and display extension metadata\n- **query-version**: Query latest extension version and optionally increment it\n- **Wait for Validation**: Wait for extension validation to complete\n- **Wait for Installation**: Wait for tasks to be available after installation",
+      "helpMarkDown": "**Operation to perform:**\n\n- **Package**: Create a .vsix package file from manifest\n- **Publish**: Publish extension to Visual Studio Marketplace\n- **Unpublish**: Remove extension from marketplace\n- **Share**: Share private extension with specific organizations\n- **Unshare**: Unshare extension from organizations\n- **Install**: Install extension to Azure DevOps organizations\n- **Show**: Query and display extension metadata\n- **queryVersion**: Query latest extension version and optionally increment it\n- **waitForValidation**: Wait for extension validation to complete\n- **waitForInstallation**: Wait for tasks to be available after installation",
       "options": {
         "package": "Package - Create .vsix file",
         "publish": "Publish - Publish to marketplace",
@@ -31,9 +31,9 @@
         "unshare": "Unshare - Unshare from organizations",
         "install": "Install - Install to organizations",
         "show": "Show - Query extension metadata",
-        "query-version": "Query Version - Query extension version",
-        "wait-for-validation": "Wait for Validation - Wait for validation",
-        "wait-for-installation": "Wait for Installation - Wait for task availability"
+        "queryVersion": "Query Version - Query extension version",
+        "waitForValidation": "Wait for Validation - Wait for validation",
+        "waitForInstallation": "Wait for Installation - Wait for task availability"
       }
     },
     {
@@ -92,16 +92,14 @@
       "type": "string",
       "label": "Publisher ID",
       "required": false,
-      "helpMarkDown": "**Publisher ID** that owns the extension.\n\n- Must match publisher in manifest (or override it)\n- Optional when `vsixFile` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `query-version`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `mycompany` or `my-publisher-id`",
-      "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = 'query-version' || operation = 'wait-for-validation' || operation = 'wait-for-installation'"
+      "helpMarkDown": "**Publisher ID** that owns the extension.\n\n- Must match publisher in manifest (or override it)\n- Optional when `vsixFile` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `queryVersion`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `mycompany` or `my-publisher-id`"
     },
     {
       "name": "extensionId",
       "type": "string",
       "label": "Extension ID",
       "required": false,
-      "helpMarkDown": "**Extension ID** - unique identifier within the publisher namespace.\n\n- Must match ID in manifest (or override it)\n- Combined with Publisher ID forms full extension identifier: `publisherId.extensionId`\n- Optional when `vsixFile` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `query-version`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `my-extension` or `azure-devops-tasks`",
-      "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = 'query-version' || operation = 'wait-for-validation' || operation = 'wait-for-installation'"
+      "helpMarkDown": "**Extension ID** - unique identifier within the publisher namespace.\n\n- Must match ID in manifest (or override it)\n- Combined with Publisher ID forms full extension identifier: `publisherId.extensionId`\n- Optional when `vsixFile` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `queryVersion`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `my-extension` or `azure-devops-tasks`"
     },
     {
       "name": "use",
@@ -110,7 +108,7 @@
       "required": true,
       "defaultValue": "manifest",
       "helpMarkDown": "**Input source mode** for operations that support manifest or VSIX input.\n\n- **Manifest files**: Use `manifestFile` (and optional `localizationRoot`) from the current working directory\n- **VSIX file**: Use `vsixFile`",
-      "visibleRule": "operation = package || operation = publish || operation = 'wait-for-installation'",
+      "visibleRule": "operation = package || operation = publish || operation = waitForInstallation",
       "options": {
         "manifest": "Manifest files",
         "vsix": "VSIX file"
@@ -122,7 +120,7 @@
       "label": "Localization Root Folder",
       "required": false,
       "helpMarkDown": "**Folder containing localization files** for multi-language support.\n\n- Should contain language-specific resource files\n- Typically structured as: `localization/{locale}/resources.resjson`\n- If not specified, no localization is included\n\n**Example**: `$(Build.SourcesDirectory)/localization`",
-      "visibleRule": "use = manifest && operation != 'wait-for-installation'"
+      "visibleRule": "use = manifest && operation != waitForInstallation"
     },
     {
       "name": "manifestFile",
@@ -138,7 +136,7 @@
       "label": "Manifest JS File",
       "required": false,
       "helpMarkDown": "**Path to a JavaScript manifest file** exported for tfx `--manifest-js`.\n\n- Optional alternative/addition to `manifestFile`\n- Must export a function returning manifest JSON\n- Path is relative to the current working directory",
-      "visibleRule": "use = manifest && operation != 'wait-for-installation'"
+      "visibleRule": "use = manifest && operation != waitForInstallation"
     },
     {
       "name": "overridesFile",
@@ -146,15 +144,15 @@
       "label": "Overrides File",
       "required": false,
       "helpMarkDown": "**Path to a JSON overrides file** for tfx `--overrides-file`.\n\n- Optional for manifest-based package/publish\n- Existing values are preserved unless overridden by other task inputs\n- Task-generated manifest changes are merged into this file",
-      "visibleRule": "use = manifest && operation != 'wait-for-installation'"
+      "visibleRule": "use = manifest && operation != waitForInstallation"
     },
     {
       "name": "vsixFile",
       "type": "filePath",
       "label": "VSIX File",
       "required": false,
-      "helpMarkDown": "**Path to .vsix file** used for VSIX mode and VSIX identity fallback.\n\n- For publish: required when `use = vsix`\n- For install/share/unshare/unpublish/wait-for-validation: reads publisher/extension identity from VSIX when IDs are omitted\n- For wait-for-installation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For wait-for-installation, use this OR expectedTasks/manifestFile, not multiple options",
-      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = 'wait-for-validation' || operation = 'wait-for-installation'"
+      "helpMarkDown": "**Path to .vsix file** used for VSIX mode and VSIX identity fallback.\n\n- For publish: required when `use = vsix`\n- For install/share/unshare/unpublish/waitForValidation: reads publisher/extension identity from VSIX when IDs are omitted\n- For waitForInstallation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For waitForInstallation, use this OR expectedTasks/manifestFile, not multiple options",
+      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation || operation = waitForInstallation"
     },
     {
       "name": "extensionVersion",
@@ -162,7 +160,7 @@
       "label": "Extension Version",
       "required": false,
       "helpMarkDown": "**Override extension version** specified in manifest.\n\n- Must follow semantic versioning: `major.minor.patch`\n- Useful for CI/CD pipelines to inject build numbers\n- Supports pipeline variables\n\n**Examples**:\n- `1.2.3`\n- `$(Build.BuildNumber)`\n- `1.0.$(Build.BuildId)`",
-      "visibleRule": "operation = package || operation = publish || operation = 'wait-for-validation'"
+      "visibleRule": "operation = package || operation = publish || operation = waitForValidation"
     },
     {
       "name": "extensionName",
@@ -215,7 +213,7 @@
       "required": false,
       "defaultValue": "none",
       "helpMarkDown": "**Action to apply to the marketplace version**.\n\n- **None**: Use the current latest marketplace version\n- **Major**: Increment major and reset minor/patch\n- **Minor**: Increment minor and reset patch\n- **Patch**: Increment patch\n\n**Example**: If latest is `1.2.3` and action is `Minor`, result is `1.3.0`",
-      "visibleRule": "operation = 'query-version'",
+      "visibleRule": "operation = queryVersion",
       "options": {
         "none": "None - Keep current version",
         "major": "Major - Increment major",
@@ -229,7 +227,7 @@
       "label": "Version Override Variable",
       "required": false,
       "helpMarkDown": "**Variable name containing a version override**.\n\nIf set and the variable exists, that value is used instead of querying marketplace.\n\n**Example**: `MyVersionVar` (where `$(MyVersionVar)` resolves to `2.1.0`)",
-      "visibleRule": "operation = 'query-version'"
+      "visibleRule": "operation = queryVersion"
     },
     {
       "name": "setBuildNumber",
@@ -238,7 +236,7 @@
       "required": false,
       "defaultValue": "false",
       "helpMarkDown": "**Update the Azure Pipelines build number** to the resolved version.\n\n**Default**: false",
-      "visibleRule": "operation = 'query-version'"
+      "visibleRule": "operation = queryVersion"
     },
     {
       "name": "bypassValidation",
@@ -254,8 +252,8 @@
       "type": "multiLine",
       "label": "Accounts",
       "required": true,
-      "helpMarkDown": "**Azure DevOps accounts/organizations** (one per line).\n\n- Format: Full organization URL or organization name\n- Required for `install`, `share`, `unshare`, and `wait-for-installation`\n- For share/unshare: organizations to grant/remove extension access\n- For install/wait-for-installation: target organizations for installation checks\n\n**Examples**:\n```\nhttps://dev.azure.com/myorg1\nhttps://dev.azure.com/myorg2\n```\n\nOr just:\n```\nmyorg1\nmyorg2\n```",
-      "visibleRule": "operation = install || operation = 'wait-for-installation' || operation = share || operation = unshare"
+      "helpMarkDown": "**Azure DevOps accounts/organizations** (one per line).\n\n- Format: Full organization URL or organization name\n- Required for `install`, `share`, `unshare`, and `waitForInstallation`\n- For share/unshare: organizations to grant/remove extension access\n- For install/waitForInstallation: target organizations for installation checks\n\n**Examples**:\n```\nhttps://dev.azure.com/myorg1\nhttps://dev.azure.com/myorg2\n```\n\nOr just:\n```\nmyorg1\nmyorg2\n```",
+      "visibleRule": "operation = install || operation = waitForInstallation || operation = share || operation = unshare"
     },
     {
       "name": "noWaitValidation",
@@ -297,7 +295,7 @@
       "required": false,
       "defaultValue": "10",
       "helpMarkDown": "**Maximum number of retry attempts** for extension validation.\n\n- Validation can take time as marketplace processes the extension\n- Task will retry with exponential backoff between min and max timeout\n- Set higher for complex extensions that take longer to validate\n\n**Default**: 10 attempts",
-      "visibleRule": "operation = 'wait-for-validation'"
+      "visibleRule": "operation = waitForValidation"
     },
     {
       "name": "minTimeout",
@@ -306,7 +304,7 @@
       "required": false,
       "defaultValue": "1",
       "helpMarkDown": "**Minimum timeout between validation retry attempts** (in minutes).\n\n- Initial wait time before first retry\n- Increases exponentially up to max timeout\n- Lower values check validation status more frequently\n\n**Default**: 1 minute",
-      "visibleRule": "operation = 'wait-for-validation'"
+      "visibleRule": "operation = waitForValidation"
     },
     {
       "name": "maxTimeout",
@@ -315,7 +313,7 @@
       "required": false,
       "defaultValue": "15",
       "helpMarkDown": "**Maximum timeout between validation retry attempts** (in minutes).\n\n- Maximum wait time between retry attempts\n- Timeout increases exponentially from min timeout\n- Higher values give extension more time to validate\n\n**Default**: 15 minutes",
-      "visibleRule": "operation = 'wait-for-validation'"
+      "visibleRule": "operation = waitForValidation"
     },
     {
       "name": "expectedTasks",
@@ -323,7 +321,7 @@
       "label": "Expected Tasks (JSON)",
       "required": false,
       "helpMarkDown": "**Expected tasks as JSON array** - manually specify tasks to verify.\n\n**Format**: Array of objects with `name` and `versions` properties\n\n**Example**:\n```json\n[\n  {\"name\": \"MyTask\", \"versions\": [\"1.0.0\", \"1.0.1\"]},\n  {\"name\": \"AnotherTask\", \"versions\": [\"2.0.0\"]}\n]\n```\n\n**Note**: Use this OR auto-discovery options (manifestFile/vsixFile), not both",
-      "visibleRule": "operation = 'wait-for-installation'"
+      "visibleRule": "operation = waitForInstallation"
     },
     {
       "name": "timeoutMinutes",
@@ -332,7 +330,7 @@
       "required": false,
       "defaultValue": "10",
       "helpMarkDown": "**Maximum time to wait** for tasks to become available after installation (in minutes).\n\n- Task polls Azure DevOps at regular intervals\n- If tasks don't appear within timeout, verification fails\n- Increase for slower marketplace propagation\n\n**Default**: 10 minutes",
-      "visibleRule": "operation = 'wait-for-installation'"
+      "visibleRule": "operation = waitForInstallation"
     },
     {
       "name": "pollingIntervalSeconds",
@@ -341,7 +339,7 @@
       "required": false,
       "defaultValue": "30",
       "helpMarkDown": "**Interval between task availability checks** (in seconds).\n\n- How often to check if tasks are available\n- Lower values detect availability faster but create more API calls\n- Higher values reduce API load but delay detection\n\n**Recommendation**: 30-60 seconds is usually sufficient\n\n**Default**: 30 seconds",
-      "visibleRule": "operation = 'wait-for-installation'"
+      "visibleRule": "operation = waitForInstallation"
     },
     {
       "name": "tfxVersion",
@@ -370,11 +368,11 @@
     },
     {
       "name": "proposedVersion",
-      "description": "Proposed extension version after applying version action (query-version operation only)"
+      "description": "Proposed extension version after applying version action (queryVersion operation only)"
     },
     {
       "name": "currentVersion",
-      "description": "Current marketplace version before applying version action (query-version operation only)"
+      "description": "Current marketplace version before applying version action (queryVersion operation only)"
     }
   ],
   "execution": {
