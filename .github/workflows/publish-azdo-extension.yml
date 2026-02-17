@@ -64,7 +64,7 @@ jobs:
       - id: query
         name: Query next patch version
         continue-on-error: true
-        uses: jessehouwing/azure-devops-extension-tasks/query-version@main
+        uses: jessehouwing/azdo-marketplace/query-version@main
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -83,7 +83,7 @@ jobs:
 
       - id: package
         name: Package VSIX
-        uses: jessehouwing/azure-devops-extension-tasks/package@main
+        uses: jessehouwing/azdo-marketplace/package@main
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ inputs.extension_id }}
@@ -94,7 +94,7 @@ jobs:
           output-path: ${{ runner.temp }}
 
       - name: Publish from VSIX
-        uses: jessehouwing/azure-devops-extension-tasks/publish@main
+        uses: jessehouwing/azdo-marketplace/publish@main
         with:
           auth-type: oidc
           publish-source: vsix
@@ -102,32 +102,29 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azure-devops-extension-tasks/wait-for-validation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@main
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ inputs.extension_id }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
 
       - name: Share extension
-        uses: jessehouwing/azure-devops-extension-tasks/share@main
+        uses: jessehouwing/azdo-marketplace/share@main
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ inputs.extension_id }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
       - name: Install extension
-        uses: jessehouwing/azure-devops-extension-tasks/install@main
+        uses: jessehouwing/azdo-marketplace/install@main
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ inputs.extension_id }}
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
       - name: Wait for installation
-        uses: jessehouwing/azure-devops-extension-tasks/wait-for-installation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@main
         with:
           auth-type: oidc
           vsix-path: ${{ steps.package.outputs.vsix-path }}
