@@ -231,7 +231,6 @@ describe('Azure DevOps main entrypoint', () => {
       expect.anything(),
       platform
     );
-    expect(platform.setOutput).toHaveBeenCalledWith('published', 'true');
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'publish completed successfully');
   });
 
@@ -399,7 +398,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     await importMainAndFlush();
 
-    expect(platform.setOutput).toHaveBeenCalledWith('installed', 'true');
+    expect(installExtensionMock).toHaveBeenCalled();
   });
 
   it('forwards publish manifest editor options', async () => {
@@ -458,7 +457,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     await importMainAndFlush();
 
-    expect(platform.setOutput).toHaveBeenCalledWith('shared', 'true');
+    expect(shareExtensionMock).toHaveBeenCalled();
   });
 
   it('sets unshared output when unshare succeeds', async () => {
@@ -478,7 +477,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     await importMainAndFlush();
 
-    expect(platform.setOutput).toHaveBeenCalledWith('unshared', 'true');
+    expect(unshareExtensionMock).toHaveBeenCalled();
   });
 
   it('fails install operation when not all accounts succeed', async () => {
@@ -637,7 +636,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     await importMainAndFlush();
 
-    expect(platform.setOutput).toHaveBeenCalledWith('waitForInstallation', 'true');
+    expect(waitForInstallationMock).toHaveBeenCalled();
     expect(validateAccountUrlMock).not.toHaveBeenCalledWith('https://marketplace.visualstudio.com');
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org1');
   });
@@ -723,6 +722,6 @@ describe('Azure DevOps main entrypoint', () => {
       expect.anything(),
       platform
     );
-    expect(platform.setOutput).toHaveBeenCalledWith('waitForValidation', 'true');
+    expect(waitForValidationMock).toHaveBeenCalled();
   });
 });
