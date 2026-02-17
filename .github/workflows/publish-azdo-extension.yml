@@ -92,7 +92,7 @@ jobs:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ inputs.extension_id }}
           extension-version: ${{ steps.version.outputs.value }}
-          extension-visibility: private
+          extension-visibility: private_preview
           update-tasks-version: patch
           update-tasks-id: true
           output-path: ${{ runner.temp }}
