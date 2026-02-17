@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { execFile } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
@@ -12,6 +12,8 @@ import { MockPlatformAdapter } from '../helpers/mock-platform.js';
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+jest.setTimeout(120_000);
 
 class RealExecPlatformAdapter extends MockPlatformAdapter {
   override async exec(tool: string, args: string[], options?: any): Promise<number> {

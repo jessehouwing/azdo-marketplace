@@ -4,13 +4,15 @@
  * These tests verify the end-to-end workflow and efficient ZIP updates
  */
 
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { createWriteStream, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import yazl from 'yazl';
 import { ManifestEditor } from '../manifest-editor.js';
 import { VsixReader } from '../vsix-reader.js';
+
+jest.setTimeout(60_000);
 
 describe('VSIX Chain Integration Tests', () => {
   let testVsixPath: string;

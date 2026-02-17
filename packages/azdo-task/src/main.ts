@@ -457,15 +457,19 @@ async function runWaitForValidation(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
+  const timeoutMinutesInput = platform.getInput('timeoutMinutes');
+  const pollingIntervalSecondsInput = platform.getInput('pollingIntervalSeconds');
+
   const result = await waitForValidation(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixPath: platform.getPathInput('vsixFile') || platform.getInput('vsixPath'),
       extensionVersion: platform.getInput('extensionVersion'),
-      maxRetries: parseInt(platform.getInput('maxRetries') || '10'),
-      minTimeout: parseInt(platform.getInput('minTimeout') || '1'),
-      maxTimeout: parseInt(platform.getInput('maxTimeout') || '15'),
+      timeoutMinutes: timeoutMinutesInput ? parseInt(timeoutMinutesInput, 10) : undefined,
+      pollingIntervalSeconds: pollingIntervalSecondsInput
+        ? parseInt(pollingIntervalSecondsInput, 10)
+        : undefined,
     },
     auth,
     tfxManager,

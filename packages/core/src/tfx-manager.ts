@@ -140,7 +140,7 @@ export class TfxManager {
    * We use 'which' to locate it, which will find it in node_modules/.bin/ or PATH.
    */
   private async resolveBuiltIn(): Promise<string> {
-    this.platform.info('Using built-in tfx-cli from core package dependencies');
+    this.platform.info('Using built-in tfx-cli.');
 
     const entrypoint = process.argv[1];
     if (!entrypoint) {

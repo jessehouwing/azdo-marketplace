@@ -252,25 +252,41 @@ async function runShow(platform, tfxManager, auth) {
     }
 }
 async function runQueryVersion(platform, tfxManager, auth) {
+    const normalizedVersionAction = (() => {
+        const input = (platform.getInput('version-action') ?? 'none').trim().toLowerCase();
+        if (input === 'major') {
+            return 'Major';
+        }
+        if (input === 'minor') {
+            return 'Minor';
+        }
+        if (input === 'patch') {
+            return 'Patch';
+        }
+        return 'None';
+    })();
     const result = await queryVersion({
         publisherId: platform.getInput('publisher-id', true),
         extensionId: platform.getInput('extension-id', true),
-        versionAction: platform.getInput('version-action') ?? 'None',
+        versionAction: normalizedVersionAction,
         extensionVersionOverrideVariable: platform.getInput('extension-version-override'),
     }, auth, tfxManager, platform);
     platform.setOutput('proposed-version', result.proposedVersion);
     platform.setOutput('current-version', result.currentVersion);
 }
 async function runWaitForValidation(platform, tfxManager, auth) {
+    const timeoutMinutesInput = platform.getInput('timeout-minutes');
+    const pollingIntervalSecondsInput = platform.getInput('polling-interval-seconds');
     const result = await waitForValidation({
         publisherId: platform.getInput('publisher-id'),
         extensionId: platform.getInput('extension-id'),
         vsixPath: platform.getInput('vsix-path'),
         extensionVersion: platform.getInput('extension-version'),
         manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
-        maxRetries: parseInt(platform.getInput('max-retries') || '10'),
-        minTimeout: parseInt(platform.getInput('min-timeout') || '1'),
-        maxTimeout: parseInt(platform.getInput('max-timeout') || '15'),
+        timeoutMinutes: timeoutMinutesInput ? parseInt(timeoutMinutesInput, 10) : undefined,
+        pollingIntervalSeconds: pollingIntervalSecondsInput
+            ? parseInt(pollingIntervalSecondsInput, 10)
+            : undefined,
     }, auth, tfxManager, platform);
     if (result.status !== 'success') {
         throw new Error(`Validation failed with status: ${result.status}`);

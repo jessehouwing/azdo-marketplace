@@ -74,8 +74,8 @@ describe('waitForValidation', () => {
       {
         publisherId: 'pub',
         extensionId: 'ext',
-        maxRetries: 5,
-        minTimeout: 0.001, // Very short for testing
+        timeoutMinutes: 0.00005,
+        pollingIntervalSeconds: 0.001,
       },
       auth,
       tfxManager,
@@ -178,8 +178,8 @@ describe('waitForValidation', () => {
       {
         publisherId: 'pub',
         extensionId: 'ext',
-        maxRetries: 3,
-        minTimeout: 0.001,
+        timeoutMinutes: 0.00005,
+        pollingIntervalSeconds: 0.001,
       },
       auth,
       tfxManager,
@@ -190,7 +190,34 @@ describe('waitForValidation', () => {
     expect(result.status).toBe('pending');
     expect(result.attempts).toBe(3);
     expect(mockExecute).toHaveBeenCalledTimes(3);
-  });
+  }, 10_000);
+
+  it('should derive retry count from timeoutMinutes and pollingIntervalSeconds', async () => {
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 0,
+      json: { status: 'pending' },
+      stdout: '',
+      stderr: '',
+    });
+
+    const result = await waitForValidation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        timeoutMinutes: 0.001,
+        pollingIntervalSeconds: 0.03,
+      },
+      auth,
+      tfxManager,
+      platform
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.status).toBe('pending');
+    expect(result.attempts).toBe(2);
+    expect(mockExecute).toHaveBeenCalledTimes(2);
+  }, 15_000);
 
   it('should use correct tfx arguments', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
@@ -406,7 +433,8 @@ describe('waitForValidation', () => {
       {
         publisherId: 'pub',
         extensionId: 'ext',
-        maxRetries: 1,
+        timeoutMinutes: 0.00001,
+        pollingIntervalSeconds: 0.001,
       },
       auth,
       tfxManager,
@@ -433,7 +461,8 @@ describe('waitForValidation', () => {
       {
         publisherId: 'pub',
         extensionId: 'ext',
-        maxRetries: 1,
+        timeoutMinutes: 0.00001,
+        pollingIntervalSeconds: 0.001,
       },
       auth,
       tfxManager,
@@ -454,8 +483,8 @@ describe('waitForValidation', () => {
         {
           publisherId: 'pub',
           extensionId: 'ext',
-          maxRetries: 1,
-          minTimeout: 0,
+          timeoutMinutes: 0.00001,
+          pollingIntervalSeconds: 0.001,
         },
         auth,
         tfxManager,

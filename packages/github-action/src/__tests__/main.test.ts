@@ -554,6 +554,8 @@ describe('GitHub Action main entrypoint', () => {
         'publisher-id': 'publisher',
         'extension-id': 'extension',
         'extension-version': '1.2.3',
+        'timeout-minutes': '14',
+        'polling-interval-seconds': '40',
       },
       delimitedInputs: {
         'manifest-file|\n': ['vss-extension.json'],
@@ -564,7 +566,11 @@ describe('GitHub Action main entrypoint', () => {
     await importMainAndFlush();
 
     expect(waitForValidationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ extensionVersion: '1.2.3' }),
+      expect.objectContaining({
+        extensionVersion: '1.2.3',
+        timeoutMinutes: 14,
+        pollingIntervalSeconds: 40,
+      }),
       expect.anything(),
       expect.anything(),
       platform

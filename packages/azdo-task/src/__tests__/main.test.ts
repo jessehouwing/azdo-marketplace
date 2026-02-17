@@ -702,6 +702,8 @@ describe('Azure DevOps main entrypoint', () => {
         publisherId: 'publisher',
         extensionId: 'extension',
         extensionVersion: '1.2.3',
+        timeoutMinutes: '12',
+        pollingIntervalSeconds: '45',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -712,7 +714,11 @@ describe('Azure DevOps main entrypoint', () => {
     await importMainAndFlush();
 
     expect(waitForValidationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ extensionVersion: '1.2.3' }),
+      expect.objectContaining({
+        extensionVersion: '1.2.3',
+        timeoutMinutes: 12,
+        pollingIntervalSeconds: 45,
+      }),
       expect.anything(),
       expect.anything(),
       platform

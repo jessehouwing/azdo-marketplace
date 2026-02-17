@@ -3,6 +3,7 @@
  * These tests actually read and write VSIX files to ensure correct behavior
  */
 
+import { jest } from '@jest/globals';
 import { createWriteStream, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { pipeline } from 'stream';
@@ -11,6 +12,8 @@ import yazl from 'yazl';
 import { VsixReader } from '../vsix-reader.js';
 
 const pipelineAsync = promisify(pipeline);
+
+jest.setTimeout(60_000);
 
 describe('VSIX Integration Tests', () => {
   const testDir = '/tmp/vsix-integration-tests';

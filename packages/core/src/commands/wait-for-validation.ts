@@ -29,12 +29,10 @@ export interface WaitForValidationOptions {
   rootFolder?: string;
   /** Manifest globs (if validating from manifest) */
   manifestGlobs?: string[];
-  /** Max retries for pending validation (default: 10) */
-  maxRetries?: number;
-  /** Min timeout between retries in minutes (default: 1) */
-  minTimeout?: number;
-  /** Max timeout between retries in minutes (default: 15) */
-  maxTimeout?: number;
+  /** Total timeout in minutes (aligned with wait-for-installation, default: 10) */
+  timeoutMinutes?: number;
+  /** Polling interval in seconds (aligned with wait-for-installation, default: 30) */
+  pollingIntervalSeconds?: number;
 }
 
 /**
@@ -88,10 +86,11 @@ export async function waitForValidation(
 
   const extensionId = identity.extensionId;
 
-  // Retry configuration
-  const maxRetries = options.maxRetries ?? 10;
-  const minTimeoutMs = (options.minTimeout ?? 1) * 60 * 1000;
-  const maxTimeoutMs = (options.maxTimeout ?? 15) * 60 * 1000;
+  // Retry configuration (aligned with wait-for-installation)
+  const timeoutMinutes = options.timeoutMinutes ?? 10;
+  const pollingIntervalSeconds = options.pollingIntervalSeconds ?? 30;
+  const maxRetries = Math.max(1, Math.ceil((timeoutMinutes * 60) / pollingIntervalSeconds));
+  const pollingIntervalMs = pollingIntervalSeconds * 1000;
 
   let attempts = 0;
   let lastStatus: ValidationStatus = 'pending';
@@ -161,11 +160,10 @@ export async function waitForValidation(
 
           case 'pending':
             platform.info('⏳ Validation pending, retrying...');
-            // Wait before retry with exponential backoff
+            // Wait before retry
             if (attempts < maxRetries) {
-              const waitTime = Math.min(minTimeoutMs * Math.pow(2, attempts - 1), maxTimeoutMs);
-              platform.debug(`Waiting ${waitTime / 1000}s before retry...`);
-              await sleep(waitTime);
+              platform.debug(`Waiting ${pollingIntervalSeconds}s before retry...`);
+              await sleep(pollingIntervalMs);
             }
             break;
 
@@ -196,7 +194,7 @@ export async function waitForValidation(
         throw err;
       }
       // Wait before retry
-      await sleep(minTimeoutMs);
+      await sleep(pollingIntervalMs);
     }
   }
 

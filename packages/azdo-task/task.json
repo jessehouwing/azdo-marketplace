@@ -330,7 +330,7 @@
       "required": false,
       "defaultValue": "10",
       "helpMarkDown": "**Maximum time to wait** for tasks to become available after installation (in minutes).\n\n- Task polls Azure DevOps at regular intervals\n- If tasks don't appear within timeout, verification fails\n- Increase for slower marketplace propagation\n\n**Default**: 10 minutes",
-      "visibleRule": "operation = waitForInstallation"
+      "visibleRule": "operation = waitForInstallation || operation = waitForValidation"
     },
     {
       "name": "pollingIntervalSeconds",
@@ -339,7 +339,7 @@
       "required": false,
       "defaultValue": "30",
       "helpMarkDown": "**Interval between task availability checks** (in seconds).\n\n- How often to check if tasks are available\n- Lower values detect availability faster but create more API calls\n- Higher values reduce API load but delay detection\n\n**Recommendation**: 30-60 seconds is usually sufficient\n\n**Default**: 30 seconds",
-      "visibleRule": "operation = waitForInstallation"
+      "visibleRule": "operation = waitForInstallation || operation = waitForValidation"
     },
     {
       "name": "tfxVersion",
