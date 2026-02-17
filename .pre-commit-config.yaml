@@ -18,6 +18,18 @@ repos:
         entry: npx eslint --fix
         language: system
         files: '\.(ts|js|mjs|cjs)$'
+      - id: sync-action-inputs-check
+        name: Check action manifest sync
+        entry: npm run sync:action-inputs:check
+        language: system
+        pass_filenames: false
+        files: '(^|/)action\.ya?ml$'
+      - id: docs-validate-samples
+        name: Check validate docs samples
+        entry: npm run docs:validate-samples
+        language: system
+        pass_filenames: false
+        files: '(^|/)(action\.ya?ml|task\.json|.*\.md)$'
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
