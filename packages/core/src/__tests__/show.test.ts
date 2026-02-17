@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { AuthCredentials } from '../auth.js';
 import { showExtension } from '../commands/show.js';
 import { TfxManager } from '../tfx-manager.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
-import type { AuthCredentials } from '../auth.js';
 
 describe('showExtension', () => {
   let platform: MockPlatformAdapter;

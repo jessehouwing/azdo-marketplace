@@ -2,10 +2,10 @@
  * Show command - Displays extension metadata from marketplace
  */
 
+import { ArgBuilder } from '../arg-builder.js';
+import type { AuthCredentials } from '../auth.js';
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
-import type { AuthCredentials } from '../auth.js';
-import { ArgBuilder } from '../arg-builder.js';
 
 /**
  * Options for show command

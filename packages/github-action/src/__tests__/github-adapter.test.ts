@@ -6,6 +6,15 @@ import { join } from 'path';
 import { Writable } from 'stream';
 import { GitHubAdapter } from '../github-adapter.js';
 
+function restoreEnvVar(name: string, value: string | undefined): void {
+  if (value === undefined) {
+    delete process.env[name];
+    return;
+  }
+
+  process.env[name] = value;
+}
+
 describe('GitHubAdapter', () => {
   let adapter: GitHubAdapter;
   let originalInputName: string | undefined;
@@ -15,6 +24,7 @@ describe('GitHubAdapter', () => {
   let originalExitCode: string | number | undefined;
   let originalActionsStepDebug: string | undefined;
   let originalActionsRunnerDebug: string | undefined;
+  let originalRunnerDebug: string | undefined;
 
   beforeEach(() => {
     adapter = new GitHubAdapter();
@@ -25,19 +35,23 @@ describe('GitHubAdapter', () => {
     originalExitCode = process.exitCode;
     originalActionsStepDebug = process.env.ACTIONS_STEP_DEBUG;
     originalActionsRunnerDebug = process.env.ACTIONS_RUNNER_DEBUG;
+    originalRunnerDebug = process.env.RUNNER_DEBUG;
   });
 
   afterEach(() => {
-    process.env.INPUT_NAME = originalInputName;
-    process.env.INPUT_ITEMS = originalInputItems;
-    process.env['INPUT_BYPASS-VALIDATION'] = originalInputBypassValidation;
-    process.env.TOKEN = originalToken;
+    restoreEnvVar('INPUT_NAME', originalInputName);
+    restoreEnvVar('INPUT_ITEMS', originalInputItems);
+    restoreEnvVar('INPUT_BYPASS-VALIDATION', originalInputBypassValidation);
+    restoreEnvVar('TOKEN', originalToken);
     process.exitCode = originalExitCode;
-    process.env.ACTIONS_STEP_DEBUG = originalActionsStepDebug;
-    process.env.ACTIONS_RUNNER_DEBUG = originalActionsRunnerDebug;
+    restoreEnvVar('ACTIONS_STEP_DEBUG', originalActionsStepDebug);
+    restoreEnvVar('ACTIONS_RUNNER_DEBUG', originalActionsRunnerDebug);
+    restoreEnvVar('RUNNER_DEBUG', originalRunnerDebug);
   });
 
   it('detects debug mode from GitHub debug environment variables', () => {
+    process.env.RUNNER_DEBUG = '0';
+
     process.env.ACTIONS_STEP_DEBUG = 'true';
     process.env.ACTIONS_RUNNER_DEBUG = 'false';
     expect(adapter.isDebugEnabled()).toBe(true);

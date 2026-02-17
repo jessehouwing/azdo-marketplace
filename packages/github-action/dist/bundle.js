@@ -3415,7 +3415,9 @@ var init_filesystem_manifest_writer = __esm({
             }
           } catch (error2) {
             const message = error2 instanceof Error ? error2.message : String(error2);
-            throw new Error(`Failed to read overrides file '${resolvedOverridesPath}': ${message}`);
+            const wrappedError = new Error(`Failed to read overrides file '${resolvedOverridesPath}': ${message}`);
+            wrappedError.cause = error2;
+            throw wrappedError;
           }
         }
         const mergedOverrides = {
