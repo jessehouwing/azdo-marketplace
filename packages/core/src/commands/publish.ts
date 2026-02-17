@@ -28,6 +28,7 @@ export interface PublishOptions {
   rootFolder?: string;
   localizationRoot?: string;
   manifestGlobs?: string[];
+  manifestFileJs?: string;
   overridesFile?: string;
 
   // VSIX source (when publishSource = 'vsix')
@@ -224,8 +225,8 @@ export async function publishExtension(
       options.manifestGlobs.forEach((glob) => args.arg(glob));
     }
 
-    if (options.overridesFile) {
-      args.option('--overrides-file', options.overridesFile);
+    if (options.manifestFileJs) {
+      args.option('--manifest-js', options.manifestFileJs);
     }
 
     // Overrides
@@ -296,13 +297,15 @@ export async function publishExtension(
 
         // Write modifications to filesystem
         const writer = await editor.toWriter();
-        await writer.writeToFilesystem();
+        await writer.writeToFilesystem({ overridesFilePath: options.overridesFile });
 
         // Get overrides file path if generated
         const overridesPath = writer.getOverridesPath();
         if (overridesPath) {
           platform.debug(`Using overrides file: ${overridesPath}`);
           args.option('--overrides-file', overridesPath);
+        } else if (options.overridesFile) {
+          args.option('--overrides-file', options.overridesFile);
         }
 
         // Setup cleanup function
@@ -320,6 +323,10 @@ export async function publishExtension(
 
     // Execute tfx and handle cleanup
     try {
+      if (options.overridesFile && !args.build().includes('--overrides-file')) {
+        args.option('--overrides-file', options.overridesFile);
+      }
+
       return await executeTfxPublish(tfx, args, platform, options);
     } finally {
       if (cleanupWriter) {

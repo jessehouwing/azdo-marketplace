@@ -75,11 +75,11 @@ Creates a VSIX from manifest files.
 - Required:
   - `operation: package`
 - Optional:
-  - `manifestFile`, `localizationRoot`
+  - `manifestFile`, `manifestFileJs`, `overridesFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `outputPath`
-  - `bypassValidation`, `revVersion`
+  - `bypassValidation`
   - `updateTasksVersion`, `updateTasksVersionType`, `updateTasksId`
   - `tfxVersion`
 
@@ -93,7 +93,7 @@ Publishes to Marketplace from manifest or prebuilt VSIX.
   - `use`
   - If `use = vsix`: `vsixFile`
 - Optional:
-  - `manifestFile`, `localizationRoot`
+  - `manifestFile`, `manifestFileJs`, `overridesFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `noWaitValidation`

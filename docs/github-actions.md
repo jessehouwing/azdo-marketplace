@@ -45,11 +45,13 @@ This repository ships a **unified JavaScript action** and **composite command wr
 ### Packaging/publish source and overrides
 
 - `manifest-file`
+- `manifest-file-js`
+- `overrides-file`
 - `publish-source` (`manifest` or `vsix`)
 - `vsix-file`
 - `extension-version`, `extension-name`, `extension-visibility`
 - `output-path`
-- `bypass-validation`, `rev-version`
+- `bypass-validation`
 - `share-with`, `unshare-with`
 - `no-wait-validation`
 - `update-tasks-version`, `update-tasks-id`
@@ -70,10 +72,10 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `operation: package`
 - Optional:
   - `publisher-id`, `extension-id`
-  - `manifest-file`
+  - `manifest-file`, `manifest-file-js`, `overrides-file`
   - `extension-version`, `extension-name`, `extension-visibility`
   - `output-path`
-  - `bypass-validation`, `rev-version`, `update-tasks-version`, `update-tasks-id`
+  - `bypass-validation`, `update-tasks-version`, `update-tasks-id`
   - auth/tooling inputs
 
 ### `publish`
@@ -85,7 +87,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `vsix-file` when `publish-source=vsix`
 - Optional:
   - identity inputs
-  - manifest inputs
+  - manifest inputs (`manifest-file`, `manifest-file-js`, `overrides-file`)
   - metadata override inputs
   - `share-with`, `no-wait-validation`, `update-tasks-version`, `update-tasks-id`
 

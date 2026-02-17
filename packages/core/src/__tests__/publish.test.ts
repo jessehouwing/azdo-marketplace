@@ -239,6 +239,79 @@ describe('publishExtension', () => {
       expect(callArgs).toContain('--extension-id');
       expect(callArgs).toContain('my-ext');
     });
+
+    it('should include manifest-js argument for manifest publish', async () => {
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: { published: true, packaged: '/out/ext.vsix' },
+        stdout: '',
+        stderr: '',
+      });
+
+      await publishExtension(
+        withManifestDefaults({ manifestFileJs: 'manifests/build-manifest.js' }),
+        auth,
+        tfxManager,
+        platform
+      );
+
+      const callArgs = mockExecute.mock.calls[0][0];
+      expect(callArgs).toContain('--manifest-js');
+      expect(callArgs).toContain('manifests/build-manifest.js');
+    });
+
+    it('should merge generated overrides into provided overrides file for manifest publish', async () => {
+      const root = await fs.mkdtemp(join(tmpdir(), 'publish-overrides-file-'));
+      const overridesPath = join(root, 'overrides.json');
+
+      await fs.writeFile(
+        join(root, 'vss-extension.json'),
+        JSON.stringify({ id: 'ext', publisher: 'pub', version: '1.0.0', files: [] }),
+        'utf-8'
+      );
+      await fs.writeFile(
+        overridesPath,
+        JSON.stringify({ description: 'keep-me' }, null, 2),
+        'utf-8'
+      );
+
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: { published: true, packaged: '/out/ext.vsix' },
+        stdout: '',
+        stderr: '',
+      });
+
+      try {
+        await publishExtension(
+          withManifestDefaults({
+            rootFolder: root,
+            manifestGlobs: ['vss-extension.json'],
+            extensionVersion: '2.0.0',
+            overridesFile: overridesPath,
+          }),
+          auth,
+          tfxManager,
+          platform
+        );
+
+        const callArgs = mockExecute.mock.calls[0][0];
+        const overridesFlagIndex = callArgs.lastIndexOf('--overrides-file');
+        expect(overridesFlagIndex).toBeGreaterThan(-1);
+        expect(callArgs[overridesFlagIndex + 1]).toBe(overridesPath);
+
+        const mergedOverrides = JSON.parse(await fs.readFile(overridesPath, 'utf-8')) as {
+          description?: string;
+          version?: string;
+        };
+        expect(mergedOverrides.description).toBe('keep-me');
+        expect(mergedOverrides.version).toBe('2.0.0');
+      } finally {
+        await fs.rm(root, { recursive: true, force: true });
+      }
+    });
   });
 
   describe('vsix publishing', () => {

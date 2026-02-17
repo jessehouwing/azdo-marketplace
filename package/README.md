@@ -63,6 +63,8 @@ None - all inputs are optional with sensible defaults.
 
 - `root-folder`: Root folder containing extension files (default: current directory)
 - `manifest-file`: Manifest file path(s), newline-separated (default: `vss-extension.json`)
+- `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
+- `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
 
 #### Metadata Overrides
 
@@ -76,7 +78,6 @@ None - all inputs are optional with sensible defaults.
 
 - `output-path`: Output directory for .vsix file
 - `bypass-validation`: Skip extension validation (default: `false`)
-- `rev-version`: Auto-increment patch version (default: `false`)
 - `update-tasks-version`: Task version update mode (`none`, `major`, `minor`, `patch`, default: `none`)
 - `update-tasks-id`: Generate deterministic task IDs (default: `false`)
 

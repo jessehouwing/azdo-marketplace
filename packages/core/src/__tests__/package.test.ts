@@ -120,6 +120,28 @@ describe('packageExtension', () => {
     expect(callArgs).toContain('*.json');
   });
 
+  it('should include manifest-js in arguments', async () => {
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 0,
+      json: { path: '/output/extension.vsix' },
+      stdout: '',
+      stderr: '',
+    });
+
+    await packageExtension(
+      withManifestDefaults({
+        manifestFileJs: 'manifests/build-manifest.js',
+      }),
+      tfxManager,
+      platform
+    );
+
+    const callArgs = mockExecute.mock.calls[0][0];
+    expect(callArgs).toContain('--manifest-js');
+    expect(callArgs).toContain('manifests/build-manifest.js');
+  });
+
   it('should apply extension ID override', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
     mockExecute.mockResolvedValue({
@@ -235,21 +257,6 @@ describe('packageExtension', () => {
 
     const callArgs = mockExecute.mock.calls[0][0];
     expect(callArgs).toContain('--bypass-validation');
-  });
-
-  it('should include rev-version flag', async () => {
-    const mockExecute = jest.spyOn(tfxManager, 'execute');
-    mockExecute.mockResolvedValue({
-      exitCode: 0,
-      json: { path: '/output/extension.vsix' },
-      stdout: '',
-      stderr: '',
-    });
-
-    await packageExtension(withManifestDefaults({ revVersion: true }), tfxManager, platform);
-
-    const callArgs = mockExecute.mock.calls[0][0];
-    expect(callArgs).toContain('--rev-version');
   });
 
   it('should set vsixPath output variable', async () => {
@@ -393,6 +400,53 @@ describe('packageExtension', () => {
     expect(platform.errorMessages.some((m) => m.includes('Failed to update task manifests'))).toBe(
       true
     );
+  });
+
+  it('should merge generated overrides into provided overrides file', async () => {
+    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-overrides-file-'));
+    const overridesPath = join(root, 'overrides.json');
+
+    await fs.writeFile(
+      join(root, 'vss-extension.json'),
+      JSON.stringify({ id: 'ext', publisher: 'pub', version: '1.0.0', files: [] }),
+      'utf-8'
+    );
+    await fs.writeFile(overridesPath, JSON.stringify({ description: 'keep-me' }, null, 2), 'utf-8');
+
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 0,
+      json: { path: '/output/extension.vsix' },
+      stdout: '',
+      stderr: '',
+    });
+
+    try {
+      await packageExtension(
+        {
+          rootFolder: root,
+          manifestGlobs: ['vss-extension.json'],
+          extensionVersion: '2.0.0',
+          overridesFile: overridesPath,
+        },
+        tfxManager,
+        platform
+      );
+
+      const callArgs = mockExecute.mock.calls[0][0];
+      const overridesFlagIndex = callArgs.lastIndexOf('--overrides-file');
+      expect(overridesFlagIndex).toBeGreaterThan(-1);
+      expect(callArgs[overridesFlagIndex + 1]).toBe(overridesPath);
+
+      const mergedOverrides = JSON.parse(await fs.readFile(overridesPath, 'utf-8')) as {
+        description?: string;
+        version?: string;
+      };
+      expect(mergedOverrides.description).toBe('keep-me');
+      expect(mergedOverrides.version).toBe('2.0.0');
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 
   it('should pass publisher and extension ID directly to tfx while synchronizing binary file entries', async () => {

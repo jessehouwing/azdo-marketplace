@@ -191,6 +191,8 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
   const options = {
     localizationRoot: platform.getInput('localizationRoot'),
     manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
+    manifestFileJs: platform.getInput('manifestFileJs'),
+    overridesFile: platform.getInput('overridesFile'),
     publisherId: platform.getInput('publisherId'),
     extensionId: platform.getInput('extensionId'),
     extensionVersion: platform.getInput('extensionVersion'),
@@ -209,7 +211,6 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
     updateTasksId: platform.getBoolInput('updateTasksId'),
     outputPath: platform.getInput('outputPath'),
     bypassValidation: platform.getBoolInput('bypassValidation'),
-    revVersion: platform.getBoolInput('revVersion'),
   };
 
   const result = await packageExtension(options, tfxManager, platform);
@@ -232,7 +233,9 @@ async function runPublish(
       publishSource: use,
       vsixFile: use === 'vsix' ? platform.getInput('vsixFile', true) : undefined,
       manifestGlobs:
-        use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n', true) : undefined,
+        use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
+      manifestFileJs: use === 'manifest' ? platform.getInput('manifestFileJs') : undefined,
+      overridesFile: use === 'manifest' ? platform.getInput('overridesFile') : undefined,
       localizationRoot: use === 'manifest' ? platform.getInput('localizationRoot') : undefined,
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),

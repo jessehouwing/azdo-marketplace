@@ -98,6 +98,8 @@ OR
 
 - `root-folder`: Root folder containing extension files
 - `manifest-file`: Manifest file path(s), newline-separated
+- `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
+- `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
 
 #### VSIX Source (when publish-source is vsix)
 

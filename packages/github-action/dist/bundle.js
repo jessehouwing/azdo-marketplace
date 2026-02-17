@@ -3098,7 +3098,7 @@ var init_filesystem_manifest_writer = __esm({
        *
        * @returns Promise that resolves when writing is complete
        */
-      async writeToFilesystem() {
+      async writeToFilesystem(options) {
         const reader = this.editor.getReader();
         const rootFolder = reader.getRootFolder();
         const manifestMods = this.editor.getManifestModifications();
@@ -3122,7 +3122,7 @@ var init_filesystem_manifest_writer = __esm({
             await writeFile(absolutePath, new Uint8Array(mod.content));
           }
         }
-        await this.generateOverridesFile(manifestMods);
+        await this.generateOverridesFile(manifestMods, options?.overridesFilePath);
         this.platform.info("Manifests written to filesystem successfully");
       }
       /**
@@ -3371,7 +3371,7 @@ var init_filesystem_manifest_writer = __esm({
        * This file can be passed to tfx with --overrides-file to override
        * extension manifest values during packaging without modifying source files.
        */
-      async generateOverridesFile(manifestMods) {
+      async generateOverridesFile(manifestMods, overridesFilePath) {
         if (Object.keys(manifestMods).length === 0) {
           this.platform.debug("No manifest modifications, skipping overrides.json generation");
           return;
@@ -3398,11 +3398,33 @@ var init_filesystem_manifest_writer = __esm({
         if (typeof manifestMods.public === "boolean") {
           overrides.public = manifestMods.public;
         }
-        const tempDir = this.platform.getTempDir();
-        await mkdir(tempDir, { recursive: true });
-        this.overridesPath = path4.join(tempDir, `overrides-${Date.now()}.json`);
+        let resolvedOverridesPath = overridesFilePath;
+        if (!resolvedOverridesPath) {
+          const tempDir = this.platform.getTempDir();
+          await mkdir(tempDir, { recursive: true });
+          resolvedOverridesPath = path4.join(tempDir, `overrides-${Date.now()}.json`);
+        } else {
+          await mkdir(path4.dirname(resolvedOverridesPath), { recursive: true });
+        }
+        let existingOverrides = {};
+        if (await this.platform.fileExists(resolvedOverridesPath)) {
+          try {
+            const existingContent = (await readFile2(resolvedOverridesPath)).toString("utf8").trim();
+            if (existingContent) {
+              existingOverrides = JSON.parse(existingContent);
+            }
+          } catch (error2) {
+            const message = error2 instanceof Error ? error2.message : String(error2);
+            throw new Error(`Failed to read overrides file '${resolvedOverridesPath}': ${message}`);
+          }
+        }
+        const mergedOverrides = {
+          ...existingOverrides,
+          ...overrides
+        };
+        this.overridesPath = resolvedOverridesPath;
         this.platform.debug(`Writing overrides file: ${this.overridesPath}`);
-        const overridesJson = JSON.stringify(overrides, null, 2) + "\n";
+        const overridesJson = JSON.stringify(mergedOverrides, null, 2) + "\n";
         await writeFile(this.overridesPath, overridesJson, "utf-8");
         this.platform.info(`Generated overrides file: ${this.overridesPath}`);
       }
@@ -5264,6 +5286,7 @@ async function validateAzureCliAvailable(platform, logVersion = true) {
 }
 
 // packages/core/dist/commands/package.js
+import { cwd } from "process";
 init_filesystem_manifest_reader();
 init_manifest_editor();
 async function packageExtension(options, tfx, platform) {
@@ -5279,8 +5302,8 @@ async function packageExtension(options, tfx, platform) {
     args.flag("--manifest-globs");
     options.manifestGlobs.forEach((glob) => args.arg(glob));
   }
-  if (options.overridesFile) {
-    args.option("--overrides-file", options.overridesFile);
+  if (options.manifestFileJs) {
+    args.option("--manifest-js", options.manifestFileJs);
   }
   if (options.publisherId) {
     args.option("--publisher", options.publisherId);
@@ -5295,16 +5318,13 @@ async function packageExtension(options, tfx, platform) {
   if (options.bypassValidation) {
     args.flag("--bypass-validation");
   }
-  if (options.revVersion) {
-    args.flag("--rev-version");
-  }
   let cleanupWriter = null;
   const synchronizeBinaryFileEntries = true;
   const shouldApplyManifestOptions = options.updateTasksVersion && options.updateTasksVersion !== "none" || options.updateTasksId || options.extensionVersion || options.extensionName || options.extensionVisibility || options.extensionPricing || synchronizeBinaryFileEntries;
   if (shouldApplyManifestOptions) {
     platform.info("Updating task manifests before packaging...");
     try {
-      const rootFolder = options.rootFolder || ".";
+      const rootFolder = options.rootFolder || cwd();
       const manifestGlobs = options.manifestGlobs || ["vss-extension.json"];
       const reader = new FilesystemManifestReader({
         rootFolder,
@@ -5324,11 +5344,13 @@ async function packageExtension(options, tfx, platform) {
         synchronizeBinaryFileEntries
       });
       const writer = await editor.toWriter();
-      await writer.writeToFilesystem();
+      await writer.writeToFilesystem({ overridesFilePath: options.overridesFile });
       const overridesPath = writer.getOverridesPath();
       if (overridesPath) {
         platform.debug(`Using overrides file: ${overridesPath}`);
         args.option("--overrides-file", overridesPath);
+      } else if (options.overridesFile) {
+        args.option("--overrides-file", options.overridesFile);
       }
       cleanupWriter = async () => {
         await writer.close();
@@ -5341,6 +5363,9 @@ async function packageExtension(options, tfx, platform) {
     }
   }
   try {
+    if (options.overridesFile && !args.build().includes("--overrides-file")) {
+      args.option("--overrides-file", options.overridesFile);
+    }
     const result = await tfx.execute(args.build(), { captureJson: true });
     if (result.exitCode !== 0) {
       platform.error(`tfx exited with code ${result.exitCode}`);
@@ -5369,6 +5394,7 @@ async function packageExtension(options, tfx, platform) {
 // packages/core/dist/commands/publish.js
 import { copyFile, mkdir as mkdir2 } from "fs/promises";
 import { basename, join } from "path";
+import { cwd as cwd2 } from "process";
 init_manifest_editor();
 init_vsix_reader();
 async function executeTfxPublish(tfx, args, platform, options, publishedVsixPath) {
@@ -5461,8 +5487,8 @@ async function publishExtension(options, auth, tfx, platform) {
       args.flag("--manifest-globs");
       options.manifestGlobs.forEach((glob) => args.arg(glob));
     }
-    if (options.overridesFile) {
-      args.option("--overrides-file", options.overridesFile);
+    if (options.manifestFileJs) {
+      args.option("--manifest-js", options.manifestFileJs);
     }
     if (options.publisherId) {
       args.option("--publisher", options.publisherId);
@@ -5487,7 +5513,7 @@ async function publishExtension(options, auth, tfx, platform) {
       try {
         const { FilesystemManifestReader: FilesystemManifestReader2 } = await Promise.resolve().then(() => (init_filesystem_manifest_reader(), filesystem_manifest_reader_exports));
         const { ManifestEditor: ManifestEditor2 } = await Promise.resolve().then(() => (init_manifest_editor(), manifest_editor_exports));
-        const rootFolder = options.rootFolder || ".";
+        const rootFolder = options.rootFolder || cwd2();
         const manifestGlobs = options.manifestGlobs || ["vss-extension.json"];
         const reader = new FilesystemManifestReader2({
           rootFolder,
@@ -5507,11 +5533,13 @@ async function publishExtension(options, auth, tfx, platform) {
           synchronizeBinaryFileEntries
         });
         const writer = await editor.toWriter();
-        await writer.writeToFilesystem();
+        await writer.writeToFilesystem({ overridesFilePath: options.overridesFile });
         const overridesPath = writer.getOverridesPath();
         if (overridesPath) {
           platform.debug(`Using overrides file: ${overridesPath}`);
           args.option("--overrides-file", overridesPath);
+        } else if (options.overridesFile) {
+          args.option("--overrides-file", options.overridesFile);
         }
         cleanupWriter = async () => {
           await writer.close();
@@ -5524,6 +5552,9 @@ async function publishExtension(options, auth, tfx, platform) {
       }
     }
     try {
+      if (options.overridesFile && !args.build().includes("--overrides-file")) {
+        args.option("--overrides-file", options.overridesFile);
+      }
       return await executeTfxPublish(tfx, args, platform, options);
     } finally {
       if (cleanupWriter) {
@@ -6452,24 +6483,24 @@ function ensureAbsoluteRoot(root, itemPath) {
   }
   if (IS_WINDOWS) {
     if (itemPath.match(/^[A-Z]:[^\\/]|^[A-Z]:$/i)) {
-      let cwd = process.cwd();
-      assert(cwd.match(/^[A-Z]:\\/i), `Expected current directory to start with an absolute drive root. Actual '${cwd}'`);
-      if (itemPath[0].toUpperCase() === cwd[0].toUpperCase()) {
+      let cwd3 = process.cwd();
+      assert(cwd3.match(/^[A-Z]:\\/i), `Expected current directory to start with an absolute drive root. Actual '${cwd3}'`);
+      if (itemPath[0].toUpperCase() === cwd3[0].toUpperCase()) {
         if (itemPath.length === 2) {
-          return `${itemPath[0]}:\\${cwd.substr(3)}`;
+          return `${itemPath[0]}:\\${cwd3.substr(3)}`;
         } else {
-          if (!cwd.endsWith("\\")) {
-            cwd += "\\";
+          if (!cwd3.endsWith("\\")) {
+            cwd3 += "\\";
           }
-          return `${itemPath[0]}:\\${cwd.substr(3)}${itemPath.substr(2)}`;
+          return `${itemPath[0]}:\\${cwd3.substr(3)}${itemPath.substr(2)}`;
         }
       } else {
         return `${itemPath[0]}:\\${itemPath.substr(2)}`;
       }
     } else if (normalizeSeparators(itemPath).match(/^\\$|^\\[^\\]/)) {
-      const cwd = process.cwd();
-      assert(cwd.match(/^[A-Z]:\\/i), `Expected current directory to start with an absolute drive root. Actual '${cwd}'`);
-      return `${cwd[0]}:\\${itemPath.substr(1)}`;
+      const cwd3 = process.cwd();
+      assert(cwd3.match(/^[A-Z]:\\/i), `Expected current directory to start with an absolute drive root. Actual '${cwd3}'`);
+      return `${cwd3[0]}:\\${itemPath.substr(1)}`;
     }
   }
   assert(hasAbsoluteRoot(root), `ensureAbsoluteRoot parameter 'root' must have an absolute root`);
@@ -7368,6 +7399,8 @@ async function runPackage(platform, tfxManager) {
   const options = {
     localizationRoot: platform.getInput("localization-root"),
     manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
+    manifestFileJs: platform.getInput("manifest-file-js"),
+    overridesFile: platform.getInput("overrides-file"),
     publisherId: platform.getInput("publisher-id"),
     extensionId: platform.getInput("extension-id"),
     extensionVersion: platform.getInput("extension-version"),
@@ -7377,8 +7410,7 @@ async function runPackage(platform, tfxManager) {
     updateTasksVersion: getUpdateTasksVersionMode(platform),
     updateTasksId: platform.getBoolInput("update-tasks-id"),
     outputPath: platform.getInput("output-path"),
-    bypassValidation: platform.getBoolInput("bypass-validation"),
-    revVersion: platform.getBoolInput("rev-version")
+    bypassValidation: platform.getBoolInput("bypass-validation")
   };
   const result = await packageExtension(options, tfxManager, platform);
   if (result.vsixPath) {
@@ -7392,7 +7424,9 @@ async function runPublish(platform, tfxManager, auth) {
     {
       publishSource,
       vsixFile: publishSource === "vsix" ? platform.getInput("vsix-file", true) : void 0,
-      manifestGlobs: publishSource === "manifest" ? platform.getDelimitedInput("manifest-file", "\n", true) : void 0,
+      manifestGlobs: publishSource === "manifest" ? platform.getDelimitedInput("manifest-file", "\n") : void 0,
+      manifestFileJs: publishSource === "manifest" ? platform.getInput("manifest-file-js") : void 0,
+      overridesFile: publishSource === "manifest" ? platform.getInput("overrides-file") : void 0,
       localizationRoot: publishSource === "manifest" ? platform.getInput("localization-root") : void 0,
       publisherId: platform.getInput("publisher-id"),
       extensionId: platform.getInput("extension-id"),

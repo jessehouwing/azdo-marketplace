@@ -148,6 +148,22 @@
       "visibleRule": "use = manifest"
     },
     {
+      "name": "manifestFileJs",
+      "type": "filePath",
+      "label": "Manifest JS File",
+      "required": false,
+      "helpMarkDown": "**Path to a JavaScript manifest file** exported for tfx `--manifest-js`.\n\n- Optional alternative/addition to `manifestFile`\n- Must export a function returning manifest JSON\n- Path is relative to the current working directory",
+      "visibleRule": "use = manifest && operation != wait-for-installation"
+    },
+    {
+      "name": "overridesFile",
+      "type": "filePath",
+      "label": "Overrides File",
+      "required": false,
+      "helpMarkDown": "**Path to a JSON overrides file** for tfx `--overrides-file`.\n\n- Optional for manifest-based package/publish\n- Existing values are preserved unless overridden by other task inputs\n- Task-generated manifest changes are merged into this file",
+      "visibleRule": "use = manifest && operation != wait-for-installation"
+    },
+    {
       "name": "vsixFile",
       "type": "filePath",
       "label": "VSIX File",
@@ -247,15 +263,6 @@
       "defaultValue": "false",
       "helpMarkDown": "**Skip extension validation checks** during package/publish.\n\n- Not recommended for production use\n- Use only when validation incorrectly fails\n- May result in extension rejection by marketplace\n\n**Default**: false (validation enabled)",
       "visibleRule": "operation = package || operation = publish"
-    },
-    {
-      "name": "revVersion",
-      "type": "boolean",
-      "label": "Auto-increment Version",
-      "required": false,
-      "defaultValue": "false",
-      "helpMarkDown": "**Automatically increment the patch version** of the extension.\n\n- Increments the last digit: `1.2.3` → `1.2.4`\n- Applied before packaging\n- Useful for automated builds\n\n**Note**: Does not modify source manifest file, only the packaged version\n\n**Default**: false",
-      "visibleRule": "operation = package"
     },
     {
       "name": "accounts",

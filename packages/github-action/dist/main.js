@@ -52,14 +52,12 @@ async function run() {
             // Get authentication credentials with optional service/marketplace URLs
             const token = platform.getInput('token');
             const username = platform.getInput('username');
-            const password = platform.getInput('password');
             const serviceUrl = operation === 'install' || operation === 'wait-for-installation'
                 ? undefined
                 : platform.getInput('service-url');
             auth = await getAuth(authType, platform, {
                 token,
                 username,
-                password,
                 serviceUrl,
             });
             // Secret masking is now handled inside auth providers
@@ -140,9 +138,10 @@ function getUpdateTasksVersionMode(platform) {
 async function runPackage(platform, tfxManager) {
     const extensionPricingInput = platform.getInput('extension-pricing');
     const options = {
-        rootFolder: platform.getInput('root-folder'),
         localizationRoot: platform.getInput('localization-root'),
         manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
+        manifestFileJs: platform.getInput('manifest-file-js'),
+        overridesFile: platform.getInput('overrides-file'),
         publisherId: platform.getInput('publisher-id'),
         extensionId: platform.getInput('extension-id'),
         extensionVersion: platform.getInput('extension-version'),
@@ -155,7 +154,6 @@ async function runPackage(platform, tfxManager) {
         updateTasksId: platform.getBoolInput('update-tasks-id'),
         outputPath: platform.getInput('output-path'),
         bypassValidation: platform.getBoolInput('bypass-validation'),
-        revVersion: platform.getBoolInput('rev-version'),
     };
     const result = await packageExtension(options, tfxManager, platform);
     if (result.vsixPath) {
@@ -169,9 +167,10 @@ async function runPublish(platform, tfxManager, auth) {
         publishSource,
         vsixFile: publishSource === 'vsix' ? platform.getInput('vsix-file', true) : undefined,
         manifestGlobs: publishSource === 'manifest'
-            ? platform.getDelimitedInput('manifest-file', '\n', true)
+            ? platform.getDelimitedInput('manifest-file', '\n')
             : undefined,
-        rootFolder: publishSource === 'manifest' ? platform.getInput('root-folder') : undefined,
+        manifestFileJs: publishSource === 'manifest' ? platform.getInput('manifest-file-js') : undefined,
+        overridesFile: publishSource === 'manifest' ? platform.getInput('overrides-file') : undefined,
         localizationRoot: publishSource === 'manifest' ? platform.getInput('localization-root') : undefined,
         publisherId: platform.getInput('publisher-id'),
         extensionId: platform.getInput('extension-id'),
@@ -252,7 +251,6 @@ async function runWaitForValidation(platform, tfxManager, auth) {
         extensionId: platform.getInput('extension-id'),
         vsixPath: platform.getInput('vsix-path'),
         extensionVersion: platform.getInput('extension-version'),
-        rootFolder: platform.getInput('root-folder'),
         manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
         maxRetries: parseInt(platform.getInput('max-retries') || '10'),
         minTimeout: parseInt(platform.getInput('min-timeout') || '1'),

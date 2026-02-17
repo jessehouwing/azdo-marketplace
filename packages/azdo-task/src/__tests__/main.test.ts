@@ -163,6 +163,8 @@ describe('Azure DevOps main entrypoint', () => {
         extensionName: 'Name',
         extensionVisibility: 'private_preview',
         extensionPricing: 'free',
+        manifestFileJs: 'manifests/build-manifest.js',
+        overridesFile: 'manifests/overrides.json',
         updateTasksVersion: 'major',
       },
       boolInputs: {
@@ -184,6 +186,8 @@ describe('Azure DevOps main entrypoint', () => {
         extensionName: 'Name',
         extensionVisibility: 'private_preview',
         extensionPricing: 'free',
+        manifestFileJs: 'manifests/build-manifest.js',
+        overridesFile: 'manifests/overrides.json',
         updateTasksVersion: 'major',
         updateTasksId: true,
       }),
@@ -200,6 +204,8 @@ describe('Azure DevOps main entrypoint', () => {
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
         use: 'manifest',
+        manifestFileJs: 'manifests/build-manifest.js',
+        overridesFile: 'manifests/overrides.json',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -213,7 +219,15 @@ describe('Azure DevOps main entrypoint', () => {
     expect(validateNpmAvailableMock).not.toHaveBeenCalled();
     expect(getAuthMock).toHaveBeenCalledWith('PAT', 'svc-connection', platform);
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
-    expect(publishExtensionMock).toHaveBeenCalled();
+    expect(publishExtensionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        manifestFileJs: 'manifests/build-manifest.js',
+        overridesFile: 'manifests/overrides.json',
+      }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
     expect(platform.setOutput).toHaveBeenCalledWith('published', 'true');
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'publish completed successfully');
   });

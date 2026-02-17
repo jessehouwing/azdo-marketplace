@@ -200,6 +200,8 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
   const options = {
     localizationRoot: platform.getInput('localization-root'),
     manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
+    manifestFileJs: platform.getInput('manifest-file-js'),
+    overridesFile: platform.getInput('overrides-file'),
     publisherId: platform.getInput('publisher-id'),
     extensionId: platform.getInput('extension-id'),
     extensionVersion: platform.getInput('extension-version'),
@@ -218,7 +220,6 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
     updateTasksId: platform.getBoolInput('update-tasks-id'),
     outputPath: platform.getInput('output-path'),
     bypassValidation: platform.getBoolInput('bypass-validation'),
-    revVersion: platform.getBoolInput('rev-version'),
   };
 
   const result = await packageExtension(options, tfxManager, platform);
@@ -242,8 +243,11 @@ async function runPublish(
       vsixFile: publishSource === 'vsix' ? platform.getInput('vsix-file', true) : undefined,
       manifestGlobs:
         publishSource === 'manifest'
-          ? platform.getDelimitedInput('manifest-file', '\n', true)
+          ? platform.getDelimitedInput('manifest-file', '\n')
           : undefined,
+      manifestFileJs:
+        publishSource === 'manifest' ? platform.getInput('manifest-file-js') : undefined,
+      overridesFile: publishSource === 'manifest' ? platform.getInput('overrides-file') : undefined,
       localizationRoot:
         publishSource === 'manifest' ? platform.getInput('localization-root') : undefined,
       publisherId: platform.getInput('publisher-id'),

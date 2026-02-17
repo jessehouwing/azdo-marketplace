@@ -72,7 +72,7 @@ export class FilesystemManifestWriter {
    *
    * @returns Promise that resolves when writing is complete
    */
-  async writeToFilesystem(): Promise<void> {
+  async writeToFilesystem(options?: { overridesFilePath?: string }): Promise<void> {
     const reader = this.editor.getReader() as FilesystemManifestReader;
     const rootFolder = (reader as any).getRootFolder() as string;
 
@@ -112,7 +112,7 @@ export class FilesystemManifestWriter {
 
     // Step 4: Generate overrides.json for extension manifest overrides
     // This is used by tfx during packaging to override values without modifying source
-    await this.generateOverridesFile(manifestMods);
+    await this.generateOverridesFile(manifestMods, options?.overridesFilePath);
 
     this.platform.info('Manifests written to filesystem successfully');
   }
@@ -487,7 +487,10 @@ export class FilesystemManifestWriter {
    * This file can be passed to tfx with --overrides-file to override
    * extension manifest values during packaging without modifying source files.
    */
-  private async generateOverridesFile(manifestMods: Partial<ExtensionManifest>): Promise<void> {
+  private async generateOverridesFile(
+    manifestMods: Partial<ExtensionManifest>,
+    overridesFilePath?: string
+  ): Promise<void> {
     if (Object.keys(manifestMods).length === 0) {
       this.platform.debug('No manifest modifications, skipping overrides.json generation');
       return;
@@ -524,13 +527,41 @@ export class FilesystemManifestWriter {
       overrides.public = (manifestMods as { public?: boolean }).public;
     }
 
-    // Write to temp directory
-    const tempDir = this.platform.getTempDir();
-    await mkdir(tempDir, { recursive: true });
-    this.overridesPath = path.join(tempDir, `overrides-${Date.now()}.json`);
+    let resolvedOverridesPath = overridesFilePath;
+    if (!resolvedOverridesPath) {
+      const tempDir = this.platform.getTempDir();
+      await mkdir(tempDir, { recursive: true });
+      resolvedOverridesPath = path.join(tempDir, `overrides-${Date.now()}.json`);
+    } else {
+      await mkdir(path.dirname(resolvedOverridesPath), { recursive: true });
+    }
+
+    let existingOverrides: Record<string, unknown> = {};
+    if (await this.platform.fileExists(resolvedOverridesPath)) {
+      try {
+        const existingContent = (await readFile(resolvedOverridesPath)).toString('utf8').trim();
+        if (existingContent) {
+          existingOverrides = JSON.parse(existingContent) as Record<string, unknown>;
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        const wrappedError = new Error(
+          `Failed to read overrides file '${resolvedOverridesPath}': ${message}`
+        ) as Error & { cause?: unknown };
+        wrappedError.cause = error;
+        throw wrappedError;
+      }
+    }
+
+    const mergedOverrides = {
+      ...existingOverrides,
+      ...overrides,
+    };
+
+    this.overridesPath = resolvedOverridesPath;
 
     this.platform.debug(`Writing overrides file: ${this.overridesPath}`);
-    const overridesJson = JSON.stringify(overrides, null, 2) + '\n';
+    const overridesJson = JSON.stringify(mergedOverrides, null, 2) + '\n';
     await writeFile(this.overridesPath, overridesJson, 'utf-8');
 
     this.platform.info(`Generated overrides file: ${this.overridesPath}`);

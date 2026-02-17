@@ -170,12 +170,13 @@ describe('GitHub Action main entrypoint', () => {
         'extension-name': 'Name',
         'extension-visibility': 'private',
         'output-path': '/out',
+        'manifest-file-js': 'manifests/build-manifest.js',
+        'overrides-file': 'manifests/overrides.json',
         'update-tasks-version': 'major',
       },
       boolInputs: {
         'update-tasks-id': true,
         'bypass-validation': false,
-        'rev-version': false,
       },
       delimitedInputs: {
         'manifest-file|\n': ['vss-extension.json'],
@@ -192,6 +193,8 @@ describe('GitHub Action main entrypoint', () => {
         extensionVersion: '1.2.3',
         extensionName: 'Name',
         extensionVisibility: 'private',
+        manifestFileJs: 'manifests/build-manifest.js',
+        overridesFile: 'manifests/overrides.json',
         updateTasksVersion: 'major',
         updateTasksId: true,
         outputPath: '/out',
@@ -211,6 +214,8 @@ describe('GitHub Action main entrypoint', () => {
         'auth-type': 'oidc',
         'publish-source': 'manifest',
         'output-path': '/out',
+        'manifest-file-js': 'manifests/build-manifest.js',
+        'overrides-file': 'manifests/overrides.json',
       },
       delimitedInputs: {
         'manifest-file|\n': ['vss-extension.json'],
@@ -230,7 +235,11 @@ describe('GitHub Action main entrypoint', () => {
     expect(platform.setSecret).toHaveBeenCalledWith('token');
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
     expect(publishExtensionMock).toHaveBeenCalledWith(
-      expect.objectContaining({ outputPath: '/out' }),
+      expect.objectContaining({
+        outputPath: '/out',
+        manifestFileJs: 'manifests/build-manifest.js',
+        overridesFile: 'manifests/overrides.json',
+      }),
       expect.anything(),
       expect.anything(),
       platform

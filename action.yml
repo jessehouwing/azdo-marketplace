@@ -168,6 +168,30 @@ inputs:
       manifests/prod/vss-extension.json
       ```
     required: false
+  manifest-file-js:
+    description: |-
+      **Manifest JS file path** for tfx `--manifest-js`.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
+
+      - Path to JavaScript file exporting a function that returns manifest JSON
+      - Path is relative to the current working directory
+      - Optional alternative/addition to `manifest-file`
+    required: false
+  overrides-file:
+    description: |-
+      **Overrides JSON file path** for tfx `--overrides-file`.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
+
+      - Existing JSON is preserved unless overridden by explicit inputs
+      - Manifest updates from this action are merged into this file
+      - Path is relative to the current working directory
+    required: false
   vsix-file:
     description: |-
       **Path to pre-built .vsix file** (for publish operation).
@@ -293,21 +317,6 @@ inputs:
       - May result in extension rejection by marketplace
 
       **Default:** `false` (validation enabled)
-    required: false
-    default: 'false'
-  rev-version:
-    description: |-
-      **Automatically increment the patch version** of the extension.
-
-      Available for: package.
-      Required for: none.
-      Default: false
-
-      - Increments the last digit: `1.2.3` → `1.2.4`
-      - Applied before packaging
-      - Does not modify source manifest file
-
-      **Default:** `false`
     required: false
     default: 'false'
   no-wait-validation:

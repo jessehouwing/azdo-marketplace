@@ -17,6 +17,7 @@ export interface PackageOptions {
   rootFolder?: string;
   localizationRoot?: string;
   manifestGlobs?: string[];
+  manifestFileJs?: string;
   overridesFile?: string;
 
   // Overrides
@@ -36,7 +37,6 @@ export interface PackageOptions {
 
   // Behavior
   bypassValidation?: boolean;
-  revVersion?: boolean;
 }
 
 /**
@@ -86,8 +86,8 @@ export async function packageExtension(
     options.manifestGlobs.forEach((glob) => args.arg(glob));
   }
 
-  if (options.overridesFile) {
-    args.option('--overrides-file', options.overridesFile);
+  if (options.manifestFileJs) {
+    args.option('--manifest-js', options.manifestFileJs);
   }
 
   // Overrides
@@ -109,10 +109,6 @@ export async function packageExtension(
   // Flags
   if (options.bypassValidation) {
     args.flag('--bypass-validation');
-  }
-
-  if (options.revVersion) {
-    args.flag('--rev-version');
   }
 
   // Handle manifest updates using the unified architecture
@@ -158,13 +154,15 @@ export async function packageExtension(
 
       // Write modifications to filesystem
       const writer = await editor.toWriter();
-      await writer.writeToFilesystem();
+      await writer.writeToFilesystem({ overridesFilePath: options.overridesFile });
 
       // Get overrides file path if generated
       const overridesPath = writer.getOverridesPath();
       if (overridesPath) {
         platform.debug(`Using overrides file: ${overridesPath}`);
         args.option('--overrides-file', overridesPath);
+      } else if (options.overridesFile) {
+        args.option('--overrides-file', options.overridesFile);
       }
 
       // Setup cleanup function
@@ -181,6 +179,10 @@ export async function packageExtension(
   }
 
   try {
+    if (options.overridesFile && !args.build().includes('--overrides-file')) {
+      args.option('--overrides-file', options.overridesFile);
+    }
+
     // Execute tfx
     const result = await tfx.execute(args.build(), { captureJson: true });
 
