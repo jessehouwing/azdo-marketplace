@@ -377,10 +377,10 @@
   ],
   "execution": {
     "Node20_1": {
-      "target": "dist/main.js"
+      "target": "dist/bundle.js"
     },
     "Node24": {
-      "target": "dist/main.js"
+      "target": "dist/bundle.js"
     }
   }
 }
