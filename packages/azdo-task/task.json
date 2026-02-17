@@ -125,7 +125,7 @@
       "required": true,
       "defaultValue": "manifest",
       "helpMarkDown": "**Input source mode** for operations that support manifest or VSIX input.\n\n- **Manifest files**: Use `manifestFile` (and optional `localizationRoot`) from the current working directory\n- **VSIX file**: Use `vsixFile`",
-      "visibleRule": "operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = wait-for-validation || operation = wait-for-installation",
+      "visibleRule": "operation = package || operation = publish || operation = wait-for-installation",
       "options": {
         "manifest": "Manifest files",
         "vsix": "VSIX file"
@@ -137,7 +137,7 @@
       "label": "Localization Root Folder",
       "required": false,
       "helpMarkDown": "**Folder containing localization files** for multi-language support.\n\n- Should contain language-specific resource files\n- Typically structured as: `localization/{locale}/resources.resjson`\n- If not specified, no localization is included\n\n**Example**: `$(Build.SourcesDirectory)/localization`",
-      "visibleRule": "operation = package && use = manifest"
+      "visibleRule": "use = manifest && operation != wait-for-installation"
     },
     {
       "name": "manifestFile",
@@ -145,7 +145,7 @@
       "label": "Manifest File(s)",
       "required": false,
       "helpMarkDown": "**Manifest file path(s)** (one per line).\n\n- Defaults to `vss-extension.json` if not specified\n- Supports multiple manifest files\n- Paths are relative to the current working directory\n\n**Examples**:\n- `vss-extension.json`\n- `manifests/dev/vss-extension.json`\n- `manifests/prod/vss-extension.json`",
-      "visibleRule": "operation = package || use = manifest"
+      "visibleRule": "use = manifest"
     },
     {
       "name": "vsixFile",
@@ -153,7 +153,7 @@
       "label": "VSIX File",
       "required": false,
       "helpMarkDown": "**Path to .vsix file** used for VSIX mode and VSIX identity fallback.\n\n- For publish: required when `use = vsix`\n- For install/share/unshare/unpublish/wait-for-validation: reads publisher/extension identity from VSIX when IDs are omitted\n- For wait-for-installation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For wait-for-installation, use this OR expectedTasks/manifestFile, not multiple options",
-      "visibleRule": "use = vsix"
+      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = wait-for-validation || operation = wait-for-installation"
     },
     {
       "name": "extensionVersion",

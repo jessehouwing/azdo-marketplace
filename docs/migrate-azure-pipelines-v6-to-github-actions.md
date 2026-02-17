@@ -47,7 +47,7 @@ Common input mappings:
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
 - `manifestFile` → `manifest-file`
-- `use` → `publish-source`
+- `use` → `publish-source` (publish flows)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 - `localizationRoot` → `localization-root`
@@ -58,6 +58,7 @@ Common input mappings:
 
 - Use `accounts` for `install`, `share`, `unshare`, and `wait-for-installation` on both platforms.
 - Do not map any publish sharing input; publish-time sharing was removed. Use a dedicated `share` step with `accounts`.
+- Azure Pipelines `wait-for-validation` uses VSIX input (`vsixFile`) instead of manifest selection.
 
 ## Account input mapping
 

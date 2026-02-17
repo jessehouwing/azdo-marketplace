@@ -51,7 +51,7 @@ These appear across multiple operations.
 
 - `manifestFile`
 - `localizationRoot`
-- `use` (`manifest` or `vsix`)
+- `use` (`manifest` or `vsix`) for `package`, `publish`, and `wait-for-installation`
 - `vsixFile` (publish from VSIX)
 
 ### Overrides and behavior
@@ -184,7 +184,7 @@ Polls Marketplace validation result.
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
-  - `manifestFile`
+  - `vsixFile`
   - `maxRetries`, `minTimeout`, `maxTimeout`
   - `tfxVersion`
 

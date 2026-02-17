@@ -269,14 +269,11 @@ async function runUnpublish(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
-  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
-
   await unpublishExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath:
-        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
     },
     auth,
     tfxManager,
@@ -289,14 +286,11 @@ async function runShare(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
-  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
-
   await shareExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath:
-        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -312,14 +306,11 @@ async function runUnshare(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
-  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
-
   await unshareExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath:
-        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -335,14 +326,11 @@ async function runInstall(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
-  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
-
   const result = await installExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath:
-        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -422,17 +410,12 @@ async function runWaitForValidation(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
-  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
-
   const result = await waitForValidation(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath:
-        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       extensionVersion: platform.getInput('extensionVersion'),
-      manifestGlobs:
-        use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
       maxRetries: parseInt(platform.getInput('maxRetries') || '10'),
       minTimeout: parseInt(platform.getInput('minTimeout') || '1'),
       maxTimeout: parseInt(platform.getInput('maxTimeout') || '15'),

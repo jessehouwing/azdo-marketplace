@@ -76,14 +76,19 @@ When migrating to v6, update account-related inputs as follows:
 
 Use this mapping carefully when updating YAML:
 
-| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                      |
-| ------------------------------------------------------------ | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `wait-for-installation`.                        |
-| `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, wait-for-validation, and wait-for-installation. |
-| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                           |
-| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `wait-for-installation` no longer take `serviceUrl`; each account resolves to service URL.   |
-| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                            |
-| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                                |
+| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                    |
+| ------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `wait-for-installation`.                      |
+| `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, and wait-for-installation.                    |
+| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                         |
+| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `wait-for-installation` no longer take `serviceUrl`; each account resolves to service URL. |
+| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                          |
+| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                              |
+
+Additional source selection behavior in v6:
+
+- `use` is shown for `package`, `publish`, and `wait-for-installation`.
+- `wait-for-validation` is VSIX-based; provide `vsixFile` when inferring identity from package metadata.
 
 Additional v6 package/publish inputs:
 
