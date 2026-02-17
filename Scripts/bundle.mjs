@@ -208,7 +208,9 @@ async function ensureExecutableBinScripts(target) {
 
   const entries = await fs.readdir(binDir, { withFileTypes: true });
   const extensionlessScripts = entries
-    .filter((entry) => entry.isFile() && path.extname(entry.name) === '')
+    .filter(
+      (entry) => (entry.isFile() || entry.isSymbolicLink()) && path.extname(entry.name) === ''
+    )
     .map((entry) => entry.name);
 
   if (extensionlessScripts.length === 0) {
@@ -232,19 +234,29 @@ async function ensureExecutableBinScripts(target) {
   try {
     const trackedOutput = await runCommandCapture(
       'git',
-      ['ls-files', '--', ...relativePaths],
+      ['ls-files', '--stage', '--', ...relativePaths],
       rootDir
     );
-    const trackedPaths = new Set(
-      trackedOutput
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-    );
 
-    const trackedExtensionlessScripts = relativePaths.filter((scriptPath) =>
-      trackedPaths.has(scriptPath)
-    );
+    const trackedExtensionlessScripts = trackedOutput
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split(/\s+/);
+        const mode = parts[0];
+        const filePath = parts.slice(3).join(' ');
+        return { mode, filePath };
+      })
+      .filter(
+        ({ mode, filePath }) =>
+          mode !== '120000' && filePath.startsWith(`${target.packageDir}/dist/node_modules/.bin/`)
+      )
+      .map(({ filePath }) => filePath)
+      .filter((filePath) => {
+        const ext = path.posix.extname(filePath);
+        return ext === '';
+      });
 
     if (trackedExtensionlessScripts.length > 0) {
       await runCommand(
