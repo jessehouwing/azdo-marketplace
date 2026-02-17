@@ -23,6 +23,8 @@ export interface WaitForValidationOptions {
   extensionId?: string;
   /** Path to VSIX file to infer publisher/extension identity */
   vsixPath?: string;
+  /** Optional extension version to validate */
+  extensionVersion?: string;
   /** Root folder for manifest (if validating from manifest) */
   rootFolder?: string;
   /** Manifest globs (if validating from manifest) */
@@ -51,6 +53,18 @@ export interface WaitForValidationResult {
   attempts: number;
   /** Exit code from tfx */
   exitCode: number;
+}
+
+interface ValidationStepResult {
+  status?: string;
+  source?: string;
+  message?: string;
+  details?: unknown[];
+  reports?: unknown[];
+}
+
+interface ValidationPayload {
+  results?: ValidationStepResult[];
 }
 
 /**
@@ -94,6 +108,10 @@ export async function waitForValidation(
       .flag('--no-color')
       .option('--publisher', identity.publisherId)
       .option('--extension-id', extensionId);
+
+    if (options.extensionVersion) {
+      args.option('--extension-version', options.extensionVersion);
+    }
 
     // Manifest arguments if provided
     if (options.rootFolder) {
@@ -153,6 +171,7 @@ export async function waitForValidation(
 
           case 'failed':
           case 'error':
+            logValidationFailureDetails(json, platform);
             platform.error(`✗ Extension validation failed: ${lastStatus}`);
             return {
               status: lastStatus,
@@ -193,6 +212,63 @@ export async function waitForValidation(
     attempts,
     exitCode: lastExitCode,
   };
+}
+
+function parseValidationPayload(raw: unknown): ValidationPayload | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  if (typeof raw === 'string') {
+    try {
+      return parseValidationPayload(JSON.parse(raw));
+    } catch {
+      return undefined;
+    }
+  }
+
+  if (typeof raw === 'object') {
+    const payload = raw as ValidationPayload;
+    if (Array.isArray(payload.results)) {
+      return payload;
+    }
+  }
+
+  return undefined;
+}
+
+function logValidationFailureDetails(json: any, platform: IPlatformAdapter): void {
+  if (!json || typeof json !== 'object') {
+    return;
+  }
+
+  const parsed =
+    parseValidationPayload(json) ||
+    (typeof json.message === 'string' && json.message.trim().length > 0
+      ? parseValidationPayload(json.message)
+      : undefined);
+
+  if (!parsed?.results?.length) {
+    if (typeof json.message === 'string' && json.message.trim().length > 0) {
+      platform.error(`Validation message: ${json.message}`);
+    }
+    return;
+  }
+
+  for (const step of parsed.results) {
+    const status = (step.status ?? '').toLowerCase();
+    const isSuccess = status === 'success';
+    const icon = isSuccess ? '✅' : '❌';
+    const source = step.source ?? 'unknown-step';
+    const message = step.message?.trim() || '';
+    const line = `${icon} ${source}: ${message}`;
+
+    if (isSuccess) {
+      platform.info(line);
+    } else {
+      platform.error(line);
+    }
+  }
 }
 
 /**

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { AuthCredentials } from '../auth.js';
 import { waitForValidation } from '../commands/wait-for-validation.js';
 import { TfxManager } from '../tfx-manager.js';
-import { MockPlatformAdapter } from './helpers/mock-platform.js';
 import { createIdentityVsix } from './helpers/create-test-vsix.js';
+import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
 describe('waitForValidation', () => {
   let platform: MockPlatformAdapter;
@@ -112,6 +112,58 @@ describe('waitForValidation', () => {
     expect(result.attempts).toBe(1);
   });
 
+  it('logs nested validation failure details from message payload', async () => {
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 1,
+      json: {
+        status: 'error',
+        message: JSON.stringify({
+          results: [
+            {
+              status: 'failure',
+              source: 'PackageValidationStep',
+              message:
+                "Task definition visible rule 'operation = package || operation = publish && publishSource = manifest || operation = wait-for-validation' is invalid. Rule cannot contain both '&&' and '||' operators.",
+              reports: [],
+              details: [],
+            },
+            {
+              status: 'success',
+              source: 'VirusScanStep',
+              message: '',
+              reports: [],
+              details: [],
+            },
+          ],
+        }),
+      },
+      stdout: '',
+      stderr: '',
+    });
+
+    const result = await waitForValidation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+      },
+      auth,
+      tfxManager,
+      platform
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.status).toBe('error');
+    expect(
+      platform.errorMessages.some(
+        (m) =>
+          m.includes('❌ PackageValidationStep:') &&
+          m.includes("Rule cannot contain both '&&' and '||' operators")
+      )
+    ).toBe(true);
+    expect(platform.infoMessages).toContain('✅ VirusScanStep: ');
+  });
+
   it('should timeout after max retries', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
     // Always return pending
@@ -167,6 +219,31 @@ describe('waitForValidation', () => {
     expect(callArgs).toContain('--extension-id');
     expect(callArgs).toContain('ext');
     expect(callArgs).toContain('--json');
+  });
+
+  it('should include extension-version argument when provided', async () => {
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 0,
+      json: { status: 'success' },
+      stdout: '',
+      stderr: '',
+    });
+
+    await waitForValidation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        extensionVersion: '1.2.3',
+      },
+      auth,
+      tfxManager,
+      platform
+    );
+
+    const callArgs = mockExecute.mock.calls[0][0];
+    expect(callArgs).toContain('--extension-version');
+    expect(callArgs).toContain('1.2.3');
   });
 
   it('should use extension ID as provided', async () => {

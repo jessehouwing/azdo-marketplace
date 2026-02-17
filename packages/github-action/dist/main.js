@@ -251,6 +251,7 @@ async function runWaitForValidation(platform, tfxManager, auth) {
         publisherId: platform.getInput('publisher-id'),
         extensionId: platform.getInput('extension-id'),
         vsixPath: platform.getInput('vsix-path'),
+        extensionVersion: platform.getInput('extension-version'),
         rootFolder: platform.getInput('root-folder'),
         manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
         maxRetries: parseInt(platform.getInput('max-retries') || '10'),

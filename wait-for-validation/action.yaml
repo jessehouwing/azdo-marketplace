@@ -143,6 +143,19 @@ inputs:
 
       **Example:** `my-extension` or `azure-devops-tasks`
     required: false
+  extension-version:
+    description: |-
+      **Optional extension version** to validate.
+
+      Available for: wait-for-validation.
+      Required for: none.
+      Default: none
+
+      - When provided, validates this specific extension version
+      - Useful when multiple versions may be in validation concurrently
+
+      **Example:** `1.2.3`
+    required: false
   vsix-path:
     description: |-
       **Path to .vsix file** for auto-extracting task versions.
@@ -213,6 +226,7 @@ runs:
         tfx-version: ${{ inputs.tfx-version }}
         publisher-id: ${{ inputs.publisher-id }}
         extension-id: ${{ inputs.extension-id }}
+        extension-version: ${{ inputs.extension-version }}
         vsix-path: ${{ inputs.vsix-path }}
         max-retries: ${{ inputs.max-retries }}
         min-timeout: ${{ inputs.min-timeout }}

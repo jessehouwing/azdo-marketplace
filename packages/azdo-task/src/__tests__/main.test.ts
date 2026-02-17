@@ -484,6 +484,7 @@ describe('Azure DevOps main entrypoint', () => {
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
+        extensionVersion: '1.2.3',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -493,6 +494,12 @@ describe('Azure DevOps main entrypoint', () => {
 
     await importMainAndFlush();
 
+    expect(waitForValidationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ extensionVersion: '1.2.3' }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
     expect(platform.setOutput).toHaveBeenCalledWith('waitForValidation', 'true');
   });
 });

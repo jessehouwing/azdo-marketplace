@@ -176,7 +176,7 @@
       "label": "Extension Version",
       "required": false,
       "helpMarkDown": "**Override extension version** specified in manifest.\n\n- Must follow semantic versioning: `major.minor.patch`\n- Useful for CI/CD pipelines to inject build numbers\n- Supports pipeline variables\n\n**Examples**:\n- `1.2.3`\n- `$(Build.BuildNumber)`\n- `1.0.$(Build.BuildId)`",
-      "visibleRule": "operation = package || operation = publish",
+      "visibleRule": "operation = package || operation = publish || operation = wait-for-validation",
       "groupName": "operationConfig"
     },
     {

@@ -5889,6 +5889,9 @@ async function waitForValidation(options, auth, tfx, platform) {
     attempts++;
     platform.info(`Validation attempt ${attempts}/${maxRetries}...`);
     const args = new ArgBuilder().arg(["extension", "isvalid"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId);
+    if (options.extensionVersion) {
+      args.option("--extension-version", options.extensionVersion);
+    }
     if (options.rootFolder) {
       args.option("--root", options.rootFolder);
     }
@@ -5934,6 +5937,7 @@ async function waitForValidation(options, auth, tfx, platform) {
             break;
           case "failed":
           case "error":
+            logValidationFailureDetails(json, platform);
             platform.error(`\u2717 Extension validation failed: ${lastStatus}`);
             return {
               status: lastStatus,
@@ -5968,6 +5972,50 @@ async function waitForValidation(options, auth, tfx, platform) {
     attempts,
     exitCode: lastExitCode
   };
+}
+function parseValidationPayload(raw) {
+  if (!raw) {
+    return void 0;
+  }
+  if (typeof raw === "string") {
+    try {
+      return parseValidationPayload(JSON.parse(raw));
+    } catch {
+      return void 0;
+    }
+  }
+  if (typeof raw === "object") {
+    const payload = raw;
+    if (Array.isArray(payload.results)) {
+      return payload;
+    }
+  }
+  return void 0;
+}
+function logValidationFailureDetails(json, platform) {
+  if (!json || typeof json !== "object") {
+    return;
+  }
+  const parsed = parseValidationPayload(json) || (typeof json.message === "string" && json.message.trim().length > 0 ? parseValidationPayload(json.message) : void 0);
+  if (!parsed?.results?.length) {
+    if (typeof json.message === "string" && json.message.trim().length > 0) {
+      platform.error(`Validation message: ${json.message}`);
+    }
+    return;
+  }
+  for (const step of parsed.results) {
+    const status = (step.status ?? "").toLowerCase();
+    const isSuccess = status === "success";
+    const icon = isSuccess ? "\u2705" : "\u274C";
+    const source = step.source ?? "unknown-step";
+    const message = step.message?.trim() || "";
+    const line = `${icon} ${source}: ${message}`;
+    if (isSuccess) {
+      platform.info(line);
+    } else {
+      platform.error(line);
+    }
+  }
 }
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -7456,6 +7504,7 @@ async function runWaitForValidation(platform, tfxManager, auth) {
       publisherId: platform.getInput("publisher-id"),
       extensionId: platform.getInput("extension-id"),
       vsixPath: platform.getInput("vsix-path"),
+      extensionVersion: platform.getInput("extension-version"),
       rootFolder: platform.getInput("root-folder"),
       manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
       maxRetries: parseInt(platform.getInput("max-retries") || "10"),

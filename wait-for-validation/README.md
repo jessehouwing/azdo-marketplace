@@ -12,6 +12,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
     extension-id: 'my-extension'
+    extension-version: '1.2.3'
 ```
 
 ### With Custom Retry Settings
@@ -84,6 +85,7 @@ OR
 - `max-retries`: Maximum retry attempts (default: `10`)
 - `min-timeout`: Minimum timeout between retries in minutes (default: `1`)
 - `max-timeout`: Maximum timeout between retries in minutes (default: `15`)
+- `extension-version`: Optional specific extension version to validate (e.g. `1.2.3`)
 
 #### Identity Fallback
 

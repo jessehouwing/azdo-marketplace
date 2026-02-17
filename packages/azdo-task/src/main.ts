@@ -417,6 +417,7 @@ async function runWaitForValidation(
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      extensionVersion: platform.getInput('extensionVersion'),
       rootFolder: platform.getInput('rootFolder'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
       maxRetries: parseInt(platform.getInput('maxRetries') || '10'),

@@ -460,6 +460,7 @@ describe('GitHub Action main entrypoint', () => {
         'auth-type': 'pat',
         'publisher-id': 'publisher',
         'extension-id': 'extension',
+        'extension-version': '1.2.3',
       },
       delimitedInputs: {
         'manifest-file|\n': ['vss-extension.json'],
@@ -469,7 +470,12 @@ describe('GitHub Action main entrypoint', () => {
 
     await importMainAndFlush();
 
-    expect(waitForValidationMock).toHaveBeenCalled();
+    expect(waitForValidationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ extensionVersion: '1.2.3' }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
     expect(setFailedMock).toHaveBeenCalledWith('Validation failed with status: failed');
   });
 });
