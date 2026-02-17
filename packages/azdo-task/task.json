@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
   "id": "a55bd3a0-30c6-463d-885e-851b7f663580",
   "name": "azdo-marketplace",
-  "friendlyName": "Azure DevOps Extension Tasks",
+  "friendlyName": "Azdo Marketplace Task",
   "description": "Package, publish, and manage Azure DevOps extensions and Visual Studio Marketplace extensions",
   "helpMarkDown": "[More Information](https://github.com/jessehouwing/azdo-marketplace)",
   "category": "Package",
@@ -152,7 +152,7 @@
       "label": "VSIX File",
       "required": false,
       "helpMarkDown": "**Path to .vsix file** used for VSIX mode and VSIX identity fallback.\n\n- For publish: required when `use = vsix`\n- For install/share/unshare/unpublish/waitForValidation: reads publisher/extension identity from VSIX when IDs are omitted\n- For waitForInstallation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For waitForInstallation, use this OR expectedTasks/manifestFile, not multiple options",
-      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation"
+      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation || operation = waitForInstallation"
     },
     {
       "name": "extensionVersion",

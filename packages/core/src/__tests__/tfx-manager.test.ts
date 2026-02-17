@@ -445,6 +445,34 @@ describe('TfxManager', () => {
       expect(platform.debugMessages.some((m) => m.includes('[tfx stdout] <empty>'))).toBe(true);
       expect(platform.debugMessages.some((m) => m.includes('[tfx stderr] <empty>'))).toBe(true);
     });
+
+    it('should emit platform errors for error-prefixed output lines on failure', async () => {
+      jest.spyOn(platform, 'exec').mockImplementation(async (_tool, _args, options) => {
+        options?.outStream?.write(
+          'error: Version number must increase each time an extension is published.\n'
+        );
+        options?.errStream?.write('  error: Marketplace rejected the extension payload\n');
+        return 1;
+      });
+
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      await manager.execute(['extension', 'publish']);
+
+      expect(
+        platform.errorMessages.some((m) =>
+          m.startsWith('error: Version number must increase each time an extension is published.')
+        )
+      ).toBe(true);
+      expect(
+        platform.errorMessages.some((m) =>
+          m.startsWith('error: Marketplace rejected the extension payload')
+        )
+      ).toBe(true);
+    });
   });
 
   describe('platform-specific behavior', () => {

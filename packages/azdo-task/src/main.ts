@@ -418,29 +418,25 @@ async function runQueryVersion(
   tfxManager: TfxManager,
   auth: any
 ): Promise<void> {
+  const normalizedVersionAction = (() => {
+    const input = (platform.getInput('versionAction') ?? 'none').trim().toLowerCase();
+    if (input === 'major') {
+      return 'Major' as const;
+    }
+    if (input === 'minor') {
+      return 'Minor' as const;
+    }
+    if (input === 'patch') {
+      return 'Patch' as const;
+    }
+    return 'None' as const;
+  })();
+
   const result = await queryVersion(
     {
       publisherId: platform.getInput('publisherId', true),
       extensionId: platform.getInput('extensionId', true),
-      versionAction:
-        (platform.getInput('versionAction') as 'none' | 'major' | 'minor' | 'patch' | undefined) ===
-        'major'
-          ? 'Major'
-          : (platform.getInput('versionAction') as
-                | 'none'
-                | 'major'
-                | 'minor'
-                | 'patch'
-                | undefined) === 'minor'
-            ? 'Minor'
-            : (platform.getInput('versionAction') as
-                  | 'none'
-                  | 'major'
-                  | 'minor'
-                  | 'patch'
-                  | undefined) === 'patch'
-              ? 'Patch'
-              : 'None',
+      versionAction: normalizedVersionAction,
       extensionVersionOverrideVariable: platform.getInput('extensionVersionOverride'),
     },
     auth,
@@ -485,6 +481,7 @@ async function runWaitForValidation(
 
 async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentials): Promise<void> {
   const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
+  const vsixPath = platform.getPathInput('vsixFile') || platform.getInput('vsixPath');
   const expectedTasksInput = platform.getInput('expectedTasks');
   let expectedTasks;
   if (expectedTasksInput) {
@@ -508,10 +505,7 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentia
       expectedTasks,
       manifestFiles:
         use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
-      vsixPath:
-        use === 'vsix'
-          ? platform.getPathInput('vsixFile') || platform.getInput('vsixPath')
-          : undefined,
+      vsixPath,
       timeoutMinutes: parseInt(platform.getInput('timeoutMinutes') || '10'),
       pollingIntervalSeconds: parseInt(platform.getInput('pollingIntervalSeconds') || '30'),
     },

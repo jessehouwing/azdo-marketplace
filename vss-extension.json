@@ -3,7 +3,7 @@
   "manifestVersion": 1,
   "id": "azure-pipelines-demo-ping-task",
   "publisher": "jessehouwing",
-  "name": "azdo marketplace extension",
+  "name": "Azdo Marketplace Extension",
   "version": "6.0.0",
   "description": "Azure Pipelines tasks for packaging and publishing Azure Devops and Visual Studio extensions to the Visual Studio Marketplace.",
   "tags": [

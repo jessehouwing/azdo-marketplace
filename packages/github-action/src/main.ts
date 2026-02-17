@@ -398,12 +398,25 @@ async function runQueryVersion(
   tfxManager: TfxManager,
   auth: any
 ): Promise<void> {
+  const normalizedVersionAction = (() => {
+    const input = (platform.getInput('version-action') ?? 'none').trim().toLowerCase();
+    if (input === 'major') {
+      return 'Major' as const;
+    }
+    if (input === 'minor') {
+      return 'Minor' as const;
+    }
+    if (input === 'patch') {
+      return 'Patch' as const;
+    }
+    return 'None' as const;
+  })();
+
   const result = await queryVersion(
     {
       publisherId: platform.getInput('publisher-id', true),
       extensionId: platform.getInput('extension-id', true),
-      versionAction:
-        (platform.getInput('version-action') as 'None' | 'Major' | 'Minor' | 'Patch') ?? 'None',
+      versionAction: normalizedVersionAction,
       extensionVersionOverrideVariable: platform.getInput('extension-version-override'),
     },
     auth,

@@ -501,14 +501,21 @@ describe('GitHub Action main entrypoint', () => {
         'auth-type': 'pat',
         'publisher-id': 'publisher',
         'extension-id': 'extension',
-        'version-action': 'Major',
+        'version-action': 'major',
       },
     });
     githubAdapterCtorMock.mockReturnValue(platform);
 
     await importMainAndFlush();
 
-    expect(queryVersionMock).toHaveBeenCalled();
+    expect(queryVersionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        versionAction: 'Major',
+      }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
     expect(platform.setOutput).toHaveBeenCalledWith('proposed-version', '2.0.0');
     expect(platform.setOutput).toHaveBeenCalledWith('current-version', '1.0.0');
   });

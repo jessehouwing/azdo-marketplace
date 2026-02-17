@@ -398,6 +398,29 @@ export class TfxManager {
     });
   }
 
+  private emitFailureErrorLines(stdout: string, stderr: string): void {
+    const seen = new Set<string>();
+    const allLines = `${stdout}\n${stderr}`.replace(/\r\n/g, '\n').split('\n');
+
+    for (const line of allLines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+
+      if (!/^error\b/i.test(trimmed)) {
+        continue;
+      }
+
+      if (seen.has(trimmed)) {
+        continue;
+      }
+
+      seen.add(trimmed);
+      this.platform.error(trimmed);
+    }
+  }
+
   /**
    * Execute tfx with given arguments
    * @param args Arguments to pass to tfx
@@ -464,6 +487,10 @@ export class TfxManager {
       ? `${jsonStream.messages.join('')}${jsonStream.jsonString}`
       : stdoutStream.content;
     const stderr = stderrStream.content;
+
+    if (exitCode !== 0) {
+      this.emitFailureErrorLines(stdout, stderr);
+    }
 
     if (this.platform.isDebugEnabled()) {
       this.logCapturedOutput('stdout', stdout);

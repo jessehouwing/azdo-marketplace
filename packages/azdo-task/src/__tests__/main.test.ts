@@ -546,7 +546,7 @@ describe('Azure DevOps main entrypoint', () => {
         connectionNamePAT: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
-        versionAction: 'major',
+        versionAction: 'MAJOR',
       },
       boolInputs: {
         setBuildNumber: true,
@@ -556,7 +556,14 @@ describe('Azure DevOps main entrypoint', () => {
 
     await importMainAndFlush();
 
-    expect(queryVersionMock).toHaveBeenCalled();
+    expect(queryVersionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        versionAction: 'Major',
+      }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
     expect(tlCommandMock).toHaveBeenCalledWith('build.updatebuildnumber', undefined, '2.0.0');
     expect(platform.setOutput).toHaveBeenCalledWith('proposedVersion', '2.0.0');
     expect(platform.setOutput).toHaveBeenCalledWith('currentVersion', '1.0.0');
@@ -633,6 +640,32 @@ describe('Azure DevOps main entrypoint', () => {
     expect(platform.setOutput).toHaveBeenCalledWith('waitForInstallation', 'true');
     expect(validateAccountUrlMock).not.toHaveBeenCalledWith('https://marketplace.visualstudio.com');
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org1');
+  });
+
+  it('passes vsixFile to waitForInstallation even when use is manifest', async () => {
+    const vsixPath = '/tmp/my-extension.vsix';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'waitForInstallation',
+        connectionType: 'PAT',
+        connectionNamePAT: 'svc-connection',
+        use: 'manifest',
+        vsixFile: vsixPath,
+      },
+      delimitedInputs: {
+        'accounts|;': ['https://dev.azure.com/org1'],
+        'accounts|\n': ['https://dev.azure.com/org1'],
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(waitForInstallationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ vsixPath }),
+      expect.anything(),
+      platform
+    );
   });
 
   it('fails waitForValidation when status is not success', async () => {
