@@ -111,12 +111,12 @@ inputs:
     required: false
   vsix-path:
     description: |
-      **Path to .vsix file** to infer extension identity.
+      **Path to .vsix file** for auto-extracting task versions.
 
-      - Optional fallback when `publisher-id` or `extension-id` is not provided
-      - Reads publisher and extension ID from VSIX metadata
+      - Extracts task.json files from VSIX package
+      - Most convenient when verifying immediately after packaging
 
-      **Note:** Explicit `publisher-id` and `extension-id` take precedence when both are supplied
+      **Note:** Use this OR expected-tasks/manifest-path, not multiple
     required: false
   max-retries:
     description: |
