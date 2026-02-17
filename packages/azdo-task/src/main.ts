@@ -45,9 +45,28 @@ function initializeDeclaredOutputs(platform: AzdoAdapter): void {
   platform.setOutput('currentVersion', '');
 }
 
+async function validateSingleFileInputs(
+  platform: AzdoAdapter,
+  inputs: Array<{ name: string; value: string | undefined }>
+): Promise<void> {
+  for (const input of inputs) {
+    if (!input.value) {
+      continue;
+    }
+
+    const exists = await platform.fileExists(input.value);
+    if (!exists) {
+      throw new Error(
+        `Input '${input.name}' must reference an existing file. File not found: ${input.value}`
+      );
+    }
+  }
+}
+
 async function run(): Promise<void> {
   try {
     const platform = new AzdoAdapter();
+    process.env.AZDO_TASK_FORCE_TFX_VERBOSE = 'true';
 
     // Validate node is available (always required)
     await validateNodeAvailable(platform);
@@ -81,6 +100,12 @@ async function run(): Promise<void> {
       }
       validateVersion(extensionVersion);
     }
+
+    await validateSingleFileInputs(platform, [
+      { name: 'vsixFile', value: platform.getPathInput('vsixFile') },
+      { name: 'manifestFileJs', value: platform.getPathInput('manifestFileJs') },
+      { name: 'overridesFile', value: platform.getPathInput('overridesFile') },
+    ]);
 
     // Create TfxManager
     const tfxVersion = platform.getInput('tfxVersion') || 'built-in';

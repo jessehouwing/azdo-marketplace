@@ -76,12 +76,14 @@ type PlatformConfig = {
   inputs?: Record<string, string | undefined>;
   boolInputs?: Record<string, boolean>;
   delimitedInputs?: Record<string, string[]>;
+  fileExists?: Record<string, boolean>;
 };
 
 function createPlatformMock(config: PlatformConfig = {}) {
   const inputValues = config.inputs ?? {};
   const boolValues = config.boolInputs ?? {};
   const delimitedValues = config.delimitedInputs ?? {};
+  const fileExistsValues = config.fileExists ?? {};
 
   return {
     getInput: jest.fn((name: string) => inputValues[name]),
@@ -101,6 +103,7 @@ function createPlatformMock(config: PlatformConfig = {}) {
     getVariable: jest.fn(),
     setOutput: jest.fn(),
     setResult: jest.fn(),
+    fileExists: jest.fn(async (filePath: string) => fileExistsValues[filePath] ?? true),
   };
 }
 
@@ -230,6 +233,90 @@ describe('Azure DevOps main entrypoint', () => {
     );
     expect(platform.setOutput).toHaveBeenCalledWith('published', 'true');
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'publish completed successfully');
+  });
+
+  it('fails early when vsixFile does not exist', async () => {
+    const missingPath = '/tmp/missing.vsix';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        tfxVersion: 'built-in',
+        connectionType: 'PAT',
+        connectionNamePAT: 'svc-connection',
+        use: 'vsix',
+        vsixFile: missingPath,
+      },
+      fileExists: {
+        [missingPath]: false,
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(publishExtensionMock).not.toHaveBeenCalled();
+    expect(tlSetResultMock).toHaveBeenCalledWith(
+      'Failed',
+      expect.stringContaining(
+        `Input 'vsixFile' must reference an existing file. File not found: ${missingPath}`
+      )
+    );
+  });
+
+  it('fails early when manifestFileJs does not exist', async () => {
+    const missingPath = '/tmp/missing-manifest.js';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'package',
+        tfxVersion: 'built-in',
+        manifestFileJs: missingPath,
+      },
+      delimitedInputs: {
+        'manifestFile|\n': ['vss-extension.json'],
+      },
+      fileExists: {
+        [missingPath]: false,
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(packageExtensionMock).not.toHaveBeenCalled();
+    expect(tlSetResultMock).toHaveBeenCalledWith(
+      'Failed',
+      expect.stringContaining(
+        `Input 'manifestFileJs' must reference an existing file. File not found: ${missingPath}`
+      )
+    );
+  });
+
+  it('fails early when overridesFile does not exist', async () => {
+    const missingPath = '/tmp/missing-overrides.json';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'package',
+        tfxVersion: 'built-in',
+        overridesFile: missingPath,
+      },
+      delimitedInputs: {
+        'manifestFile|\n': ['vss-extension.json'],
+      },
+      fileExists: {
+        [missingPath]: false,
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(packageExtensionMock).not.toHaveBeenCalled();
+    expect(tlSetResultMock).toHaveBeenCalledWith(
+      'Failed',
+      expect.stringContaining(
+        `Input 'overridesFile' must reference an existing file. File not found: ${missingPath}`
+      )
+    );
   });
 
   it('accepts manual YAML casing for connectionType', async () => {

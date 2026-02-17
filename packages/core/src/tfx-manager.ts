@@ -427,7 +427,8 @@ export class TfxManager {
     }
 
     // Build exec options
-    const defaultSilent = !this.platform.isDebugEnabled();
+    const forceNonSilentFromEnv = process.env.AZDO_TASK_FORCE_TFX_VERBOSE === 'true';
+    const defaultSilent = forceNonSilentFromEnv ? false : !this.platform.isDebugEnabled();
     const execOptions = {
       cwd: options?.cwd,
       env: options?.env,

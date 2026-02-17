@@ -7343,6 +7343,19 @@ var GitHubAdapter = class {
 };
 
 // packages/github-action/src/main.ts
+async function validateSingleFileInputs(platform, inputs) {
+  for (const input of inputs) {
+    if (!input.value) {
+      continue;
+    }
+    const exists = await platform.fileExists(input.value);
+    if (!exists) {
+      throw new Error(
+        `Input '${input.name}' must reference an existing file. File not found: ${input.value}`
+      );
+    }
+  }
+}
 async function run() {
   try {
     const platform = new GitHubAdapter();
@@ -7367,6 +7380,11 @@ async function run() {
       }
       validateVersion(extensionVersion);
     }
+    await validateSingleFileInputs(platform, [
+      { name: "vsix-file", value: platform.getInput("vsix-file") },
+      { name: "manifest-file-js", value: platform.getInput("manifest-file-js") },
+      { name: "overrides-file", value: platform.getInput("overrides-file") }
+    ]);
     const tfxVersion = platform.getInput("tfx-version") || "built-in";
     if (tfxVersion === "path") {
       await validateTfxAvailable(platform);

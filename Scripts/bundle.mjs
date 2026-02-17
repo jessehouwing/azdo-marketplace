@@ -54,6 +54,12 @@ const targets = [
   },
 ];
 
+const targetSelectors = {
+  azdo: (target) => target.packageDir === 'packages/azdo-task',
+  actions: (target) => target.packageDir === 'packages/github-action',
+  all: () => true,
+};
+
 async function readJson(relativePath) {
   const fullPath = path.join(rootDir, relativePath);
   const raw = await fs.readFile(fullPath, 'utf-8');
@@ -272,8 +278,26 @@ async function ensureExecutableBinScripts(target) {
   }
 }
 
+function resolveTargetsFromArgs() {
+  const mode = (process.argv[2] || 'all').toLowerCase();
+  const selector = targetSelectors[mode];
+
+  if (!selector) {
+    throw new Error(`Unknown bundle target '${mode}'. Use one of: all, azdo, actions`);
+  }
+
+  const selectedTargets = targets.filter(selector);
+  if (selectedTargets.length === 0) {
+    throw new Error(`No bundle targets matched mode '${mode}'`);
+  }
+
+  return selectedTargets;
+}
+
 async function bundle() {
-  for (const target of targets) {
+  const selectedTargets = resolveTargetsFromArgs();
+
+  for (const target of selectedTargets) {
     console.log(`Bundling ${target.name}...`);
     await esbuild.build({
       entryPoints: [path.join(rootDir, target.entryPoint)],

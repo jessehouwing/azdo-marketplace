@@ -2,6 +2,17 @@ import * as core from '@actions/core';
 import { installExtension, normalizeAccountToServiceUrl, packageExtension, publishExtension, queryVersion, shareExtension, showExtension, TaskResult, TfxManager, unpublishExtension, unshareExtension, validateAccountUrl, validateAzureCliAvailable, validateExtensionId, validateNodeAvailable, validateNpmAvailable, validatePublisherId, validateTfxAvailable, validateVersion, waitForInstallation, waitForValidation, } from '@extension-tasks/core';
 import { getAuth } from './auth/index.js';
 import { GitHubAdapter } from './github-adapter.js';
+async function validateSingleFileInputs(platform, inputs) {
+    for (const input of inputs) {
+        if (!input.value) {
+            continue;
+        }
+        const exists = await platform.fileExists(input.value);
+        if (!exists) {
+            throw new Error(`Input '${input.name}' must reference an existing file. File not found: ${input.value}`);
+        }
+    }
+}
 async function run() {
     try {
         const platform = new GitHubAdapter();
@@ -29,6 +40,11 @@ async function run() {
             }
             validateVersion(extensionVersion);
         }
+        await validateSingleFileInputs(platform, [
+            { name: 'vsix-file', value: platform.getInput('vsix-file') },
+            { name: 'manifest-file-js', value: platform.getInput('manifest-file-js') },
+            { name: 'overrides-file', value: platform.getInput('overrides-file') },
+        ]);
         // Create TfxManager
         const tfxVersion = platform.getInput('tfx-version') || 'built-in';
         // Validate binaries based on tfx version mode

@@ -31,7 +31,9 @@
     "format:check": "prettier --check .",
     "sync:action-inputs": "node Scripts/sync-action-inputs.mjs",
     "sync:action-inputs:check": "node Scripts/sync-action-inputs.mjs --check",
-    "bundle": "node Scripts/bundle.mjs",
+    "bundle:azdo": "node Scripts/bundle.mjs azdo",
+    "bundle:actions": "node Scripts/bundle.mjs actions",
+    "bundle": "npm run bundle:azdo && npm run bundle:actions",
     "setup:windows:path": "powershell -NoProfile -ExecutionPolicy Bypass -File ./Scripts/setup-windows-path.ps1",
     "clean": "git clean -fdX"
   },

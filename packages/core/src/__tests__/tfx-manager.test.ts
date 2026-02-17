@@ -312,6 +312,28 @@ describe('TfxManager', () => {
       expect(platform.execCalls[0].options?.silent).toBe(true);
     });
 
+    it('should force non-silent execution when AZDO verbose env flag is set', async () => {
+      const previous = process.env.AZDO_TASK_FORCE_TFX_VERBOSE;
+      process.env.AZDO_TASK_FORCE_TFX_VERBOSE = 'true';
+      platform.debugEnabled = false;
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      try {
+        await manager.execute(['extension', 'create']);
+      } finally {
+        if (previous === undefined) {
+          delete process.env.AZDO_TASK_FORCE_TFX_VERBOSE;
+        } else {
+          process.env.AZDO_TASK_FORCE_TFX_VERBOSE = previous;
+        }
+      }
+
+      expect(platform.execCalls[0].options?.silent).toBe(false);
+    });
+
     it('should log execution details', async () => {
       platform.debugEnabled = true;
       const manager = new TfxManager({

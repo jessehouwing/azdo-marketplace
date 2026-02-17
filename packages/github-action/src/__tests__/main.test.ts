@@ -71,12 +71,14 @@ type PlatformConfig = {
   inputs?: Record<string, string | undefined>;
   boolInputs?: Record<string, boolean>;
   delimitedInputs?: Record<string, string[]>;
+  fileExists?: Record<string, boolean>;
 };
 
 function createPlatformMock(config: PlatformConfig = {}) {
   const inputValues = config.inputs ?? {};
   const boolValues = config.boolInputs ?? {};
   const delimitedValues = config.delimitedInputs ?? {};
+  const fileExistsValues = config.fileExists ?? {};
 
   return {
     getInput: jest.fn((name: string) => inputValues[name]),
@@ -96,6 +98,7 @@ function createPlatformMock(config: PlatformConfig = {}) {
     getVariable: jest.fn(),
     setOutput: jest.fn(),
     setResult: jest.fn(),
+    fileExists: jest.fn(async (filePath: string) => fileExistsValues[filePath] ?? true),
   };
 }
 
@@ -276,6 +279,86 @@ describe('GitHub Action main entrypoint', () => {
     );
     expect(platform.setOutput).toHaveBeenCalledWith('vsix-path', '/tmp/temp-12345.vsix');
     expectNoLegacyStatusOutputs(platform);
+  });
+
+  it('fails early when vsix-file does not exist', async () => {
+    const missingPath = '/repo/missing.vsix';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        'tfx-version': 'built-in',
+        'auth-type': 'pat',
+        'publish-source': 'vsix',
+        'vsix-file': missingPath,
+      },
+      fileExists: {
+        [missingPath]: false,
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(publishExtensionMock).not.toHaveBeenCalled();
+    expect(setFailedMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Input 'vsix-file' must reference an existing file. File not found: ${missingPath}`
+      )
+    );
+  });
+
+  it('fails early when manifest-file-js does not exist', async () => {
+    const missingPath = '/repo/missing-manifest.js';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'package',
+        'tfx-version': 'built-in',
+        'manifest-file-js': missingPath,
+      },
+      delimitedInputs: {
+        'manifest-file|\n': ['vss-extension.json'],
+      },
+      fileExists: {
+        [missingPath]: false,
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(packageExtensionMock).not.toHaveBeenCalled();
+    expect(setFailedMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Input 'manifest-file-js' must reference an existing file. File not found: ${missingPath}`
+      )
+    );
+  });
+
+  it('fails early when overrides-file does not exist', async () => {
+    const missingPath = '/repo/missing-overrides.json';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'package',
+        'tfx-version': 'built-in',
+        'overrides-file': missingPath,
+      },
+      delimitedInputs: {
+        'manifest-file|\n': ['vss-extension.json'],
+      },
+      fileExists: {
+        [missingPath]: false,
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(packageExtensionMock).not.toHaveBeenCalled();
+    expect(setFailedMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Input 'overrides-file' must reference an existing file. File not found: ${missingPath}`
+      )
+    );
   });
 
   it('does not emit legacy status outputs for operation-only commands', async () => {

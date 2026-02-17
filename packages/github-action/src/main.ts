@@ -26,6 +26,24 @@ import {
 import { AuthType, getAuth } from './auth/index.js';
 import { GitHubAdapter } from './github-adapter.js';
 
+async function validateSingleFileInputs(
+  platform: GitHubAdapter,
+  inputs: Array<{ name: string; value: string | undefined }>
+): Promise<void> {
+  for (const input of inputs) {
+    if (!input.value) {
+      continue;
+    }
+
+    const exists = await platform.fileExists(input.value);
+    if (!exists) {
+      throw new Error(
+        `Input '${input.name}' must reference an existing file. File not found: ${input.value}`
+      );
+    }
+  }
+}
+
 async function run(): Promise<void> {
   try {
     const platform = new GitHubAdapter();
@@ -59,6 +77,12 @@ async function run(): Promise<void> {
       }
       validateVersion(extensionVersion);
     }
+
+    await validateSingleFileInputs(platform, [
+      { name: 'vsix-file', value: platform.getInput('vsix-file') },
+      { name: 'manifest-file-js', value: platform.getInput('manifest-file-js') },
+      { name: 'overrides-file', value: platform.getInput('overrides-file') },
+    ]);
 
     // Create TfxManager
     const tfxVersion = platform.getInput('tfx-version') || 'built-in';
