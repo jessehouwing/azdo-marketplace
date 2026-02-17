@@ -37,6 +37,7 @@ jobs:
         run: |
           test -f packages/azdo-task/dist/runtime-dependencies.json
           test -f packages/github-action/dist/runtime-dependencies.json
+        shell: bash
 
       - name: Compare the expected and actual dist/ directories
         run: |
@@ -46,6 +47,7 @@ jobs:
             exit 1
           fi
         id: diff
+        shell: bash
 
       - name: Upload diff
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f #v6.0.0
