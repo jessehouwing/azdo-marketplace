@@ -25,26 +25,27 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 #v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: https://registry.npmjs.org
           cache: npm
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 #v6.2.0
         with:
           python-version: '3.x'
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 #v6.2.0
         with:
           go-version: stable
 
       - name: Ensure Azure CLI is installed
+        id: azure_cli
         run: |
           set -euo pipefail
           if command -v az >/dev/null 2>&1; then
@@ -54,30 +55,45 @@ jobs:
           fi
           az version
           az extension add --name azure-devops
+          azure_cli_version="$(az version --query '"azure-cli"' -o tsv)"
+          echo "version=${azure_cli_version}" >> "$GITHUB_OUTPUT"
+          echo "Azure CLI version: ${azure_cli_version}"
 
       - name: Ensure tfx-cli is installed
+        id: tfx
         run: |
           set -euo pipefail
           npm install --global tfx-cli
-          tfx --version
+          tfx_version="$(tfx version --no-color --no-prompt | awk '/^Version / { print $2; exit }')"
+          echo "version=${tfx_version}" >> "$GITHUB_OUTPUT"
+          echo "tfx-cli version: ${tfx_version}"
 
       - name: Ensure jest is installed globally
+        id: jest
         run: |
           set -euo pipefail
           npm install --global jest
-          jest --version
+          jest_version="$(jest --version)"
+          echo "version=${jest_version}" >> "$GITHUB_OUTPUT"
+          echo "jest version: ${jest_version}"
 
       - name: Ensure pre-commit is installed
+        id: pre_commit
         run: |
           set -euo pipefail
           python3 -m pip install --user pre-commit
-          python3 -m pre_commit --version
+          pre_commit_version="$(python3 -m pre_commit --version)"
+          echo "version=${pre_commit_version}" >> "$GITHUB_OUTPUT"
+          echo "pre-commit version: ${pre_commit_version}"
 
       - name: Ensure actionlint is installed
+        id: actionlint
         run: |
           set -euo pipefail
           go install github.com/rhysd/actionlint/cmd/actionlint@latest
-          "$(go env GOPATH)/bin/actionlint" -version
+          actionlint_version="$($(go env GOPATH)/bin/actionlint -version | head -n 1)"
+          echo "version=${actionlint_version}" >> "$GITHUB_OUTPUT"
+          echo "actionlint version: ${actionlint_version}"
 
       - name: Install dependencies
         run: npm install
@@ -89,16 +105,21 @@ jobs:
         run: npm run build
 
       - name: Setup summary
+        env:
+          AZURE_CLI_VERSION: ${{ steps.azure_cli.outputs.version }}
+          TFX_VERSION: ${{ steps.tfx.outputs.version }}
+          JEST_VERSION: ${{ steps.jest.outputs.version }}
+          PRE_COMMIT_VERSION: ${{ steps.pre_commit.outputs.version }}
+          ACTIONLINT_VERSION: ${{ steps.actionlint.outputs.version }}
         run: |
-          actionlint_version="$("$(go env GOPATH)/bin/actionlint" -version | head -n 1)"
           {
             echo "## Copilot setup summary"
             echo "- Node: ${NODE_VERSION}"
-            echo "- Azure CLI: $(az version --query '"azure-cli"' -o tsv)"
-            echo "- tfx-cli: $(tfx --version)"
-            echo "- jest: $(jest --version)"
-            echo "- pre-commit: $(python3 -m pre_commit --version)"
-            echo "- actionlint: ${actionlint_version}"
+            echo "- Azure CLI: ${AZURE_CLI_VERSION}"
+            echo "- tfx-cli: ${TFX_VERSION}"
+            echo "- jest: ${JEST_VERSION}"
+            echo "- pre-commit: ${PRE_COMMIT_VERSION}"
+            echo "- actionlint: ${ACTIONLINT_VERSION}"
             echo "- Dependencies: ✅ Installed"
             echo "- Git hooks: ✅ Installed"
             echo "- Build: ✅ Successful"
