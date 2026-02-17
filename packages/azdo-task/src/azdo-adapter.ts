@@ -10,6 +10,30 @@ import { tmpdir } from 'os';
  * Implements IPlatformAdapter using azure-pipelines-task-lib
  */
 export class AzdoAdapter implements IPlatformAdapter {
+  private async ensureExecutable(tool: string): Promise<void> {
+    if (process.platform === 'win32') {
+      return;
+    }
+
+    if (!tool.includes('/') && !tool.includes('\\')) {
+      return;
+    }
+
+    try {
+      const stats = await fs.stat(tool);
+      if (!stats.isFile()) {
+        return;
+      }
+
+      if ((stats.mode & 0o111) === 0) {
+        await fs.chmod(tool, 0o755);
+        this.debug(`Set executable bit on tool: ${tool}`);
+      }
+    } catch {
+      // Best-effort only: some paths are command names, symlinks, or immutable files.
+    }
+  }
+
   // ===== Input =====
 
   getInput(name: string, required?: boolean): string | undefined {
@@ -77,7 +101,9 @@ export class AzdoAdapter implements IPlatformAdapter {
     return Promise.resolve(tl.which(tool, check));
   }
 
-  exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
+  async exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
+    await this.ensureExecutable(tool);
+
     const toolRunner = tl.tool(tool);
     toolRunner.arg(args);
 

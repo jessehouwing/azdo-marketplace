@@ -133,4 +133,27 @@ describe('AzdoAdapter', () => {
     expect(process.env.ADAPTER_TEST_ENV).toBe('set-value');
     delete process.env.ADAPTER_TEST_ENV;
   });
+
+  it('sets execute bit for Unix script tools before exec', async () => {
+    if (process.platform === 'win32') {
+      expect(true).toBe(true);
+      return;
+    }
+
+    const baseDir = await fs.mkdtemp(join(tmpdir(), 'azdo-adapter-exec-'));
+    const scriptPath = join(baseDir, 'test-script.sh');
+
+    try {
+      await fs.writeFile(scriptPath, '#!/usr/bin/env sh\necho ok\n', 'utf-8');
+      await fs.chmod(scriptPath, 0o644);
+
+      const code = await adapter.exec(scriptPath, [], { silent: true });
+      const stats = await fs.stat(scriptPath);
+
+      expect(code).toBe(0);
+      expect((stats.mode & 0o111) !== 0).toBe(true);
+    } finally {
+      await fs.rm(baseDir, { recursive: true, force: true });
+    }
+  });
 });
