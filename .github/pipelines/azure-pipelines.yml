@@ -103,7 +103,7 @@ stages:
                   displayName: 'Publish the private extension to ms-devlabs'
                   inputs:
                     operation: 'publish'
-                    connectionType: 'connectedService:AzureRM'
+                    connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     publishSource: 'vsix'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
@@ -113,7 +113,7 @@ stages:
                   displayName: 'Validate the private extension on the marketplace'
                   inputs:
                     operation: 'wait-for-validation'
-                    connectionType: 'connectedService:AzureRM'
+                    connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
 
@@ -142,7 +142,7 @@ stages:
                   displayName: 'Publish the public extension to ms-devlabs'
                   inputs:
                     operation: 'publish'
-                    connectionType: 'connectedService:AzureRM'
+                    connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     publishSource: 'vsix'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
@@ -152,7 +152,7 @@ stages:
                   displayName: 'Validate the private extension on the marketplace'
                   inputs:
                     operation: 'wait-for-validation'
-                    connectionType: 'connectedService:AzureRM'
+                    connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
 

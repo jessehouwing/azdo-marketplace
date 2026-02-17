@@ -30,7 +30,6 @@
       "required": true,
       "defaultValue": "wait-for-validation",
       "helpMarkDown": "Operation to perform.",
-      "aliases": ["method"],
       "options": {
         "wait-for-validation": "Wait for Validation"
       }
@@ -42,19 +41,17 @@
       "required": true,
       "defaultValue": "VsTeam",
       "helpMarkDown": "Authentication method for marketplace operations.",
-      "aliases": ["connectTo"],
       "options": {
         "VsTeam": "Visual Studio Marketplace"
       },
       "visibleRule": "operation = wait-for-validation"
     },
     {
-      "name": "connectionName",
+      "name": "connectedServiceName",
       "type": "connectedService:VstsMarketplacePublishing",
       "label": "Visual Studio Marketplace",
       "required": true,
       "helpMarkDown": "Service endpoint connection to install the extension.",
-      "aliases": ["connectedServiceName"],
       "visibleRule": "operation = wait-for-validation && connectionType = VsTeam"
     },
     {
@@ -64,7 +61,6 @@
       "defaultValue": "",
       "required": true,
       "helpMarkDown": "Publisher ID of the extension to be installed.",
-      "aliases": ["publisher-id", "publisher"],
       "visibleRule": "operation = wait-for-validation"
     },
     {
@@ -74,7 +70,6 @@
       "defaultValue": "",
       "helpMarkDown": "Extension ID of the extension to be installed",
       "required": true,
-      "aliases": ["extension-id", "extension"],
       "visibleRule": "operation = wait-for-validation"
     },
     {
@@ -84,14 +79,13 @@
       "defaultValue": "latest",
       "helpMarkDown": "Extension version (enter 'latest' or leave the value empty to check the last submitted version).",
       "required": false,
-      "aliases": ["extension-version", "version"],
       "visibleRule": "operation = wait-for-validation"
     }
   ],
   "execution": {
     "HttpRequest": {
       "Execute": {
-        "EndpointId": "$(connectionName)",
+        "EndpointId": "$(connectedServiceName)",
         "EndpointUrl": "$(endpoint.url)_apis/gallery/publishers/$(publisherId)/extensions/$(extensionId)?flags=1",
         "Method": "GET",
         "Body": "",

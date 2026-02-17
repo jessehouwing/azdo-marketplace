@@ -44,7 +44,6 @@ jest.unstable_mockModule('../azdo-adapter.js', () => ({
 
 jest.unstable_mockModule('../auth/index.js', () => ({
   getAuth: getAuthMock,
-  ConnectionType: {},
 }));
 
 jest.unstable_mockModule('@extension-tasks/core', () => ({
@@ -199,7 +198,7 @@ describe('Azure DevOps main entrypoint', () => {
       inputs: {
         operation: 'publish',
         tfxVersion: 'path',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publishSource: 'manifest',
       },
@@ -213,11 +212,32 @@ describe('Azure DevOps main entrypoint', () => {
 
     expect(validateTfxAvailableMock).toHaveBeenCalledWith(platform);
     expect(validateNpmAvailableMock).not.toHaveBeenCalled();
-    expect(getAuthMock).toHaveBeenCalledWith('connectedService:VsTeam', 'svc-connection', platform);
+    expect(getAuthMock).toHaveBeenCalledWith('VsTeam', 'svc-connection', platform);
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
     expect(publishExtensionMock).toHaveBeenCalled();
     expect(platform.setOutput).toHaveBeenCalledWith('published', 'true');
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'publish completed successfully');
+  });
+
+  it('accepts manual YAML casing for connectionType', async () => {
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        tfxVersion: 'built-in',
+        connectionType: 'azurerm',
+        connectionNameAzureRm: 'svc-connection',
+        publishSource: 'manifest',
+      },
+      delimitedInputs: {
+        'manifestFile|\n': ['vss-extension.json'],
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(getAuthMock).toHaveBeenCalledWith('azurerm', 'svc-connection', platform);
+    expect(publishExtensionMock).toHaveBeenCalled();
   });
 
   it('executes show operation and emits extension metadata output', async () => {
@@ -227,7 +247,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'show',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -244,7 +264,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'install',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -266,7 +286,7 @@ describe('Azure DevOps main entrypoint', () => {
       inputs: {
         operation: 'publish',
         tfxVersion: 'built-in',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publishSource: 'manifest',
         rootFolder: '/repo',
@@ -306,7 +326,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'share',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -326,7 +346,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'unshare',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -348,7 +368,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'install',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -374,7 +394,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'wait-for-installation',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -403,7 +423,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'query-version',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -432,7 +452,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'wait-for-installation',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -457,7 +477,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'wait-for-validation',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -480,7 +500,7 @@ describe('Azure DevOps main entrypoint', () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'wait-for-validation',
-        connectionType: 'connectedService:VsTeam',
+        connectionType: 'VsTeam',
         connectionName: 'svc-connection',
         publisherId: 'publisher',
         extensionId: 'extension',

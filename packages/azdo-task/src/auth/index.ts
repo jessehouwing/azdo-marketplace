@@ -1,34 +1,35 @@
 import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
-import { getPatAuth } from './pat-auth.js';
-import { getBasicAuth } from './basic-auth.js';
 import { getAzureRmAuth } from './azurerm-auth.js';
+import { getBasicAuth } from './basic-auth.js';
+import { getPatAuth } from './pat-auth.js';
 
-export type ConnectionType =
-  | 'connectedService:VsTeam'
-  | 'connectedService:AzureRM'
-  | 'connectedService:Generic';
+export type ConnectionType = 'VsTeam' | 'AzureRM' | 'Generic';
 
 /**
  * Get authentication credentials based on connection type
  */
 export async function getAuth(
-  connectionType: ConnectionType,
+  connectionType: string,
   connectionName: string,
   platform: IPlatformAdapter
 ): Promise<AuthCredentials> {
-  switch (connectionType) {
-    case 'connectedService:VsTeam':
+  const normalizedConnectionType = connectionType.trim().toLowerCase();
+
+  switch (normalizedConnectionType) {
+    case 'vsteam':
       return getPatAuth(connectionName, platform);
 
-    case 'connectedService:AzureRM':
+    case 'azurerm':
       return getAzureRmAuth(connectionName, platform);
 
-    case 'connectedService:Generic':
+    case 'generic':
       return getBasicAuth(connectionName, platform);
 
     default:
-      throw new Error(`Unsupported connection type: ${String(connectionType)}`);
+      throw new Error(
+        `Unsupported connection type: ${String(connectionType)}. Expected one of: VsTeam, AzureRM, Generic`
+      );
   }
 }
 
-export { getPatAuth, getBasicAuth, getAzureRmAuth };
+export { getAzureRmAuth, getBasicAuth, getPatAuth };

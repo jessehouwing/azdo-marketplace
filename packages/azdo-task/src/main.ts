@@ -22,7 +22,7 @@ import {
   waitForValidation,
 } from '@extension-tasks/core';
 import * as tl from 'azure-pipelines-task-lib/task.js';
-import { ConnectionType, getAuth } from './auth/index.js';
+import { getAuth } from './auth/index.js';
 import { AzdoAdapter } from './azdo-adapter.js';
 
 async function run(): Promise<void> {
@@ -76,15 +76,16 @@ async function run(): Promise<void> {
     // Get authentication if needed (not required for package)
     let auth;
     if (operation !== 'package') {
-      const connectionType = platform.getInput('connectionType', true) as ConnectionType;
+      const connectionType = platform.getInput('connectionType', true);
+      const normalizedConnectionType = connectionType.trim().toLowerCase();
 
       // Get the appropriate connection name based on type
       let connectionName: string | undefined;
-      if (connectionType === 'connectedService:VsTeam') {
+      if (normalizedConnectionType === 'vsteam') {
         connectionName = platform.getInput('connectionName', true);
-      } else if (connectionType === 'connectedService:AzureRM') {
+      } else if (normalizedConnectionType === 'azurerm') {
         connectionName = platform.getInput('connectionNameAzureRm', true);
-      } else if (connectionType === 'connectedService:Generic') {
+      } else if (normalizedConnectionType === 'generic') {
         connectionName = platform.getInput('connectionNameGeneric', true);
       }
 

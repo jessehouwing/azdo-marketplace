@@ -44,11 +44,11 @@
       "helpMarkDown": "**Authentication method** for marketplace operations:\n\n- **Visual Studio Team Services (PAT)**: Use Personal Access Token (recommended for most users)\n- **Azure Resource Manager (OIDC)**: Use workload identity federation with Azure CLI (no secrets needed, requires Azure RM service connection)\n- **Generic (Basic Auth)**: Use username/password authentication (for on-premises TFS/Azure DevOps Server)\n\n**Note**: Package operation does not require authentication.",
       "visibleRule": "operation != package",
       "options": {
-        "connectedService:VsTeam": "Visual Studio Team Services (PAT)",
-        "connectedService:AzureRM": "Azure Resource Manager (OIDC)",
-        "connectedService:Generic": "Generic (Basic Auth)"
+        "VsTeam": "Visual Studio Team Services (PAT)",
+        "AzureRM": "Azure Resource Manager (OIDC)",
+        "Generic": "Generic (Basic Auth)"
       },
-      "defaultValue": "connectedService:VsTeam"
+      "defaultValue": "VsTeam"
     },
     {
       "name": "connectionName",
@@ -56,7 +56,7 @@
       "label": "Service Connection",
       "required": true,
       "helpMarkDown": "**Visual Studio Team Services service connection** configured with a Personal Access Token (PAT).\n\n**Required scopes**: Marketplace (Publish)\n\nCreate a PAT at: https://dev.azure.com/_usersSettings/tokens",
-      "visibleRule": "operation != package && connectionType = connectedService:VsTeam"
+      "visibleRule": "operation != package && connectionType = VsTeam"
     },
     {
       "name": "connectionNameAzureRm",
@@ -64,7 +64,7 @@
       "label": "Azure RM Connection",
       "required": true,
       "helpMarkDown": "**Azure Resource Manager service connection** using workload identity federation (OIDC).\n\n**Benefits**: No secrets or PAT tokens needed - uses federated Azure credentials\n\n**Required**: Connection must have access to Visual Studio Marketplace scope (`499b84ac-1321-427f-aa17-267ca6975798`)",
-      "visibleRule": "operation != package && connectionType = connectedService:AzureRM"
+      "visibleRule": "operation != package && connectionType = AzureRM"
     },
     {
       "name": "connectionNameGeneric",
@@ -72,7 +72,7 @@
       "label": "Generic Connection",
       "required": true,
       "helpMarkDown": "**Generic service connection** for basic authentication (username/password).\n\n**Use case**: On-premises TFS or Azure DevOps Server deployments\n\n**Note**: Not recommended for cloud-hosted Azure DevOps - use PAT authentication instead",
-      "visibleRule": "operation != package && connectionType = connectedService:Generic"
+      "visibleRule": "operation != package && connectionType = Generic"
     },
     {
       "name": "tfxVersion",

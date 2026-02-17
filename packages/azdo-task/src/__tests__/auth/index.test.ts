@@ -1,5 +1,5 @@
-import { describe, it, expect, jest, beforeAll, beforeEach } from '@jest/globals';
-import type { IPlatformAdapter, AuthCredentials } from '@extension-tasks/core';
+import type { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
+import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 const getPatAuthMock =
   jest.fn<(connectionName: string, platform: IPlatformAdapter) => Promise<AuthCredentials>>();
@@ -40,7 +40,7 @@ describe('Azure Pipelines getAuth router', () => {
       token: 'pat-token',
     });
 
-    const result = await getAuth('connectedService:VsTeam', 'MyConn', platform);
+    const result = await getAuth('VsTeam', 'MyConn', platform);
 
     expect(getPatAuthMock).toHaveBeenCalledWith('MyConn', platform);
     expect(result.authType).toBe('pat');
@@ -53,7 +53,7 @@ describe('Azure Pipelines getAuth router', () => {
       token: 'aad-token',
     });
 
-    const result = await getAuth('connectedService:AzureRM', 'ArmConn', platform);
+    const result = await getAuth('AzureRM', 'ArmConn', platform);
 
     expect(getAzureRmAuthMock).toHaveBeenCalledWith('ArmConn', platform);
     expect(result.token).toBe('aad-token');
@@ -67,7 +67,7 @@ describe('Azure Pipelines getAuth router', () => {
       password: 'pass',
     });
 
-    const result = await getAuth('connectedService:Generic', 'GenericConn', platform);
+    const result = await getAuth('Generic', 'GenericConn', platform);
 
     expect(getBasicAuthMock).toHaveBeenCalledWith('GenericConn', platform);
     expect(result.authType).toBe('basic');
@@ -75,7 +75,20 @@ describe('Azure Pipelines getAuth router', () => {
 
   it('throws on unsupported connection type', async () => {
     await expect(getAuth('unsupported:type' as any, 'BadConn', platform)).rejects.toThrow(
-      'Unsupported connection type: unsupported:type'
+      'Unsupported connection type: unsupported:type. Expected one of: VsTeam, AzureRM, Generic'
     );
+  });
+
+  it('normalizes connection type values case-insensitively', async () => {
+    getPatAuthMock.mockResolvedValue({
+      authType: 'pat',
+      serviceUrl: 'https://marketplace.visualstudio.com',
+      token: 'pat-token',
+    });
+
+    await getAuth('vsteam', 'MyConn', platform);
+    await getAuth('VSTEAM', 'MyConn', platform);
+
+    expect(getPatAuthMock).toHaveBeenCalledTimes(2);
   });
 });
