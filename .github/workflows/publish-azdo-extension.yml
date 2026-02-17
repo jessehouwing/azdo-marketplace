@@ -64,7 +64,7 @@ jobs:
       - id: query
         name: Query next patch version
         continue-on-error: true
-        uses: jessehouwing/azure-devops-extension-tasks/query-version@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/query-version@main
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -83,7 +83,7 @@ jobs:
 
       - id: package
         name: Package VSIX
-        uses: jessehouwing/azure-devops-extension-tasks/package@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/package@main
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ inputs.extension_id }}
@@ -94,24 +94,22 @@ jobs:
           output-path: ${{ runner.temp }}
 
       - name: Publish from VSIX
-        uses: jessehouwing/azure-devops-extension-tasks/publish@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/publish@main
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ inputs.extension_id }}
           publish-source: vsix
           vsix-file: ${{ steps.package.outputs.vsix-path }}
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azure-devops-extension-tasks/wait-for-validation@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/wait-for-validation@main
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ inputs.extension_id }}
 
       - name: Share extension
-        uses: jessehouwing/azure-devops-extension-tasks/share@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/share@main
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -120,7 +118,7 @@ jobs:
             https://dev.azure.com/jessehouwing-dev
 
       - name: Install extension
-        uses: jessehouwing/azure-devops-extension-tasks/install@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/install@main
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -129,7 +127,7 @@ jobs:
             https://dev.azure.com/jessehouwing-dev
 
       - name: Wait for installation
-        uses: jessehouwing/azure-devops-extension-tasks/wait-for-installation@refactor/v6
+        uses: jessehouwing/azure-devops-extension-tasks/wait-for-installation@main
         with:
           auth-type: oidc
           vsix-path: ${{ steps.package.outputs.vsix-path }}
