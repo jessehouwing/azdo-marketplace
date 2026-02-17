@@ -97,6 +97,13 @@ jobs:
           update-tasks-id: true
           output-path: ${{ runner.temp }}
 
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f #v6.0.0
+        with:
+          name: vsix-${{ inputs.extension_id }}-${{ steps.version.outputs.value }}
+          path: ${{ steps.package.outputs.vsix-path }}
+          if-no-files-found: error
+
       - name: Publish from VSIX
         uses: ./publish
         with:
