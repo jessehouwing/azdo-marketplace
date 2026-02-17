@@ -186,6 +186,8 @@ async function installRuntimeDependencies(target) {
     'install',
     '--omit=dev',
     '--no-package-lock',
+    '--install-links',
+    'false',
     '--ignore-scripts',
     '--no-audit',
     '--no-fund',
@@ -215,6 +217,7 @@ async function ensureExecutableBinScripts(target) {
 
   for (const scriptName of extensionlessScripts) {
     const scriptPath = path.join(binDir, scriptName);
+
     try {
       await fs.chmod(scriptPath, 0o755);
     } catch {
@@ -238,6 +241,7 @@ async function ensureExecutableBinScripts(target) {
         .map((line) => line.trim())
         .filter(Boolean)
     );
+
     const trackedExtensionlessScripts = relativePaths.filter((scriptPath) =>
       trackedPaths.has(scriptPath)
     );
