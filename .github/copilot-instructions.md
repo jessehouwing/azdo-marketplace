@@ -273,7 +273,7 @@ Handles extensions where task sources are in different directories than package 
 
 #### 1. PAT (Personal Access Token)
 
-**Azure Pipelines:** Via service endpoint (VsTeam connection type)
+**Azure Pipelines:** Via service endpoint (PAT connection type)
 **GitHub Actions:** Via `pat` input or GITHUB_TOKEN
 
 ```typescript

@@ -157,8 +157,8 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "INPUT_OPERATION": "publish",
-        "INPUT_CONNECTIONTYPE": "connectedService:VsTeam",
-        "INPUT_CONNECTIONNAME": "MarketplaceConnection",
+        "INPUT_CONNECTIONTYPE": "connectedService:PAT",
+        "INPUT_CONNECTIONNAMEPAT": "MarketplaceConnection",
         "INPUT_PUBLISHSOURCE": "manifest",
         "INPUT_ROOTFOLDER": "${workspaceFolder}/packages/core/src/__tests__/integration/fixtures/test-extension",
         "INPUT_PUBLISHERID": "your-publisher",
@@ -204,8 +204,8 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "INPUT_OPERATION": "show",
-        "INPUT_CONNECTIONTYPE": "connectedService:VsTeam",
-        "INPUT_CONNECTIONNAME": "MarketplaceConnection",
+        "INPUT_CONNECTIONTYPE": "connectedService:PAT",
+        "INPUT_CONNECTIONNAMEPAT": "MarketplaceConnection",
         "INPUT_PUBLISHERID": "your-publisher",
         "INPUT_EXTENSIONID": "your-extension",
         "INPUT_TFXVERSION": "embedded",
