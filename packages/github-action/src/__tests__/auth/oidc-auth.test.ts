@@ -1,5 +1,5 @@
-import { describe, it, expect, jest, beforeEach, beforeAll } from '@jest/globals';
 import type { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
+import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 const coreMock = {
   info: jest.fn<(message: string) => void>(),
@@ -127,9 +127,7 @@ describe('GitHub OIDC Auth', () => {
 
     await getOidcAuth(undefined, mockPlatform);
 
-    expect(coreMock.info).toHaveBeenCalledWith(
-      'Getting Azure AD token via Azure CLI (requires azure/login action)...'
-    );
+    expect(coreMock.info).toHaveBeenCalledWith('Getting Azure AD token via Azure CLI...');
     expect(coreMock.info).toHaveBeenCalledWith(
       'Successfully obtained Azure AD token via Azure CLI'
     );
