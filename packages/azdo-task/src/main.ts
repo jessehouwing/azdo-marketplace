@@ -38,6 +38,13 @@ function normalizeOperation(operation: string): string {
   }
 }
 
+function initializeDeclaredOutputs(platform: AzdoAdapter): void {
+  platform.setOutput('vsixPath', '');
+  platform.setOutput('extensionMetadata', '');
+  platform.setOutput('proposedVersion', '');
+  platform.setOutput('currentVersion', '');
+}
+
 async function run(): Promise<void> {
   try {
     const platform = new AzdoAdapter();
@@ -51,6 +58,8 @@ async function run(): Promise<void> {
       throw new Error('Operation is required');
     }
     const operation = normalizeOperation(rawOperation);
+
+    initializeDeclaredOutputs(platform);
 
     platform.debug(`Starting operation: ${operation}`);
 

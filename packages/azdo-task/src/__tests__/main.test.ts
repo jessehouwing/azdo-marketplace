@@ -475,6 +475,51 @@ describe('Azure DevOps main entrypoint', () => {
     expect(platform.setOutput).toHaveBeenCalledWith('currentVersion', '1.0.0');
   });
 
+  it('initializes queryVersion outputs before query execution and keeps them empty on failure', async () => {
+    queryVersionMock.mockImplementationOnce(async () => {
+      throw new Error('tfx failed');
+    });
+
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'queryVersion',
+        connectionType: 'PAT',
+        connectionNamePAT: 'svc-connection',
+        publisherId: 'publisher',
+        extensionId: 'extension',
+        versionAction: 'patch',
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(platform.setOutput).toHaveBeenCalledWith('proposedVersion', '');
+    expect(platform.setOutput).toHaveBeenCalledWith('currentVersion', '');
+    expect(tlSetResultMock).toHaveBeenCalledWith('Failed', 'tfx failed');
+  });
+
+  it('initializes declared task outputs before input validation', async () => {
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'package',
+        tfxVersion: 'built-in',
+        extensionVersion: 'invalid-version',
+      },
+      delimitedInputs: {
+        'manifestFile|\n': ['vss-extension.json'],
+      },
+    });
+    azdoAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(platform.setOutput).toHaveBeenCalledWith('vsixPath', '');
+    expect(platform.setOutput).toHaveBeenCalledWith('extensionMetadata', '');
+    expect(platform.setOutput).toHaveBeenCalledWith('proposedVersion', '');
+    expect(platform.setOutput).toHaveBeenCalledWith('currentVersion', '');
+  });
+
   it('sets waitForInstallation output when verification succeeds', async () => {
     getAuthMock.mockImplementationOnce(async () => ({
       token: 'token',
