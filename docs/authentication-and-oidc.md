@@ -77,10 +77,10 @@ This section follows the approach from Jesse Houwing’s guide:
 
 ### 7) Configure the pipeline to request a token and use it
 
-For modern v6 task usage, the recommended approach is to use `connectionType: connectedService:AzureRM` directly on `ExtensionTasks@6` with your OIDC ARM connection.
+For modern v6 task usage, the recommended approach is to use `connectionType: connectedService:AzureRM` directly on `azdo-marketplace@6` with your OIDC ARM connection.
 
 ```yaml
-- task: ExtensionTasks@6
+- task: azdo-marketplace@6
   inputs:
     operation: publish
     connectionType: connectedService:AzureRM

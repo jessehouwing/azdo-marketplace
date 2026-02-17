@@ -3,14 +3,14 @@
 This guide helps you migrate from the original multi-task v5 setup to the unified v6 task.
 
 - **v5 model**: multiple Azure Pipelines tasks (package/publish/share/install/etc.)
-- **v6 model**: one task, `ExtensionTasks@6`, with `operation` selecting the command
+- **v6 model**: one task, `azdo-marketplace@6`, with `operation` selecting the command
 
 ## What changes
 
 In v6, all extension operations are routed through one task:
 
 ```yaml
-- task: ExtensionTasks@6
+- task: azdo-marketplace@6
   inputs:
     operation: publish
 ```
@@ -31,7 +31,7 @@ Supported v6 operations:
 ## Migration checklist
 
 1. Install/update to extension version 6 in your Azure DevOps organization.
-2. Replace each v5 task invocation with `ExtensionTasks@6`.
+2. Replace each v5 task invocation with `azdo-marketplace@6`.
 3. Set `operation` to the equivalent command.
 4. Move authentication inputs to v6 connection inputs:
    - `connectionType`
@@ -45,13 +45,13 @@ Supported v6 operations:
 
 Use this mapping when converting existing YAML:
 
-- Package Extension task → `ExtensionTasks@6` with `operation: package`
-- Publish Extension task → `ExtensionTasks@6` with `operation: publish`
-- Unpublish Extension task → `ExtensionTasks@6` with `operation: unpublish`
-- Share Extension task → `ExtensionTasks@6` with `operation: share`
-- Install Extension task → `ExtensionTasks@6` with `operation: install`
-- Query Version task → `ExtensionTasks@6` with `operation: query-version`
-- Wait for Validation task → `ExtensionTasks@6` with `operation: wait-for-validation`
+- Package Extension task → `azdo-marketplace@6` with `operation: package`
+- Publish Extension task → `azdo-marketplace@6` with `operation: publish`
+- Unpublish Extension task → `azdo-marketplace@6` with `operation: unpublish`
+- Share Extension task → `azdo-marketplace@6` with `operation: share`
+- Install Extension task → `azdo-marketplace@6` with `operation: install`
+- Query Version task → `azdo-marketplace@6` with `operation: query-version`
+- Wait for Validation task → `azdo-marketplace@6` with `operation: wait-for-validation`
 
 Additional commands now available in v6:
 
@@ -102,7 +102,7 @@ variables:
   EXTENSION_ID_SUFFIX: '-dev'
 
 steps:
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     inputs:
       operation: publish
       extensionId: '$(EXTENSION_ID_BASE)$(EXTENSION_ID_SUFFIX)'
@@ -127,14 +127,14 @@ steps:
 
 ```yaml
 steps:
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     name: packageExt
     inputs:
       operation: package
       rootFolder: $(Build.SourcesDirectory)
       outputPath: $(Build.ArtifactStagingDirectory)
 
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     inputs:
       operation: publish
       connectionType: connectedService:VsTeam

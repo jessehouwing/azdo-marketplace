@@ -49,7 +49,7 @@ stages:
               verbose: false
               customCommand: 'run bundle'
 
-          - task: ExtensionTasks@6
+          - task: azdo-marketplace@6
             name: 'packageprivate'
             displayName: 'Package the private extension'
             inputs:
@@ -60,7 +60,7 @@ stages:
               extensionVisibility: 'private'
               updateTasksVersion: 'patch'
 
-          - task: ExtensionTasks@6
+          - task: azdo-marketplace@6
             displayName: 'Package the public extension'
             name: 'packagepublic'
             inputs:
@@ -98,7 +98,7 @@ stages:
                     versionSpec: '20.x'
                   displayName: 'Install Node.js'
 
-                - task: ExtensionTasks@6
+                - task: azdo-marketplace@6
                   name: 'publishDev'
                   displayName: 'Publish the private extension to ms-devlabs'
                   inputs:
@@ -109,7 +109,7 @@ stages:
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
                     noWaitValidation: true
 
-                - task: ExtensionTasks@6
+                - task: azdo-marketplace@6
                   displayName: 'Validate the private extension on the marketplace'
                   inputs:
                     operation: 'wait-for-validation'
@@ -137,7 +137,7 @@ stages:
                     versionSpec: '20.x'
                   displayName: 'Install Node.js'
 
-                - task: ExtensionTasks@6
+                - task: azdo-marketplace@6
                   name: 'publishProd'
                   displayName: 'Publish the public extension to ms-devlabs'
                   inputs:
@@ -148,7 +148,7 @@ stages:
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
                     noWaitValidation: true
 
-                - task: ExtensionTasks@6
+                - task: azdo-marketplace@6
                   displayName: 'Validate the private extension on the marketplace'
                   inputs:
                     operation: 'wait-for-validation'

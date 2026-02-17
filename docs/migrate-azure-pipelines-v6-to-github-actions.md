@@ -27,7 +27,7 @@ The same marketplace operations are available on both platforms:
 Azure Pipelines uses:
 
 ```yaml
-- task: ExtensionTasks@6
+- task: azdo-marketplace@6
   inputs:
     operation: publish
 ```
@@ -184,14 +184,14 @@ Current Azure Pipelines v6 task outputs are `vsixPath`, `extensionMetadata`, `pr
 
 ```yaml
 steps:
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     name: packageExt
     inputs:
       operation: package
       rootFolder: $(Build.SourcesDirectory)
       outputPath: $(Build.ArtifactStagingDirectory)
 
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     inputs:
       operation: publish
       connectionType: connectedService:VsTeam

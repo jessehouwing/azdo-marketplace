@@ -5,7 +5,7 @@ This folder contains implementation and usage documentation for the v6 architect
 ## Contents
 
 - [Azure Pipelines usage](./azure-pipelines.md)
-  - How to use the unified `ExtensionTasks@6` task
+  - How to use the unified `azdo-marketplace@6` task
   - All supported operations and operation-specific inputs
 - [GitHub Actions usage](./github-actions.md)
   - How to use the unified `jessehouwing/azdo-marketplace@v6` action
@@ -20,7 +20,7 @@ This folder contains implementation and usage documentation for the v6 architect
 - [Contributing](./contributing.md)
   - Local setup, build, debug, test, lint/format, and bundling workflow
 - [Migrate Azure Pipelines from v5 to v6](./migrate-azure-pipelines-v5-to-v6.md)
-  - Step-by-step migration from legacy v5 task usage to unified `ExtensionTasks@6`
+  - Step-by-step migration from legacy v5 task usage to unified `azdo-marketplace@6`
 - [Migrate Azure Pipelines to GitHub Actions](./migrate-azure-pipelines-v6-to-github-actions.md)
   - Input/auth/output mapping and end-to-end workflow translation guidance
 - [Migrate Azure Pipelines v5 to GitHub Actions](./migrate-azure-pipelines-v5-to-github-actions.md)

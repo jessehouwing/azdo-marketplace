@@ -2,14 +2,14 @@
 
 This repository ships a **single unified Azure Pipelines task** with operation routing:
 
-- Task: `ExtensionTasks@6`
+- Task: `azdo-marketplace@6`
 - Definition: `packages/azdo-task/task.json`
 - Entry point: `packages/azdo-task/src/main.ts`
 
 ## Minimal usage
 
 ```yaml
-- task: ExtensionTasks@6
+- task: azdo-marketplace@6
   inputs:
     operation: package
 ```
@@ -230,14 +230,14 @@ Compatibility outputs still set by core commands:
 
 ```yaml
 steps:
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     name: packageExt
     inputs:
       operation: package
       rootFolder: $(Build.SourcesDirectory)
       outputPath: $(Build.ArtifactStagingDirectory)
 
-  - task: ExtensionTasks@6
+  - task: azdo-marketplace@6
     inputs:
       operation: publish
       connectionType: connectedService:VsTeam
