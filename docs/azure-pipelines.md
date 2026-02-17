@@ -49,7 +49,7 @@ These appear across multiple operations.
 ### Manifest / package source
 
 - `rootFolder`
-- `manifestGlobs`
+- `manifestFile`
 - `localizationRoot`
 - `publishSource` (`manifest` or `vsix`, publish only)
 - `vsixFile` (publish from VSIX)
@@ -76,7 +76,7 @@ Creates a VSIX from manifest files.
 - Required:
   - `operation: package`
 - Optional:
-  - `rootFolder`, `manifestGlobs`, `localizationRoot`
+  - `rootFolder`, `manifestFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `outputPath`
@@ -94,7 +94,7 @@ Publishes to Marketplace from manifest or prebuilt VSIX.
   - `publishSource`
   - If `publishSource = vsix`: `vsixFile`
 - Optional:
-  - `rootFolder`, `manifestGlobs`, `localizationRoot`
+  - `rootFolder`, `manifestFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `shareWith`, `noWaitValidation`
@@ -185,7 +185,7 @@ Polls Marketplace validation result.
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
-  - `rootFolder`, `manifestGlobs`
+  - `rootFolder`, `manifestFile`
   - `maxRetries`, `minTimeout`, `maxTimeout`
   - `tfxVersion`
 
@@ -201,7 +201,7 @@ Verifies tasks are available after install.
 - Optional:
   - task expectations via one of:
     - `expectedTasks` (JSON)
-    - `manifestPath`
+    - `manifestFile`
     - `vsixPath`
   - `timeoutMinutes`, `pollingIntervalSeconds`
   - `tfxVersion`

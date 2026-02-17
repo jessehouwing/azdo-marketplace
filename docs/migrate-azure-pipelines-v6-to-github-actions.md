@@ -47,7 +47,7 @@ Common input mappings:
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
 - `rootFolder` → `root-folder`
-- `manifestGlobs` → `manifest-globs`
+- `manifestFile` → `manifest-file`
 - `publishSource` → `publish-source`
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`

@@ -106,7 +106,7 @@ describe('waitForInstallation', () => {
     expect(webApiCtorMock).toHaveBeenCalled();
   });
 
-  it('resolves expected tasks from manifestPath and verifies versions', async () => {
+  it('resolves expected tasks from manifestFiles and verifies versions', async () => {
     readManifestMock
       .mockResolvedValueOnce({
         contributes: [{ type: 'ms.vss-distributed-task.task', properties: { name: 'Task1' } }],
@@ -131,7 +131,7 @@ describe('waitForInstallation', () => {
         publisherId: 'pub',
         extensionId: 'ext',
         accounts: ['https://dev.azure.com/org1'],
-        manifestPath: 'vss-extension.json',
+        manifestFiles: ['vss-extension.json'],
       },
       auth,
       platform
@@ -140,6 +140,56 @@ describe('waitForInstallation', () => {
     expect(result.success).toBe(true);
     expect(resolveTaskManifestPathsMock).toHaveBeenCalled();
     expect(readManifestMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('resolves tasks across multiple manifest files and verifies all referenced task versions', async () => {
+    readManifestMock
+      .mockResolvedValueOnce({
+        contributes: [{ type: 'ms.vss-distributed-task.task', properties: { name: 'TaskA' } }],
+      })
+      .mockResolvedValueOnce({
+        name: 'TaskA',
+        version: { Major: 1, Minor: 0, Patch: 0 },
+      })
+      .mockResolvedValueOnce({
+        contributes: [{ type: 'ms.vss-distributed-task.task', properties: { name: 'TaskB' } }],
+      })
+      .mockResolvedValueOnce({
+        name: 'TaskB',
+        version: { Major: 2, Minor: 1, Patch: 0 },
+      });
+
+    resolveTaskManifestPathsMock
+      .mockReturnValueOnce(['tasks/taskA/task.json'])
+      .mockReturnValueOnce(['tasks/taskB/task.json']);
+
+    getTaskDefinitionsMock.mockResolvedValue([
+      {
+        name: 'TaskA',
+        id: 'task-a',
+        version: { major: 1, minor: 0, patch: 0 },
+      },
+      {
+        name: 'TaskB',
+        id: 'task-b',
+        version: { major: 2, minor: 1, patch: 0 },
+      },
+    ]);
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        manifestFiles: ['vss-extension.a.json', 'vss-extension.b.json'],
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(true);
+    expect(resolveTaskManifestPathsMock).toHaveBeenCalledTimes(2);
+    expect(readManifestMock).toHaveBeenCalledTimes(4);
   });
 
   it('resolves expected tasks from vsixPath and closes reader', async () => {
@@ -370,7 +420,7 @@ describe('waitForInstallation', () => {
         publisherId: 'pub',
         extensionId: 'ext',
         accounts: ['https://dev.azure.com/org1'],
-        manifestPath: 'vss-extension.json',
+        manifestFiles: ['vss-extension.json'],
       },
       auth,
       platform

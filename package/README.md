@@ -62,7 +62,7 @@ None - all inputs are optional with sensible defaults.
 #### Manifest Source
 
 - `root-folder`: Root folder containing extension files (default: current directory)
-- `manifest-globs`: Manifest file patterns, newline-separated (default: `vss-extension.json`)
+- `manifest-file`: Manifest file path(s), newline-separated (default: `vss-extension.json`)
 
 #### Metadata Overrides
 

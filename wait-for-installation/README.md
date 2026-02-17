@@ -21,7 +21,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
     publisher-id: 'my-publisher'
     extension-id: 'my-extension'
     accounts: 'myorg'
-    manifest-path: './extension/vss-extension.json'
+    manifest-file: './extension/vss-extension.json'
 ```
 
 ### Verify with VSIX
@@ -62,7 +62,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
       myorg1
       myorg2
       myorg3
-    manifest-path: './extension/vss-extension.json'
+    manifest-file: './extension/vss-extension.json'
 ```
 
 ### With Custom Timeout and Polling
@@ -74,7 +74,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
     publisher-id: 'my-publisher'
     extension-id: 'my-extension'
     accounts: 'myorg'
-    manifest-path: './extension/vss-extension.json'
+    manifest-file: './extension/vss-extension.json'
     timeout-minutes: '15'
     polling-interval-seconds: '60'
 ```
@@ -94,7 +94,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
     publisher-id: 'my-publisher'
     extension-id: 'my-extension'
     accounts: 'myorg'
-    manifest-path: './extension/vss-extension.json'
+    manifest-file: './extension/vss-extension.json'
 ```
 
 ## Inputs
@@ -112,7 +112,7 @@ Identity inputs:
 **Plus one of:**
 
 - `expected-tasks`: JSON array of expected tasks
-- `manifest-path`: Path to extension manifest
+- `manifest-file`: Extension manifest path(s), newline-separated
 - `vsix-path`: Path to .vsix file
 
 OR

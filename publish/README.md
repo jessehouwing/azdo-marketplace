@@ -98,7 +98,7 @@ OR
 #### Manifest Source (when publish-source is manifest)
 
 - `root-folder`: Root folder containing extension files
-- `manifest-globs`: Manifest file patterns, newline-separated
+- `manifest-file`: Manifest file path(s), newline-separated
 
 #### VSIX Source (when publish-source is vsix)
 
@@ -111,6 +111,7 @@ OR
 - `extension-visibility`: Override visibility (`private`, `public`, `private_preview`, `public_preview`)
 - `localization-root`: Localization folder root for `resources.resjson` files (manifest source)
 - `extension-pricing`: Override pricing (`default`, `free`, `paid`)
+- `output-path`: Output directory for the generated/final `.vsix` used during publish
 
 #### Publish Options
 

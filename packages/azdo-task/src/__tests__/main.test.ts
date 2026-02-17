@@ -138,7 +138,7 @@ describe('Azure DevOps main entrypoint', () => {
         tfxVersion: 'built-in',
       },
       delimitedInputs: {
-        'manifestGlobs|\n': ['vss-extension.json'],
+        'manifestFile|\n': ['vss-extension.json'],
       },
     });
     azdoAdapterCtorMock.mockReturnValue(platform);
@@ -158,7 +158,7 @@ describe('Azure DevOps main entrypoint', () => {
         operation: 'package',
         tfxVersion: 'built-in',
         rootFolder: '/repo',
-        manifestGlobs: 'vss-extension.json',
+        manifestFile: 'vss-extension.json',
         publisherId: 'publisher',
         extensionId: 'extension',
         extensionVersion: '1.2.3',
@@ -171,7 +171,7 @@ describe('Azure DevOps main entrypoint', () => {
         updateTasksId: true,
       },
       delimitedInputs: {
-        'manifestGlobs|\n': ['vss-extension.json'],
+        'manifestFile|\n': ['vss-extension.json'],
       },
     });
     azdoAdapterCtorMock.mockReturnValue(platform);
@@ -204,7 +204,7 @@ describe('Azure DevOps main entrypoint', () => {
         publishSource: 'manifest',
       },
       delimitedInputs: {
-        'manifestGlobs|\n': ['vss-extension.json'],
+        'manifestFile|\n': ['vss-extension.json'],
       },
     });
     azdoAdapterCtorMock.mockReturnValue(platform);
@@ -270,6 +270,7 @@ describe('Azure DevOps main entrypoint', () => {
         connectionName: 'svc-connection',
         publishSource: 'manifest',
         rootFolder: '/repo',
+        outputPath: '/out',
         extensionVisibility: 'public_preview',
         extensionPricing: 'paid',
         updateTasksVersion: 'patch',
@@ -278,7 +279,7 @@ describe('Azure DevOps main entrypoint', () => {
         updateTasksId: true,
       },
       delimitedInputs: {
-        'manifestGlobs|\n': ['vss-extension.json'],
+        'manifestFile|\n': ['vss-extension.json'],
       },
     });
     azdoAdapterCtorMock.mockReturnValue(platform);
@@ -289,6 +290,7 @@ describe('Azure DevOps main entrypoint', () => {
       expect.objectContaining({
         publishSource: 'manifest',
         rootFolder: '/repo',
+        outputPath: '/out',
         extensionVisibility: 'public_preview',
         extensionPricing: 'paid',
         updateTasksVersion: 'patch',
@@ -461,7 +463,7 @@ describe('Azure DevOps main entrypoint', () => {
         extensionId: 'extension',
       },
       delimitedInputs: {
-        'manifestGlobs|\n': ['vss-extension.json'],
+        'manifestFile|\n': ['vss-extension.json'],
       },
     });
     azdoAdapterCtorMock.mockReturnValue(platform);
@@ -484,7 +486,7 @@ describe('Azure DevOps main entrypoint', () => {
         extensionId: 'extension',
       },
       delimitedInputs: {
-        'manifestGlobs|\n': ['vss-extension.json'],
+        'manifestFile|\n': ['vss-extension.json'],
       },
     });
     azdoAdapterCtorMock.mockReturnValue(platform);

@@ -96,6 +96,41 @@ describe('publishExtension', () => {
       expect(result.vsixPath).toBe('/out/generated-manifest.vsix');
     });
 
+    it('should copy packaged vsix to outputPath when publishing from manifest', async () => {
+      const publishDir = await fs.mkdtemp(join(tmpdir(), 'publish-manifest-output-'));
+      const packagedPath = join(publishDir, 'generated-manifest.vsix');
+      const outputPath = join(publishDir, 'out');
+
+      await fs.writeFile(packagedPath, 'manifest-published-vsix', 'utf-8');
+
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: {
+          published: true,
+          packaged: packagedPath,
+        },
+        stdout: '',
+        stderr: '',
+      });
+
+      try {
+        const result = await publishExtension(
+          withManifestDefaults({ outputPath }),
+          auth,
+          tfxManager,
+          platform
+        );
+
+        const expectedPath = join(outputPath, 'generated-manifest.vsix');
+        expect(result.vsixPath).toBe(expectedPath);
+        const copied = await fs.readFile(expectedPath, 'utf-8');
+        expect(copied).toBe('manifest-published-vsix');
+      } finally {
+        await fs.rm(publishDir, { recursive: true, force: true });
+      }
+    });
+
     it('should publish from manifest with basic auth', async () => {
       const basicAuth: AuthCredentials = {
         authType: 'basic',
@@ -288,6 +323,44 @@ describe('publishExtension', () => {
 
       expect(result.published).toBe(true);
       expect(result.vsixPath).toBe('/path/to/extension.vsix');
+    });
+
+    it('should copy published vsix to outputPath when publishing from vsix', async () => {
+      const publishDir = await fs.mkdtemp(join(tmpdir(), 'publish-vsix-output-'));
+      const vsixFile = join(publishDir, 'input.vsix');
+      const outputPath = join(publishDir, 'out');
+
+      await fs.writeFile(vsixFile, 'vsix-content', 'utf-8');
+
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: {
+          published: true,
+        },
+        stdout: '',
+        stderr: '',
+      });
+
+      try {
+        const result = await publishExtension(
+          {
+            publishSource: 'vsix',
+            vsixFile,
+            outputPath,
+          },
+          auth,
+          tfxManager,
+          platform
+        );
+
+        const expectedPath = join(outputPath, 'input.vsix');
+        expect(result.vsixPath).toBe(expectedPath);
+        const copied = await fs.readFile(expectedPath, 'utf-8');
+        expect(copied).toBe('vsix-content');
+      } finally {
+        await fs.rm(publishDir, { recursive: true, force: true });
+      }
     });
 
     it('should read and log version from a real vsix when publish payload has no metadata', async () => {

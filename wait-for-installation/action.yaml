@@ -164,20 +164,26 @@ inputs:
       ]
       ```
 
-      **Note:** Use this OR auto-discovery options (manifest-path/vsix-path), not both
+      **Note:** Use this OR auto-discovery options (manifest-file/vsix-path), not both
     required: false
-  manifest-path:
+  manifest-file:
     description: |-
-      **Path to extension manifest** for auto-discovering task versions.
+      **Manifest file path(s)** (newline-separated).
 
-      Available for: wait-for-installation.
+      Available for: package, publish, wait-for-installation.
       Required for: none.
       Default: none
 
-      - Reads manifest to find all tasks and their versions
-      - More convenient than manually specifying expected tasks
+      - Defaults to `vss-extension.json` if not specified
+      - Can specify multiple manifest files
+      - Patterns are relative to root-folder
 
-      **Note:** Use this OR expected-tasks/vsix-path, not multiple
+      **Example:**
+      ```
+      vss-extension.json
+      manifests/dev/vss-extension.json
+      manifests/prod/vss-extension.json
+      ```
     required: false
   vsix-path:
     description: |-
@@ -190,7 +196,7 @@ inputs:
       - Extracts task.json files from VSIX package
       - Most convenient when verifying immediately after packaging
 
-      **Note:** Use this OR expected-tasks/manifest-path, not multiple
+      **Note:** Use this OR expected-tasks/manifest-file, not multiple
     required: false
   timeout-minutes:
     description: |-
@@ -238,7 +244,7 @@ runs:
         extension-id: ${{ inputs.extension-id }}
         accounts: ${{ inputs.accounts }}
         expected-tasks: ${{ inputs.expected-tasks }}
-        manifest-path: ${{ inputs.manifest-path }}
+        manifest-file: ${{ inputs.manifest-file }}
         vsix-path: ${{ inputs.vsix-path }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         polling-interval-seconds: ${{ inputs.polling-interval-seconds }}

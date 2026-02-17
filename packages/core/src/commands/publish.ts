@@ -2,6 +2,8 @@
  * Publish command - Publishes an extension to the marketplace
  */
 
+import { copyFile, mkdir } from 'fs/promises';
+import { basename, join } from 'path';
 import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
 import { ManifestEditor } from '../manifest-editor.js';
@@ -29,6 +31,9 @@ export interface PublishOptions {
 
   // VSIX source (when publishSource = 'vsix')
   vsixFile?: string;
+
+  // Output
+  outputPath?: string;
 
   // Overrides
   publisherId?: string;
@@ -130,10 +135,25 @@ async function executeTfxPublish(
   publisherId = publisherId || options.publisherId || '';
 
   // Determine vsix path
-  const vsixPath =
+  let vsixPath =
     options.publishSource === 'manifest'
       ? (json.packaged ?? '')
       : (publishedVsixPath ?? options.vsixFile ?? '');
+
+  if (options.outputPath && vsixPath) {
+    const sourceExists = await platform.fileExists(vsixPath);
+    if (sourceExists) {
+      const outputVsixPath = join(options.outputPath, basename(vsixPath));
+      await mkdir(options.outputPath, { recursive: true });
+      await copyFile(vsixPath, outputVsixPath);
+      platform.debug(`Copied published VSIX to output path: ${outputVsixPath}`);
+      vsixPath = outputVsixPath;
+    } else {
+      platform.warning(
+        `Could not copy VSIX to output path because source file was not found: ${vsixPath}`
+      );
+    }
+  }
 
   platform.info(
     `Published extension: ${extensionId || '(unknown id)'} v${extensionVersion || '(unknown version)'}`

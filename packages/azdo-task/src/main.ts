@@ -188,7 +188,7 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
   const options = {
     rootFolder: platform.getInput('rootFolder'),
     localizationRoot: platform.getInput('localizationRoot'),
-    manifestGlobs: platform.getDelimitedInput('manifestGlobs', '\n'),
+    manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     publisherId: platform.getInput('publisherId'),
     extensionId: platform.getInput('extensionId'),
     extensionVersion: platform.getInput('extensionVersion'),
@@ -231,7 +231,7 @@ async function runPublish(
       vsixFile: publishSource === 'vsix' ? platform.getInput('vsixFile', true) : undefined,
       manifestGlobs:
         publishSource === 'manifest'
-          ? platform.getDelimitedInput('manifestGlobs', '\n', true)
+          ? platform.getDelimitedInput('manifestFile', '\n', true)
           : undefined,
       rootFolder: publishSource === 'manifest' ? platform.getInput('rootFolder') : undefined,
       localizationRoot:
@@ -250,6 +250,7 @@ async function runPublish(
         extensionPricingInput && extensionPricingInput !== 'default'
           ? (extensionPricingInput as 'free' | 'paid' | 'trial')
           : undefined,
+      outputPath: platform.getInput('outputPath'),
       noWaitValidation: platform.getBoolInput('noWaitValidation'),
       bypassValidation: platform.getBoolInput('bypassValidation'),
       updateTasksVersion: getUpdateTasksVersionMode(platform),
@@ -274,7 +275,7 @@ async function runUnpublish(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixPath'),
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
     },
     auth,
     tfxManager,
@@ -291,7 +292,7 @@ async function runShare(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixPath'),
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -311,7 +312,7 @@ async function runUnshare(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixPath'),
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -331,7 +332,7 @@ async function runInstall(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixPath'),
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -415,9 +416,9 @@ async function runWaitForValidation(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixPath'),
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       rootFolder: platform.getInput('rootFolder'),
-      manifestGlobs: platform.getDelimitedInput('manifestGlobs', '\n'),
+      manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
       maxRetries: parseInt(platform.getInput('maxRetries') || '10'),
       minTimeout: parseInt(platform.getInput('minTimeout') || '1'),
       maxTimeout: parseInt(platform.getInput('maxTimeout') || '15'),
@@ -456,8 +457,8 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentia
       extensionId: platform.getInput('extensionId'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
       expectedTasks,
-      manifestPath: platform.getInput('manifestPath'),
-      vsixPath: platform.getInput('vsixPath'),
+      manifestFiles: platform.getDelimitedInput('manifestFile', '\n'),
+      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
       timeoutMinutes: parseInt(platform.getInput('timeoutMinutes') || '10'),
       pollingIntervalSeconds: parseInt(platform.getInput('pollingIntervalSeconds') || '30'),
     },

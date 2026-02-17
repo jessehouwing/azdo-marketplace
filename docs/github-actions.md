@@ -44,7 +44,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
 
 ### Packaging/publish source and overrides
 
-- `root-folder`, `manifest-globs`
+- `root-folder`, `manifest-file`
 - `publish-source` (`manifest` or `vsix`)
 - `vsix-file`
 - `extension-version`, `extension-name`, `extension-visibility`
@@ -59,7 +59,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
 - `version-action`, `extension-version-override`
 - `max-retries`, `min-timeout`, `max-timeout`
 - `accounts`
-- `expected-tasks`, `manifest-path`, `vsix-path`
+- `expected-tasks`, `manifest-file`, `vsix-path`
 - `timeout-minutes`, `polling-interval-seconds`
 
 ## Command reference (unified action)
@@ -70,7 +70,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `operation: package`
 - Optional:
   - `publisher-id`, `extension-id`
-  - `root-folder`, `manifest-globs`
+  - `root-folder`, `manifest-file`
   - `extension-version`, `extension-name`, `extension-visibility`
   - `output-path`
   - `bypass-validation`, `rev-version`, `update-tasks-version`, `update-tasks-id`
@@ -162,7 +162,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
 - Optional:
   - `publisher-id` (if omitted, inferred from `vsix-path` when provided)
   - `extension-id` (if omitted, inferred from `vsix-path` when provided)
-  - one of `expected-tasks`, `manifest-path`, `vsix-path`
+  - one of `expected-tasks`, `manifest-file`, `vsix-path`
   - `timeout-minutes`, `polling-interval-seconds`
 
 ## Unified action outputs

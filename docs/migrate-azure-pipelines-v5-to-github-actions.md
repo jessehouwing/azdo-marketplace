@@ -37,7 +37,7 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 - `extensionId` → `extension-id`
 - `extensionTag` → `extension-id`
 - `rootFolder` → `root-folder`
-- `manifestGlobs` → `manifest-globs`
+- `manifestFile` → `manifest-file`
 - `publishSource` → `publish-source`
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`

@@ -202,7 +202,7 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
   const options = {
     rootFolder: platform.getInput('root-folder'),
     localizationRoot: platform.getInput('localization-root'),
-    manifestGlobs: platform.getDelimitedInput('manifest-globs', '\n'),
+    manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     publisherId: platform.getInput('publisher-id'),
     extensionId: platform.getInput('extension-id'),
     extensionVersion: platform.getInput('extension-version'),
@@ -245,7 +245,7 @@ async function runPublish(
       vsixFile: publishSource === 'vsix' ? platform.getInput('vsix-file', true) : undefined,
       manifestGlobs:
         publishSource === 'manifest'
-          ? platform.getDelimitedInput('manifest-globs', '\n', true)
+          ? platform.getDelimitedInput('manifest-file', '\n', true)
           : undefined,
       rootFolder: publishSource === 'manifest' ? platform.getInput('root-folder') : undefined,
       localizationRoot:
@@ -259,6 +259,7 @@ async function runPublish(
         extensionPricingInput && extensionPricingInput !== 'default'
           ? (extensionPricingInput as 'free' | 'paid' | 'trial')
           : undefined,
+      outputPath: platform.getInput('output-path'),
       noWaitValidation: platform.getBoolInput('no-wait-validation'),
       bypassValidation: platform.getBoolInput('bypass-validation'),
       updateTasksVersion: getUpdateTasksVersionMode(platform),
@@ -401,7 +402,7 @@ async function runWaitForValidation(
       extensionId: platform.getInput('extension-id'),
       vsixPath: platform.getInput('vsix-path'),
       rootFolder: platform.getInput('root-folder'),
-      manifestGlobs: platform.getDelimitedInput('manifest-globs', '\n'),
+      manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       maxRetries: parseInt(platform.getInput('max-retries') || '10'),
       minTimeout: parseInt(platform.getInput('min-timeout') || '1'),
       maxTimeout: parseInt(platform.getInput('max-timeout') || '15'),
@@ -441,7 +442,7 @@ async function runWaitForInstallation(
       extensionId: platform.getInput('extension-id'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
       expectedTasks,
-      manifestPath: platform.getInput('manifest-path'),
+      manifestFiles: platform.getDelimitedInput('manifest-file', '\n'),
       vsixPath: platform.getInput('vsix-path'),
       timeoutMinutes: parseInt(platform.getInput('timeout-minutes') || '10'),
       pollingIntervalSeconds: parseInt(platform.getInput('polling-interval-seconds') || '30'),

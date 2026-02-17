@@ -172,24 +172,25 @@ inputs:
 
       - Defaults to repository root if not specified
       - All file paths in manifest are relative to this folder
-      - Must contain `vss-extension.json` (or other manifest specified in manifest-globs)
+      - Must contain `vss-extension.json` (or other manifest specified in manifest-file)
     required: false
-  manifest-globs:
+  manifest-file:
     description: |-
-      **Glob patterns for manifest files** (newline-separated).
+      **Manifest file path(s)** (newline-separated).
 
-      Available for: package, publish.
+      Available for: package, publish, wait-for-installation.
       Required for: none.
       Default: none
 
       - Defaults to `vss-extension.json` if not specified
-      - Can specify multiple patterns for multi-manifest scenarios
+      - Can specify multiple manifest files
       - Patterns are relative to root-folder
 
       **Example:**
       ```
       vss-extension.json
-      manifests/**/*.json
+      manifests/dev/vss-extension.json
+      manifests/prod/vss-extension.json
       ```
     required: false
   vsix-file:
@@ -292,9 +293,9 @@ inputs:
     default: default
   output-path:
     description: |-
-      **Output directory** for generated .vsix file (package operation).
+      **Output directory** for generated/final .vsix file.
 
-      Available for: package.
+      Available for: package, publish.
       Required for: none.
       Default: none
 
@@ -494,20 +495,7 @@ inputs:
       ]
       ```
 
-      **Note:** Use this OR auto-discovery options (manifest-path/vsix-path), not both
-    required: false
-  manifest-path:
-    description: |-
-      **Path to extension manifest** for auto-discovering task versions.
-
-      Available for: wait-for-installation.
-      Required for: none.
-      Default: none
-
-      - Reads manifest to find all tasks and their versions
-      - More convenient than manually specifying expected tasks
-
-      **Note:** Use this OR expected-tasks/vsix-path, not multiple
+      **Note:** Use this OR auto-discovery options (manifest-file/vsix-path), not both
     required: false
   vsix-path:
     description: |-
@@ -520,7 +508,7 @@ inputs:
       - Extracts task.json files from VSIX package
       - Most convenient when verifying immediately after packaging
 
-      **Note:** Use this OR expected-tasks/manifest-path, not multiple
+      **Note:** Use this OR expected-tasks/manifest-file, not multiple
     required: false
   timeout-minutes:
     description: |-

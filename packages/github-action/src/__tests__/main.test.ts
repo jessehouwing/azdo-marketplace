@@ -146,7 +146,7 @@ describe('GitHub Action main entrypoint', () => {
         'tfx-version': 'built-in',
       },
       delimitedInputs: {
-        'manifest-globs|\n': ['vss-extension.json'],
+        'manifest-file|\n': ['vss-extension.json'],
       },
     });
     githubAdapterCtorMock.mockReturnValue(platform);
@@ -180,7 +180,7 @@ describe('GitHub Action main entrypoint', () => {
         'rev-version': false,
       },
       delimitedInputs: {
-        'manifest-globs|\n': ['vss-extension.json'],
+        'manifest-file|\n': ['vss-extension.json'],
       },
     });
     githubAdapterCtorMock.mockReturnValue(platform);
@@ -213,9 +213,10 @@ describe('GitHub Action main entrypoint', () => {
         'tfx-version': '^0.17.0',
         'auth-type': 'oidc',
         'publish-source': 'manifest',
+        'output-path': '/out',
       },
       delimitedInputs: {
-        'manifest-globs|\n': ['vss-extension.json'],
+        'manifest-file|\n': ['vss-extension.json'],
       },
     });
     githubAdapterCtorMock.mockReturnValue(platform);
@@ -233,7 +234,12 @@ describe('GitHub Action main entrypoint', () => {
     expect(platform.setSecret).toHaveBeenCalledWith('token');
     expect(platform.setSecret).toHaveBeenCalledWith('password');
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
-    expect(publishExtensionMock).toHaveBeenCalled();
+    expect(publishExtensionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ outputPath: '/out' }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
     expect(platform.setOutput).toHaveBeenCalledWith('vsix-path', '/tmp/published.vsix');
   });
 
@@ -296,7 +302,7 @@ describe('GitHub Action main entrypoint', () => {
       {
         operation: 'wait-for-validation',
         delimitedInputs: {
-          'manifest-globs|\n': ['vss-extension.json'],
+          'manifest-file|\n': ['vss-extension.json'],
         },
       },
       {
@@ -456,7 +462,7 @@ describe('GitHub Action main entrypoint', () => {
         'extension-id': 'extension',
       },
       delimitedInputs: {
-        'manifest-globs|\n': ['vss-extension.json'],
+        'manifest-file|\n': ['vss-extension.json'],
       },
     });
     githubAdapterCtorMock.mockReturnValue(platform);

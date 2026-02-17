@@ -107,7 +107,7 @@
       "type": "string",
       "label": "Publisher ID",
       "required": false,
-      "helpMarkDown": "**Publisher ID** that owns the extension.\n\n- Must match publisher in manifest (or override it)\n- Optional when `vsixPath` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `query-version`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `mycompany` or `my-publisher-id`",
+      "helpMarkDown": "**Publisher ID** that owns the extension.\n\n- Must match publisher in manifest (or override it)\n- Optional when `vsixFile` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `query-version`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `mycompany` or `my-publisher-id`",
       "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = query-version || operation = wait-for-validation || operation = wait-for-installation",
       "groupName": "operationConfig"
     },
@@ -116,7 +116,7 @@
       "type": "string",
       "label": "Extension ID",
       "required": false,
-      "helpMarkDown": "**Extension ID** - unique identifier within the publisher namespace.\n\n- Must match ID in manifest (or override it)\n- Combined with Publisher ID forms full extension identifier: `publisherId.extensionId`\n- Optional when `vsixPath` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `query-version`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `my-extension` or `azure-devops-tasks`",
+      "helpMarkDown": "**Extension ID** - unique identifier within the publisher namespace.\n\n- Must match ID in manifest (or override it)\n- Combined with Publisher ID forms full extension identifier: `publisherId.extensionId`\n- Optional when `vsixFile` is supplied for operations that support VSIX identity fallback\n- Required for `show` and `query-version`\n- Alphanumeric with hyphens, dots, underscores only\n\n**Example**: `my-extension` or `azure-devops-tasks`",
       "visibleRule": "operation = package || operation = publish || operation = unpublish || operation = share || operation = unshare || operation = install || operation = show || operation = query-version || operation = wait-for-validation || operation = wait-for-installation",
       "groupName": "operationConfig"
     },
@@ -139,7 +139,7 @@
       "type": "filePath",
       "label": "Root Folder",
       "required": false,
-      "helpMarkDown": "**Root folder** containing extension manifest and source files.\n\n- Defaults to repository root if not specified\n- All file paths in manifest are relative to this folder\n- Must contain `vss-extension.json` (or other manifest specified in Manifest Patterns)\n\n**Example**: `$(Build.SourcesDirectory)/src`",
+      "helpMarkDown": "**Root folder** containing extension manifest and source files.\n\n- Defaults to repository root if not specified\n- All file paths in manifest are relative to this folder\n- Must contain `vss-extension.json` (or other manifest specified in Manifest File(s))\n\n**Example**: `$(Build.SourcesDirectory)/src`",
       "visibleRule": "operation = package || operation = publish && publishSource = manifest || operation = wait-for-validation",
       "groupName": "operationConfig"
     },
@@ -153,21 +153,21 @@
       "groupName": "operationConfig"
     },
     {
-      "name": "manifestGlobs",
+      "name": "manifestFile",
       "type": "multiLine",
-      "label": "Manifest Patterns",
+      "label": "Manifest File(s)",
       "required": false,
-      "helpMarkDown": "**Glob patterns for manifest files** (one per line).\n\n- Defaults to `vss-extension.json` if not specified\n- Can specify multiple patterns for multi-manifest scenarios\n- Patterns are relative to Root Folder\n\n**Examples**:\n- `vss-extension.json` (default)\n- `*.json`\n- `manifests/**/*.json`",
-      "visibleRule": "operation = package || operation = publish && publishSource = manifest || operation = wait-for-validation",
+      "helpMarkDown": "**Manifest file path(s)** (one per line).\n\n- Defaults to `vss-extension.json` if not specified\n- Supports multiple manifest files\n- Paths are relative to Root Folder\n\n**Examples**:\n- `vss-extension.json`\n- `manifests/dev/vss-extension.json`\n- `manifests/prod/vss-extension.json`",
+      "visibleRule": "operation = package || operation = publish && publishSource = manifest || operation = wait-for-validation || operation = wait-for-installation",
       "groupName": "operationConfig"
     },
     {
       "name": "vsixFile",
       "type": "filePath",
       "label": "VSIX File",
-      "required": true,
-      "helpMarkDown": "**Path to pre-built .vsix file** to publish.\n\n- Use when publishing source is 'VSIX file'\n- File must be a valid extension package\n- Supports pipeline variables\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`",
-      "visibleRule": "operation = publish && publishSource = vsix",
+      "required": false,
+      "helpMarkDown": "**Path to .vsix file** used for publish and VSIX identity fallback.\n\n- For publish: required when `publishSource = vsix`\n- For install/share/unshare/unpublish/wait-for-validation: reads publisher/extension identity from VSIX when IDs are omitted\n- For wait-for-installation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For wait-for-installation, use this OR expectedTasks/manifestFile, not multiple options",
+      "visibleRule": "operation = publish && publishSource = vsix || operation = install || operation = share || operation = unshare || operation = unpublish || operation = wait-for-installation || operation = wait-for-validation",
       "groupName": "operationConfig"
     },
     {
@@ -223,8 +223,8 @@
       "type": "filePath",
       "label": "Output Path",
       "required": false,
-      "helpMarkDown": "**Output directory** for generated .vsix file.\n\n- Defaults to current directory if not specified\n- Directory will be created if it doesn't exist\n- The actual filename is based on publisher.extension-id-version.vsix\n\n**Example**: `$(Build.ArtifactStagingDirectory)`\n\n**Output**: Full path is stored in `vsixPath` variable",
-      "visibleRule": "operation = package",
+      "helpMarkDown": "**Output directory** for the generated/final .vsix file.\n\n- Available for `package` and `publish`\n- Defaults to current directory if not specified\n- Directory will be created if it doesn't exist\n- The actual filename is based on publisher.extension-id-version.vsix\n\n**Example**: `$(Build.ArtifactStagingDirectory)`\n\n**Output**: Full path is stored in `vsixPath` variable",
+      "visibleRule": "operation = package || operation = publish",
       "groupName": "operationConfig"
     },
     {
@@ -362,26 +362,8 @@
       "type": "multiLine",
       "label": "Expected Tasks (JSON)",
       "required": false,
-      "helpMarkDown": "**Expected tasks as JSON array** - manually specify tasks to verify.\n\n**Format**: Array of objects with `name` and `versions` properties\n\n**Example**:\n```json\n[\n  {\"name\": \"MyTask\", \"versions\": [\"1.0.0\", \"1.0.1\"]},\n  {\"name\": \"AnotherTask\", \"versions\": [\"2.0.0\"]}\n]\n```\n\n**Note**: Use this OR auto-discovery options (manifestPath/vsixPath), not both",
+      "helpMarkDown": "**Expected tasks as JSON array** - manually specify tasks to verify.\n\n**Format**: Array of objects with `name` and `versions` properties\n\n**Example**:\n```json\n[\n  {\"name\": \"MyTask\", \"versions\": [\"1.0.0\", \"1.0.1\"]},\n  {\"name\": \"AnotherTask\", \"versions\": [\"2.0.0\"]}\n]\n```\n\n**Note**: Use this OR auto-discovery options (manifestFile/vsixFile), not both",
       "visibleRule": "operation = wait-for-installation",
-      "groupName": "operationConfig"
-    },
-    {
-      "name": "manifestPath",
-      "type": "filePath",
-      "label": "Manifest Path",
-      "required": false,
-      "helpMarkDown": "**Path to extension manifest** for auto-discovering task versions.\n\n- Reads manifest to find all tasks and their versions\n- More convenient than manually specifying expected tasks\n- File must be a valid vss-extension.json\n\n**Example**: `$(Build.SourcesDirectory)/vss-extension.json`\n\n**Note**: Use this OR expectedTasks/vsixPath, not multiple options",
-      "visibleRule": "operation = wait-for-installation",
-      "groupName": "operationConfig"
-    },
-    {
-      "name": "vsixPath",
-      "type": "filePath",
-      "label": "VSIX Path",
-      "required": false,
-      "helpMarkDown": "**Path to .vsix file** used for extension identity fallback and task discovery.\n\n- For install/share/unshare/unpublish/wait-for-validation: reads publisher/extension identity from VSIX when IDs are omitted\n- For wait-for-installation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For wait-for-installation, use this OR expectedTasks/manifestPath, not multiple options",
-      "visibleRule": "operation = install || operation = share || operation = unshare || operation = unpublish || operation = wait-for-installation || operation = wait-for-validation",
       "groupName": "operationConfig"
     },
     {

@@ -154,7 +154,7 @@ inputs:
       - Extracts task.json files from VSIX package
       - Most convenient when verifying immediately after packaging
 
-      **Note:** Use this OR expected-tasks/manifest-path, not multiple
+      **Note:** Use this OR expected-tasks/manifest-file, not multiple
     required: false
   accounts:
     description: |-
