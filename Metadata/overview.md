@@ -4,14 +4,14 @@ This extension provides Azure Pipelines tasks to package, publish, and manage Az
 
 After installing this extension in your Azure DevOps organization, add one or more tasks to your [Azure Pipelines YAML pipeline](https://learn.microsoft.com/azure/devops/pipelines/?view=azure-devops).
 
-You can find an end-to-end example in this repository’s [azure-pipelines.yml](https://github.com/microsoft/azure-devops-extension-tasks/blob/main/azure-pipelines.yml).
+You can find an end-to-end example in this repository’s [azure-pipelines.yml](https://github.com/jessehouwing/azdo-marketplace/blob/main/azure-pipelines.yml).
 
 ![add-task](./Images/add-task.png)
 
 For authenticated operations, you can use either a Personal Access Token (PAT) or Microsoft Entra ID Workload Identity Federation (OIDC).
 
 - PAT setup: [Use personal access tokens](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
-- OIDC setup guide: [Authentication and OIDC](https://github.com/microsoft/azure-devops-extension-tasks/blob/main/docs/authentication-and-oidc.md)
+- OIDC setup guide: [Authentication and OIDC](https://github.com/jessehouwing/azdo-marketplace/blob/main/docs/authentication-and-oidc.md)
 
 ## Microsoft Entra ID Workload Federation (OIDC)
 
@@ -23,8 +23,8 @@ This extension supports Azure Pipelines service connections based on **Azure Res
 
 For setup details, required marketplace resource scope, and troubleshooting, see:
 
-- [Authentication and OIDC](https://github.com/microsoft/azure-devops-extension-tasks/blob/main/docs/authentication-and-oidc.md)
-- [Azure Pipelines usage](https://github.com/microsoft/azure-devops-extension-tasks/blob/main/docs/azure-pipelines.md)
+- [Authentication and OIDC](https://github.com/jessehouwing/azdo-marketplace/blob/main/docs/authentication-and-oidc.md)
+- [Azure Pipelines usage](https://github.com/jessehouwing/azdo-marketplace/blob/main/docs/azure-pipelines.md)
 
 ## Azure Pipelines tasks
 
@@ -61,5 +61,5 @@ This project also provides GitHub Actions equivalents for the same marketplace o
 
 ## Source, feedback, and issues
 
-- Source: [microsoft/azure-devops-extension-tasks](https://github.com/microsoft/azure-devops-extension-tasks)
-- Issues: [GitHub issues](https://github.com/microsoft/azure-devops-extension-tasks/issues)
+- Source: [jessehouwing/azdo-marketplace](https://github.com/jessehouwing/azdo-marketplace)
+- Issues: [GitHub issues](https://github.com/jessehouwing/azdo-marketplace/issues)

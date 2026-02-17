@@ -162,7 +162,7 @@ stages:
                 - task: GitHubRelease@1
                   displayName: 'Publish the public extension to GitHub'
                   inputs:
-                    gitHubConnection: 'microsoft/azure-devops-extension-tasks'
+                    gitHubConnection: 'jessehouwing/azdo-marketplace'
                     repositoryName: '$(Build.Repository.Name)'
                     action: 'create'
                     target: '$(Build.SourceVersion)'
