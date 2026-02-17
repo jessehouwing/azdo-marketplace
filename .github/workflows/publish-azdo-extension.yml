@@ -41,7 +41,12 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: npm run test
+        shell: bash
+        run: |
+          stop_marker="$(uuidgen)"
+          echo "::stop-commands::$stop_marker"
+          npm run test
+          echo "::$stop_marker::"
 
       - name: Lint
         run: npm run lint
