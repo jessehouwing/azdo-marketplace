@@ -158,7 +158,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/package@v6
         id: package
         with:
-          root-folder: './extension'
+          manifest-file: './extension/vss-extension.json'
           extension-version: ${{ github.ref_name }}
           update-tasks-version: 'patch'
 
@@ -212,6 +212,37 @@ When using `expected-tasks`, provide a JSON array:
 ```
 
 Each task can have multiple versions. The verification succeeds if ALL specified versions are found.
+
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: myorg
+    manifest-file: vss-extension.json
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated verification operations.
+- `username`: Provides username when `auth-type` is `basic`.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Identifies the publisher that owns the extension to verify.
+- `extension-id`: Identifies the extension to verify.
+- `accounts`: Lists organizations/accounts where installation is verified.
+- `expected-tasks`: Supplies explicit JSON task/version expectations.
+- `manifest-file`: Supplies manifest file(s) for task expectation discovery.
+- `vsix-path`: Supplies a VSIX path for task expectation and identity discovery.
+- `timeout-minutes`: Sets total verification timeout window.
+- `polling-interval-seconds`: Sets interval between installation checks.
+
+## GitHub Marketplace outputs
+
+- No outputs: success/failure indicates whether expected tasks were detected.
 
 ## See Also
 

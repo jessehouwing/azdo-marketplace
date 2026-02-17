@@ -91,6 +91,33 @@ jobs:
         run: echo "Current version is ${{ steps.version.outputs.current-version }}"
 ```
 
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/show@v6
+  id: show
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+
+- run: echo '${{ steps.show.outputs.extension-metadata }}'
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated show operations.
+- `username`: Provides username when `auth-type` is `basic`.
+- `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Identifies the publisher that owns the extension to query.
+- `extension-id`: Identifies the extension to query.
+
+## GitHub Marketplace outputs
+
+- `extension-metadata`: Returns extension metadata JSON from marketplace lookup.
+
 ## See Also
 
 - [Publish](../publish) - Publish extension to marketplace

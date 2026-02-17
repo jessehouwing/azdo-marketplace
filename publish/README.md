@@ -10,7 +10,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 - uses: jessehouwing/azdo-marketplace/publish@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
 ```
 
 ### Publish from VSIX
@@ -35,7 +35,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 - uses: jessehouwing/azdo-marketplace/publish@v6
   with:
     auth-type: 'oidc'
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
 ```
 
 ### Publish with Basic Authentication (On-Premises)
@@ -47,7 +47,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
     username: ${{ secrets.TFS_USERNAME }}
     token: ${{ secrets.TFS_TOKEN }}
     service-url: 'https://myserver.com/tfs'
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
 ```
 
 ### Publish with Version Override and Task Updates
@@ -56,7 +56,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 - uses: jessehouwing/azdo-marketplace/publish@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
     extension-version: '2.0.0'
     update-tasks-version: 'minor'
     update-tasks-id: 'true'
@@ -96,7 +96,6 @@ OR
 
 #### Manifest Source (when publish-source is manifest)
 
-- `root-folder`: Root folder containing extension files
 - `manifest-file`: Manifest file path(s), newline-separated
 - `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
 - `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
@@ -143,11 +142,50 @@ jobs:
         uses: jessehouwing/azdo-marketplace/publish@v6
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
-          root-folder: './extension'
+          manifest-file: './extension/vss-extension.json'
           extension-version: ${{ github.ref_name }}
           extension-visibility: 'public'
           update-tasks-version: 'major'
 ```
+
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/publish@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    manifest-file: vss-extension.json
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated publish operations.
+- `username`: Provides username when `auth-type` is `basic`.
+- `service-url`: Overrides the service endpoint for cloud/on-prem publish.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Overrides publisher identity used for publish.
+- `extension-id`: Overrides extension identity used for publish.
+- `publish-source`: Chooses publish source (`manifest` or `vsix`).
+- `manifest-file`: Provides one or more manifest files for manifest publishing.
+- `manifest-file-js`: Provides a JS manifest module for `tfx --manifest-js`.
+- `overrides-file`: Provides an overrides JSON file merged into manifest publishing.
+- `vsix-file`: Provides the VSIX path when publishing from VSIX source.
+- `extension-version`: Overrides extension version before publish.
+- `extension-name`: Overrides extension display name before publish.
+- `extension-visibility`: Overrides marketplace visibility metadata.
+- `localization-root`: Points to localization resources included while publishing.
+- `extension-pricing`: Overrides extension pricing metadata.
+- `output-path`: Sets where the generated/final VSIX file is written.
+- `no-wait-validation`: Publishes without waiting for marketplace validation.
+- `update-tasks-version`: Controls task version bump behavior before publish.
+- `update-tasks-id`: Regenerates deterministic task IDs for publish variants.
+
+## GitHub Marketplace outputs
+
+- `vsix-path`: Returns the generated/final VSIX path produced during publish.
 
 ## See Also
 

@@ -119,6 +119,33 @@ jobs:
           accounts: ${{ github.event.inputs.organization }}
 ```
 
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/unshare@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: old-customer-org
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated unshare operations.
+- `username`: Provides username when `auth-type` is `basic`.
+- `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Identifies the publisher that owns the extension to unshare.
+- `extension-id`: Identifies the extension to unshare.
+- `vsix-path`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+- `accounts`: Lists organizations/accounts to remove extension access from.
+
+## GitHub Marketplace outputs
+
+- No outputs: success/failure indicates whether unsharing completed.
+
 ## See Also
 
 - [Share](../share) - Share extension with organizations

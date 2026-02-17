@@ -9,7 +9,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ```yaml
 - uses: jessehouwing/azdo-marketplace/package@v6
   with:
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
     output-path: './dist'
 ```
 
@@ -18,7 +18,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ```yaml
 - uses: jessehouwing/azdo-marketplace/package@v6
   with:
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
     extension-version: '1.2.3'
     output-path: './dist'
 ```
@@ -28,7 +28,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ```yaml
 - uses: jessehouwing/azdo-marketplace/package@v6
   with:
-    root-folder: './my-extension'
+    manifest-file: './my-extension/vss-extension.json'
     extension-version: ${{ github.ref_name }}
     update-tasks-version: 'patch'
     output-path: './dist'
@@ -61,7 +61,6 @@ None - all inputs are optional with sensible defaults.
 
 #### Manifest Source
 
-- `root-folder`: Root folder containing extension files (default: current directory)
 - `manifest-file`: Manifest file path(s), newline-separated (default: `vss-extension.json`)
 - `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
 - `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
@@ -103,7 +102,7 @@ jobs:
       - uses: jessehouwing/azdo-marketplace/package@v6
         id: package
         with:
-          root-folder: './extension'
+          manifest-file: './extension/vss-extension.json'
           extension-version: '1.0.${{ github.run_number }}'
           update-tasks-version: 'patch'
           output-path: './dist'
@@ -114,6 +113,41 @@ jobs:
           name: extension
           path: ${{ steps.package.outputs.vsix-path }}
 ```
+
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/package@v6
+  id: package
+  with:
+    publisher-id: my-publisher
+    extension-id: my-extension
+    manifest-file: vss-extension.json
+
+- run: echo "VSIX: ${{ steps.package.outputs.vsix-path }}"
+```
+
+## GitHub Marketplace inputs
+
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Overrides publisher identity used in packaging.
+- `extension-id`: Overrides extension identity used in packaging.
+- `manifest-file`: Provides one or more manifest files for package input.
+- `manifest-file-js`: Provides a JS manifest module for `tfx --manifest-js`.
+- `overrides-file`: Provides an overrides JSON file merged into the packaging manifest.
+- `extension-version`: Overrides extension version in the package.
+- `extension-name`: Overrides extension display name in the package.
+- `extension-visibility`: Overrides marketplace visibility metadata.
+- `localization-root`: Points to localization resources included in the package.
+- `extension-pricing`: Overrides extension pricing metadata.
+- `output-path`: Sets where the generated VSIX file is written.
+- `bypass-validation`: Skips validation checks during package creation.
+- `update-tasks-version`: Controls task version bump behavior during package generation.
+- `update-tasks-id`: Regenerates deterministic task IDs for packaged tasks.
+
+## GitHub Marketplace outputs
+
+- `vsix-path`: Returns the full path to the generated VSIX file.
 
 ## See Also
 

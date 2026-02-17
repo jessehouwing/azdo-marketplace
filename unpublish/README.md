@@ -99,6 +99,31 @@ jobs:
           extension-id: 'my-extension'
 ```
 
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/unpublish@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated unpublish operations.
+- `username`: Provides username when `auth-type` is `basic`.
+- `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Identifies the publisher that owns the extension to unpublish.
+- `extension-id`: Identifies the extension to unpublish.
+- `vsix-path`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+
+## GitHub Marketplace outputs
+
+- No outputs: success/failure indicates whether unpublish completed.
+
 ## See Also
 
 - [Publish](../publish) - Publish extension to marketplace

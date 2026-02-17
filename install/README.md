@@ -120,7 +120,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/publish@v6
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
-          root-folder: './extension'
+          manifest-file: './extension/vss-extension.json'
           extension-version: '1.0.${{ github.run_number }}'
 
       - name: Install to Test Org
@@ -131,6 +131,32 @@ jobs:
           extension-id: 'my-extension'
           accounts: 'test-org'
 ```
+
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/install@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: myorg
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated install operations.
+- `username`: Provides username when `auth-type` is `basic`.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Identifies the publisher that owns the extension to install.
+- `extension-id`: Identifies the extension to install.
+- `vsix-path`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+- `accounts`: Lists target organizations/accounts where the extension is installed.
+
+## GitHub Marketplace outputs
+
+- No outputs: success/failure indicates whether install completed.
 
 ## See Also
 

@@ -114,7 +114,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/publish@v6
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
-          root-folder: './extension'
+          manifest-file: './extension/vss-extension.json'
 
       - name: Validate Extension
         uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
@@ -135,6 +135,36 @@ This action polls the marketplace to check if your extension has been successful
 - Increases timeout exponentially on each retry
 - Caps at maximum timeout
 - Stops after max-retries attempts
+
+## GitHub Marketplace sample
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    max-retries: '10'
+```
+
+## GitHub Marketplace inputs
+
+- `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
+- `token`: Provides PAT/secret token for authenticated validation checks.
+- `username`: Provides username when `auth-type` is `basic`.
+- `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
+- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `publisher-id`: Identifies the publisher that owns the extension to validate.
+- `extension-id`: Identifies the extension to validate.
+- `extension-version`: Targets a specific extension version for validation checks.
+- `vsix-path`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+- `max-retries`: Sets maximum validation retry attempts.
+- `min-timeout`: Sets minimum retry delay in minutes.
+- `max-timeout`: Sets maximum retry delay in minutes.
+
+## GitHub Marketplace outputs
+
+- No outputs: success/failure indicates whether marketplace validation passed.
 
 ## See Also
 
