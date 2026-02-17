@@ -7597,11 +7597,24 @@ async function runShow(platform, tfxManager, auth) {
   }
 }
 async function runQueryVersion(platform, tfxManager, auth) {
+  const normalizedVersionAction = (() => {
+    const input = (platform.getInput("version-action") ?? "none").trim().toLowerCase();
+    if (input === "major") {
+      return "Major";
+    }
+    if (input === "minor") {
+      return "Minor";
+    }
+    if (input === "patch") {
+      return "Patch";
+    }
+    return "None";
+  })();
   const result = await queryVersion(
     {
       publisherId: platform.getInput("publisher-id", true),
       extensionId: platform.getInput("extension-id", true),
-      versionAction: platform.getInput("version-action") ?? "None",
+      versionAction: normalizedVersionAction,
       extensionVersionOverrideVariable: platform.getInput("extension-version-override")
     },
     auth,
