@@ -23,7 +23,9 @@ jobs:
   publish_oidc:
     name: Publish private (OIDC)
     runs-on: ubuntu-latest
-    environment: publisher-jessehouwing
+    environment:
+      name: publisher-jessehouwing
+      url: https://marketplace.visualstudio.com/items?itemName=${{env.PUBLISHER_ID}}.${{ inputs.extension_id }}
 
     steps:
       - uses: actions/checkout@v6
@@ -89,7 +91,7 @@ jobs:
           extension-id: ${{ inputs.extension_id }}
           extension-version: ${{ steps.version.outputs.value }}
           extension-visibility: private
-          update-tasks-version: true
+          update-tasks-version: patch
           update-tasks-id: true
           output-path: ${{ runner.temp }}
 
