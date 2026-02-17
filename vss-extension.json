@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "azdo-marketplace-extension",
   "publisher": "jessehouwing",
-  "name": "Azure DevOps Extension Tasks",
+  "name": "azdo marketplace extension",
   "version": "6.0.0",
   "description": "Azure Pipelines tasks for packaging and publishing Azure Devops and Visual Studio extensions to the Visual Studio Marketplace.",
   "tags": [
@@ -17,12 +17,13 @@
     "Release",
     "Azure Pipelines",
     "Azure DevOps Extensions",
-    "Visual Studio Extensions"
+    "GitHub Actions"
   ],
   "icons": {
     "default": "Metadata/Images/tools-icon.png"
   },
   "public": true,
+  "preview": true,
   "targets": [
     {
       "id": "Microsoft.VisualStudio.Services"
