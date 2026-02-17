@@ -113,6 +113,21 @@ async function importMainAndFlush(): Promise<void> {
   await new Promise<void>((resolve) => setImmediate(resolve));
 }
 
+function expectNoLegacyStatusOutputs(platform: ReturnType<typeof createPlatformMock>): void {
+  const legacyOutputs = [
+    'published',
+    'shared',
+    'unshared',
+    'installed',
+    'waitForValidation',
+    'waitForInstallation',
+  ];
+
+  for (const outputName of legacyOutputs) {
+    expect(platform.setOutput).not.toHaveBeenCalledWith(outputName, expect.anything());
+  }
+}
+
 describe('Azure DevOps main entrypoint', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -316,6 +331,69 @@ describe('Azure DevOps main entrypoint', () => {
         `Input 'overridesFile' must reference an existing file. File not found: ${missingPath}`
       )
     );
+  });
+
+  it('does not emit legacy status outputs for operation-only commands', async () => {
+    const cases: Array<{
+      operation: 'share' | 'unshare' | 'install' | 'waitForValidation' | 'waitForInstallation';
+      delimitedInputs?: Record<string, string[]>;
+      inputs?: Record<string, string | undefined>;
+    }> = [
+      {
+        operation: 'share',
+        delimitedInputs: {
+          'accounts|\n': ['org1'],
+        },
+      },
+      {
+        operation: 'unshare',
+        delimitedInputs: {
+          'accounts|\n': ['org1'],
+        },
+      },
+      {
+        operation: 'install',
+        delimitedInputs: {
+          'accounts|;': ['https://dev.azure.com/org1'],
+          'accounts|\n': ['https://dev.azure.com/org1'],
+        },
+      },
+      {
+        operation: 'waitForValidation',
+        delimitedInputs: {
+          'manifestFile|\n': ['vss-extension.json'],
+        },
+      },
+      {
+        operation: 'waitForInstallation',
+        delimitedInputs: {
+          'accounts|;': ['https://dev.azure.com/org1'],
+          'accounts|\n': ['https://dev.azure.com/org1'],
+        },
+      },
+    ];
+
+    waitForValidationMock.mockImplementation(async () => ({ status: 'success' }));
+
+    for (const testCase of cases) {
+      const platform = createPlatformMock({
+        inputs: {
+          operation: testCase.operation,
+          connectionType: 'PAT',
+          connectionNamePAT: 'svc-connection',
+          publisherId: 'publisher',
+          extensionId: 'extension',
+          ...testCase.inputs,
+        },
+        delimitedInputs: testCase.delimitedInputs,
+      });
+      azdoAdapterCtorMock.mockReturnValue(platform);
+
+      await importMainAndFlush();
+
+      expect(tlSetResultMock).not.toHaveBeenCalledWith('Failed', expect.anything());
+      expectNoLegacyStatusOutputs(platform);
+    }
   });
 
   it('accepts manual YAML casing for connectionType', async () => {
