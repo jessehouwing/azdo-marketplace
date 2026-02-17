@@ -2,6 +2,7 @@
  * Package command - Creates a .vsix file from extension manifest
  */
 
+import { cwd } from 'process';
 import { ArgBuilder } from '../arg-builder.js';
 import { FilesystemManifestReader } from '../filesystem-manifest-reader.js';
 import { ManifestEditor } from '../manifest-editor.js';
@@ -132,7 +133,7 @@ export async function packageExtension(
 
     try {
       // Create filesystem reader for the source directory
-      const rootFolder = options.rootFolder || '.';
+      const rootFolder = options.rootFolder || cwd();
       const manifestGlobs = options.manifestGlobs || ['vss-extension.json'];
 
       const reader = new FilesystemManifestReader({

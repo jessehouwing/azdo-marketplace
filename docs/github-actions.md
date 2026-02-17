@@ -32,8 +32,8 @@ This repository ships a **unified JavaScript action** and **composite command wr
 ### Authentication
 
 - `auth-type`: `pat` | `basic` | `oidc` (default `pat`)
-- `token`: PAT when `auth-type=pat`
-- `username` + `password`: when `auth-type=basic`
+- `token`: secret token when `auth-type=pat` or `auth-type=basic`
+- `username`: required when `auth-type=basic`
 - `service-url`: optional override for Azure DevOps service URL (required for `wait-for-installation` as `https://dev.azure.com/<organization>`)
 
 ### Identity and tooling
@@ -44,7 +44,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
 
 ### Packaging/publish source and overrides
 
-- `root-folder`, `manifest-file`
+- `manifest-file`
 - `publish-source` (`manifest` or `vsix`)
 - `vsix-file`
 - `extension-version`, `extension-name`, `extension-visibility`
@@ -70,7 +70,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `operation: package`
 - Optional:
   - `publisher-id`, `extension-id`
-  - `root-folder`, `manifest-file`
+  - `manifest-file`
   - `extension-version`, `extension-name`, `extension-visibility`
   - `output-path`
   - `bypass-validation`, `rev-version`, `update-tasks-version`, `update-tasks-id`
@@ -204,8 +204,6 @@ Use these when you prefer a dedicated command surface over setting `operation` m
 ```yaml
 - uses: jessehouwing/azdo-marketplace/package@v6
   id: package
-  with:
-    root-folder: .
 
 - run: echo "VSIX: ${{ steps.package.outputs.vsix-path }}"
 ```
@@ -230,7 +228,6 @@ steps:
     uses: jessehouwing/azdo-marketplace@v6
     with:
       operation: package
-      root-folder: .
 
   - uses: jessehouwing/azdo-marketplace@v6
     with:

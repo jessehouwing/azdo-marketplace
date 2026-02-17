@@ -1,6 +1,6 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { getBasicAuth } from '../../auth/basic-auth.js';
 import type { IPlatformAdapter } from '@extension-tasks/core';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { getBasicAuth } from '../../auth/basic-auth.js';
 
 describe('GitHub Actions Basic Auth', () => {
   let mockPlatform: jest.Mocked<IPlatformAdapter>;
@@ -26,40 +26,40 @@ describe('GitHub Actions Basic Auth', () => {
     } as unknown as jest.Mocked<IPlatformAdapter>;
   });
 
-  it('should return correct AuthCredentials with username and password', async () => {
+  it('should return correct AuthCredentials with username and token', async () => {
     const expectedUsername = 'testuser';
-    const expectedPassword = 'testpassword123';
+    const expectedToken = 'testtoken123';
     const expectedUrl = 'https://marketplace.visualstudio.com';
 
-    const result = await getBasicAuth(expectedUsername, expectedPassword, undefined, mockPlatform);
+    const result = await getBasicAuth(expectedUsername, expectedToken, undefined, mockPlatform);
 
     expect(result).toEqual({
       authType: 'basic',
       serviceUrl: expectedUrl,
       username: expectedUsername,
-      password: expectedPassword,
+      password: expectedToken,
     });
   });
 
-  it('should mask password via platform.setSecret() immediately (security critical)', async () => {
+  it('should mask token via platform.setSecret() immediately (security critical)', async () => {
     const username = 'testuser';
-    const secretPassword = 'my-secret-password';
+    const secretToken = 'my-secret-token';
 
-    await getBasicAuth(username, secretPassword, undefined, mockPlatform);
+    await getBasicAuth(username, secretToken, undefined, mockPlatform);
 
-    expect(mockPlatform.setSecret).toHaveBeenCalledWith(secretPassword);
+    expect(mockPlatform.setSecret).toHaveBeenCalledWith(secretToken);
     expect(mockPlatform.setSecret).toHaveBeenCalledTimes(1);
   });
 
   it('should throw error for missing username', async () => {
-    await expect(getBasicAuth('', 'password', undefined, mockPlatform)).rejects.toThrow(
+    await expect(getBasicAuth('', 'token', undefined, mockPlatform)).rejects.toThrow(
       'Username is required for basic authentication'
     );
   });
 
-  it('should throw error for missing password', async () => {
+  it('should throw error for missing token', async () => {
     await expect(getBasicAuth('username', null as any, undefined, mockPlatform)).rejects.toThrow(
-      'Password is required for basic authentication'
+      'Token is required for basic authentication'
     );
   });
 
@@ -85,24 +85,24 @@ describe('GitHub Actions Basic Auth', () => {
   it('should call setSecret before returning (timing security test)', async () => {
     let setSecretCalled = false;
     const username = 'testuser';
-    const password = 'timing-test-password';
+    const token = 'timing-test-token';
 
     mockPlatform.setSecret.mockImplementation(() => {
       setSecretCalled = true;
     });
 
-    const result = await getBasicAuth(username, password, undefined, mockPlatform);
+    const result = await getBasicAuth(username, token, undefined, mockPlatform);
 
     // setSecret should have been called before we got the result
     expect(setSecretCalled).toBe(true);
-    expect(result.password).toBe(password);
+    expect(result.password).toBe(token);
   });
 
-  it('should handle empty password and still mask it', async () => {
+  it('should handle empty token and still mask it', async () => {
     const username = 'user';
-    const password = '';
+    const token = '';
 
-    const result = await getBasicAuth(username, password, undefined, mockPlatform);
+    const result = await getBasicAuth(username, token, undefined, mockPlatform);
 
     expect(result.password).toBe('');
     expect(mockPlatform.setSecret).toHaveBeenCalledWith('');

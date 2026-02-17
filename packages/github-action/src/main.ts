@@ -87,7 +87,6 @@ async function run(): Promise<void> {
       // Get authentication credentials with optional service/marketplace URLs
       const token = platform.getInput('token');
       const username = platform.getInput('username');
-      const password = platform.getInput('password');
       const serviceUrl =
         operation === 'install' || operation === 'wait-for-installation'
           ? undefined
@@ -96,7 +95,6 @@ async function run(): Promise<void> {
       auth = await getAuth(authType, platform, {
         token,
         username,
-        password,
         serviceUrl,
       });
 
@@ -200,7 +198,6 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
   const extensionPricingInput = platform.getInput('extension-pricing');
 
   const options = {
-    rootFolder: platform.getInput('root-folder'),
     localizationRoot: platform.getInput('localization-root'),
     manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     publisherId: platform.getInput('publisher-id'),
@@ -247,7 +244,6 @@ async function runPublish(
         publishSource === 'manifest'
           ? platform.getDelimitedInput('manifest-file', '\n', true)
           : undefined,
-      rootFolder: publishSource === 'manifest' ? platform.getInput('root-folder') : undefined,
       localizationRoot:
         publishSource === 'manifest' ? platform.getInput('localization-root') : undefined,
       publisherId: platform.getInput('publisher-id'),
@@ -402,7 +398,6 @@ async function runWaitForValidation(
       extensionId: platform.getInput('extension-id'),
       vsixPath: platform.getInput('vsix-path'),
       extensionVersion: platform.getInput('extension-version'),
-      rootFolder: platform.getInput('root-folder'),
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       maxRetries: parseInt(platform.getInput('max-retries') || '10'),
       minTimeout: parseInt(platform.getInput('min-timeout') || '1'),

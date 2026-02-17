@@ -4,6 +4,7 @@
 
 import { copyFile, mkdir } from 'fs/promises';
 import { basename, join } from 'path';
+import { cwd } from 'process';
 import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
 import { ManifestEditor } from '../manifest-editor.js';
@@ -270,7 +271,7 @@ export async function publishExtension(
         const { ManifestEditor } = await import('../manifest-editor.js');
 
         // Create filesystem reader for the source directory
-        const rootFolder = options.rootFolder || '.';
+        const rootFolder = options.rootFolder || cwd();
         const manifestGlobs = options.manifestGlobs || ['vss-extension.json'];
 
         const reader = new FilesystemManifestReader({

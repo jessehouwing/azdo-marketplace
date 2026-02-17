@@ -13,7 +13,7 @@ const getBasicAuthMock =
   jest.fn<
     (
       username: string,
-      password: string,
+      token: string,
       serviceUrl: string | undefined,
       platform: IPlatformAdapter
     ) => Promise<AuthCredentials>
@@ -73,18 +73,18 @@ describe('GitHub Action getAuth router', () => {
       authType: 'basic',
       serviceUrl: 'https://fallback.marketplace',
       username: 'user',
-      password: 'pass',
+      password: 'token-value',
     });
 
     const result = await getAuth('basic', platform, {
       username: 'user',
-      password: 'pass',
+      token: 'token-value',
       serviceUrl: 'https://custom.server/tfs',
     });
 
     expect(getBasicAuthMock).toHaveBeenCalledWith(
       'user',
-      'pass',
+      'token-value',
       'https://custom.server/tfs',
       platform
     );
@@ -99,7 +99,7 @@ describe('GitHub Action getAuth router', () => {
 
   it('throws when basic credentials are missing', async () => {
     await expect(getAuth('basic', platform, { username: 'user' })).rejects.toThrow(
-      'Username and password are required for basic authentication'
+      'Username and token are required for basic authentication'
     );
   });
 

@@ -49,10 +49,9 @@ These appear across multiple operations.
 
 ### Manifest / package source
 
-- `rootFolder`
 - `manifestFile`
 - `localizationRoot`
-- `publishSource` (`manifest` or `vsix`, publish only)
+- `use` (`manifest` or `vsix`)
 - `vsixFile` (publish from VSIX)
 
 ### Overrides and behavior
@@ -76,7 +75,7 @@ Creates a VSIX from manifest files.
 - Required:
   - `operation: package`
 - Optional:
-  - `rootFolder`, `manifestFile`, `localizationRoot`
+  - `manifestFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `outputPath`
@@ -91,10 +90,10 @@ Publishes to Marketplace from manifest or prebuilt VSIX.
 - Required:
   - `operation: publish`
   - `connectionType` + matching connection input
-  - `publishSource`
-  - If `publishSource = vsix`: `vsixFile`
+  - `use`
+  - If `use = vsix`: `vsixFile`
 - Optional:
-  - `rootFolder`, `manifestFile`, `localizationRoot`
+  - `manifestFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `noWaitValidation`
@@ -185,7 +184,7 @@ Polls Marketplace validation result.
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
-  - `rootFolder`, `manifestFile`
+  - `manifestFile`
   - `maxRetries`, `minTimeout`, `maxTimeout`
   - `tfxVersion`
 
@@ -234,7 +233,6 @@ steps:
     name: packageExt
     inputs:
       operation: package
-      rootFolder: $(Build.SourcesDirectory)
       outputPath: $(Build.ArtifactStagingDirectory)
 
   - task: azdo-marketplace@6
@@ -242,6 +240,6 @@ steps:
       operation: publish
       connectionType: PAT
       connectionNamePAT: MyMarketplaceConnection
-      publishSource: vsix
+      use: vsix
       vsixFile: $(packageExt.Extension.OutputPath)
 ```

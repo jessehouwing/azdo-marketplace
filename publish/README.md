@@ -45,7 +45,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
   with:
     auth-type: 'basic'
     username: ${{ secrets.TFS_USERNAME }}
-    password: ${{ secrets.TFS_PASSWORD }}
+    token: ${{ secrets.TFS_TOKEN }}
     service-url: 'https://myserver.com/tfs'
     root-folder: './my-extension'
 ```
@@ -77,9 +77,8 @@ OR
 #### Authentication
 
 - `auth-type`: Authentication type (`pat`, `basic`, or `oidc`, default: `pat`)
-- `token`: Personal Access Token (required when auth-type is `pat`)
+- `token`: Secret token (PAT for `pat`, basic credential secret for `basic`; required for both)
 - `username`: Username for basic authentication (required when auth-type is `basic`)
-- `password`: Password for basic authentication (required when auth-type is `basic`)
 - `service-url`: Azure DevOps service URL (optional, for on-premises servers)
 
 #### TFX Configuration

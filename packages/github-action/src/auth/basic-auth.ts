@@ -5,7 +5,7 @@ import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
  */
 export async function getBasicAuth(
   username: string,
-  password: string,
+  token: string,
   serviceUrl: string | undefined,
   platform: IPlatformAdapter
 ): Promise<AuthCredentials> {
@@ -13,14 +13,14 @@ export async function getBasicAuth(
     throw new Error('Username is required for basic authentication');
   }
 
-  if (password === undefined || password === null) {
-    throw new Error('Password is required for basic authentication');
+  if (token === undefined || token === null) {
+    throw new Error('Token is required for basic authentication');
   }
 
-  // Mask the password immediately to prevent exposure in logs
-  // Note: username is typically not sensitive, but password definitely is
-  // We mask even empty passwords for consistency
-  platform.setSecret(password);
+  // Mask the token immediately to prevent exposure in logs
+  // Note: username is typically not sensitive, but token definitely is
+  // We mask even empty tokens for consistency
+  platform.setSecret(token);
 
   // Use provided service URL or default to marketplace
   const finalServiceUrl = serviceUrl || 'https://marketplace.visualstudio.com';
@@ -29,6 +29,6 @@ export async function getBasicAuth(
     authType: 'basic',
     serviceUrl: finalServiceUrl,
     username,
-    password,
+    password: token,
   };
 }

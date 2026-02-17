@@ -8,7 +8,6 @@ export type AuthType = 'pat' | 'basic' | 'oidc';
 export interface AuthOptions {
   token?: string;
   username?: string;
-  password?: string;
   serviceUrl?: string;
 }
 
@@ -30,10 +29,10 @@ export async function getAuth(
       return getPatAuth(options.token, finalServiceUrl, platform);
 
     case 'basic':
-      if (!options.username || !options.password) {
-        throw new Error('Username and password are required for basic authentication');
+      if (!options.username || !options.token) {
+        throw new Error('Username and token are required for basic authentication');
       }
-      return getBasicAuth(options.username, options.password, finalServiceUrl, platform);
+      return getBasicAuth(options.username, options.token, finalServiceUrl, platform);
 
     case 'oidc':
       return getOidcAuth(finalServiceUrl, platform);

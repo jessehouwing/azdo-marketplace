@@ -49,18 +49,6 @@ inputs:
 
       **Example:** `my-extension` or `azure-devops-tasks`
     required: false
-  root-folder:
-    description: |-
-      **Root folder** containing extension manifest and source files.
-
-      Available for: package, publish.
-      Required for: none.
-      Default: none
-
-      - Defaults to repository root if not specified
-      - All file paths in manifest are relative to this folder
-      - Must contain `vss-extension.json` (or other manifest specified in manifest-file)
-    required: false
   manifest-file:
     description: |-
       **Manifest file path(s)** (newline-separated).
@@ -71,7 +59,7 @@ inputs:
 
       - Defaults to `vss-extension.json` if not specified
       - Can specify multiple manifest files
-      - Patterns are relative to root-folder
+      - Patterns are relative to the current working directory
 
       **Example:**
       ```
@@ -251,7 +239,6 @@ runs:
         tfx-version: ${{ inputs.tfx-version }}
         publisher-id: ${{ inputs.publisher-id }}
         extension-id: ${{ inputs.extension-id }}
-        root-folder: ${{ inputs.root-folder }}
         manifest-file: ${{ inputs.manifest-file }}
         extension-version: ${{ inputs.extension-version }}
         extension-name: ${{ inputs.extension-name }}

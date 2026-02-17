@@ -54,24 +54,24 @@ stages:
             displayName: 'Package the private extension'
             inputs:
               operation: 'package'
-              rootFolder: '$(Build.SourcesDirectory)'
               outputPath: '$(Build.ArtifactStagingDirectory)\vsts-developer-tools-build-tasks-private.vsix'
               extensionVersion: '$(Build.BuildNumber)'
               extensionVisibility: 'private'
               updateTasksVersion: 'patch'
+              use: 'manifest'
 
           - task: azdo-marketplace@6
             displayName: 'Package the public extension'
             name: 'packagepublic'
             inputs:
               operation: 'package'
-              rootFolder: '$(Build.SourcesDirectory)'
               outputPath: '$(Build.ArtifactStagingDirectory)\vsts-developer-tools-build-tasks-public.vsix'
               publisherId: 'ms-devlabs'
               extensionName: 'Azure DevOps Extension Tasks'
               extensionId: 'vsts-developer-tools-build-tasks'
               extensionVersion: '$(Build.BuildNumber)'
               extensionVisibility: 'public'
+              use: 'manifest'
 
           - publish: $(Build.ArtifactStagingDirectory)
             artifact: vsix
@@ -106,6 +106,7 @@ stages:
                     connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     publishSource: 'vsix'
+                    use: 'vsix'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
                     noWaitValidation: true
 
@@ -115,6 +116,7 @@ stages:
                     operation: 'wait-for-validation'
                     connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
+                    use: 'vsix'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
 
   - stage: PublishProd
@@ -144,7 +146,7 @@ stages:
                     operation: 'publish'
                     connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
-                    publishSource: 'vsix'
+                    use: 'vsix'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
                     noWaitValidation: true
 
@@ -154,6 +156,7 @@ stages:
                     operation: 'wait-for-validation'
                     connectionType: 'AzureRM'
                     connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
+                    use: 'vsix'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
 
                 - task: GitHubRelease@1

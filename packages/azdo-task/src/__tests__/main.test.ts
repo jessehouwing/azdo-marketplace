@@ -156,7 +156,6 @@ describe('Azure DevOps main entrypoint', () => {
       inputs: {
         operation: 'package',
         tfxVersion: 'built-in',
-        rootFolder: '/repo',
         manifestFile: 'vss-extension.json',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -200,7 +199,7 @@ describe('Azure DevOps main entrypoint', () => {
         tfxVersion: 'path',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
-        publishSource: 'manifest',
+        use: 'manifest',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -226,7 +225,7 @@ describe('Azure DevOps main entrypoint', () => {
         tfxVersion: 'built-in',
         connectionType: 'azurerm',
         connectionNameAzureRm: 'svc-connection',
-        publishSource: 'manifest',
+        use: 'manifest',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -247,7 +246,7 @@ describe('Azure DevOps main entrypoint', () => {
         tfxVersion: 'built-in',
         connectionType: 'WorkloadIdentity',
         connectionNameWorkloadIdentity: 'wif-connection',
-        publishSource: 'manifest',
+        use: 'manifest',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -309,8 +308,7 @@ describe('Azure DevOps main entrypoint', () => {
         tfxVersion: 'built-in',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
-        publishSource: 'manifest',
-        rootFolder: '/repo',
+        use: 'manifest',
         outputPath: '/out',
         extensionVisibility: 'public_preview',
         extensionPricing: 'paid',
@@ -330,7 +328,6 @@ describe('Azure DevOps main entrypoint', () => {
     expect(publishExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         publishSource: 'manifest',
-        rootFolder: '/repo',
         outputPath: '/out',
         extensionVisibility: 'public_preview',
         extensionPricing: 'paid',

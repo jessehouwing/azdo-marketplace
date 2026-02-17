@@ -189,7 +189,6 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
   const extensionPricingInput = platform.getInput('extensionPricing');
 
   const options = {
-    rootFolder: platform.getInput('rootFolder'),
     localizationRoot: platform.getInput('localizationRoot'),
     manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     publisherId: platform.getInput('publisherId'),
@@ -225,20 +224,16 @@ async function runPublish(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
-  const publishSource = platform.getInput('publishSource', true) as 'manifest' | 'vsix';
+  const use = platform.getInput('use', true) as 'manifest' | 'vsix';
   const extensionPricingInput = platform.getInput('extensionPricing');
 
   const result = await publishExtension(
     {
-      publishSource,
-      vsixFile: publishSource === 'vsix' ? platform.getInput('vsixFile', true) : undefined,
+      publishSource: use,
+      vsixFile: use === 'vsix' ? platform.getInput('vsixFile', true) : undefined,
       manifestGlobs:
-        publishSource === 'manifest'
-          ? platform.getDelimitedInput('manifestFile', '\n', true)
-          : undefined,
-      rootFolder: publishSource === 'manifest' ? platform.getInput('rootFolder') : undefined,
-      localizationRoot:
-        publishSource === 'manifest' ? platform.getInput('localizationRoot') : undefined,
+        use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n', true) : undefined,
+      localizationRoot: use === 'manifest' ? platform.getInput('localizationRoot') : undefined,
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       extensionVersion: platform.getInput('extensionVersion'),
@@ -274,11 +269,14 @@ async function runUnpublish(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
+  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
+
   await unpublishExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath:
+        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
     },
     auth,
     tfxManager,
@@ -291,11 +289,14 @@ async function runShare(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
+  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
+
   await shareExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath:
+        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -311,11 +312,14 @@ async function runUnshare(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
+  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
+
   await unshareExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath:
+        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -331,11 +335,14 @@ async function runInstall(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
+  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
+
   const result = await installExtension(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath:
+        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -415,14 +422,17 @@ async function runWaitForValidation(
   tfxManager: TfxManager,
   auth: AuthCredentials
 ): Promise<void> {
+  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
+
   const result = await waitForValidation(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath:
+        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
       extensionVersion: platform.getInput('extensionVersion'),
-      rootFolder: platform.getInput('rootFolder'),
-      manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
+      manifestGlobs:
+        use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
       maxRetries: parseInt(platform.getInput('maxRetries') || '10'),
       minTimeout: parseInt(platform.getInput('minTimeout') || '1'),
       maxTimeout: parseInt(platform.getInput('maxTimeout') || '15'),
@@ -440,6 +450,7 @@ async function runWaitForValidation(
 }
 
 async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentials): Promise<void> {
+  const use = platform.getInput('use') as 'manifest' | 'vsix' | undefined;
   const expectedTasksInput = platform.getInput('expectedTasks');
   let expectedTasks;
   if (expectedTasksInput) {
@@ -461,8 +472,10 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentia
       extensionId: platform.getInput('extensionId'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
       expectedTasks,
-      manifestFiles: platform.getDelimitedInput('manifestFile', '\n'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      manifestFiles:
+        use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
+      vsixPath:
+        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
       timeoutMinutes: parseInt(platform.getInput('timeoutMinutes') || '10'),
       pollingIntervalSeconds: parseInt(platform.getInput('pollingIntervalSeconds') || '30'),
     },

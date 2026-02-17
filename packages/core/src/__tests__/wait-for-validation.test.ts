@@ -124,7 +124,7 @@ describe('waitForValidation', () => {
               status: 'failure',
               source: 'PackageValidationStep',
               message:
-                "Task definition visible rule 'operation = package || operation = publish && publishSource = manifest || operation = wait-for-validation' is invalid. Rule cannot contain both '&&' and '||' operators.",
+                "Task definition visible rule 'operation = package || operation = publish && use = manifest || operation = wait-for-validation' is invalid. Rule cannot contain both '&&' and '||' operators.",
               reports: [],
               details: [],
             },

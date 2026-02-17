@@ -46,9 +46,8 @@ Common input mappings:
 
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
-- `rootFolder` → `root-folder`
 - `manifestFile` → `manifest-file`
-- `publishSource` → `publish-source`
+- `use` → `publish-source`
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 - `localizationRoot` → `localization-root`
@@ -190,7 +189,6 @@ steps:
     name: packageExt
     inputs:
       operation: package
-      rootFolder: $(Build.SourcesDirectory)
       outputPath: $(Build.ArtifactStagingDirectory)
 
   - task: azdo-marketplace@6
@@ -198,7 +196,7 @@ steps:
       operation: publish
       connectionType: PAT
       connectionNamePAT: MyMarketplaceConnection
-      publishSource: vsix
+      use: vsix
       vsixFile: $(packageExt.OutputPath)
 ```
 
@@ -231,7 +229,6 @@ jobs:
         uses: jessehouwing/azdo-marketplace@v6
         with:
           operation: package
-          root-folder: .
 
       - uses: jessehouwing/azdo-marketplace@v6
         with:

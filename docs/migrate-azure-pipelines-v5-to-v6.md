@@ -132,7 +132,6 @@ steps:
     name: packageExt
     inputs:
       operation: package
-      rootFolder: $(Build.SourcesDirectory)
       outputPath: $(Build.ArtifactStagingDirectory)
 
   - task: azdo-marketplace@6
@@ -140,7 +139,7 @@ steps:
       operation: publish
       connectionType: PAT
       connectionNamePAT: MyMarketplaceConnection
-      publishSource: vsix
+      use: vsix
       vsixFile: $(packageExt.vsixPath)
 ```
 
@@ -157,6 +156,12 @@ For OIDC setup and Entra workload federation details, see:
 
 - [Authentication and OIDC](./authentication-and-oidc.md)
 - [Azure Pipelines usage](./azure-pipelines.md)
+
+## Path handling changes
+
+- `rootFolder` is removed in v6 Azure Pipelines task configuration.
+- Unrooted file operations now resolve from the current working directory.
+- Keep `manifestFile` and `localizationRoot` paths relative to the working directory.
 
 ## Output variables in v6 (Azure Pipelines)
 

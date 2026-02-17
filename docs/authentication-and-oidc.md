@@ -15,7 +15,7 @@ This project supports multiple authentication methods across Azure Pipelines and
 
 - Intended for on-prem Azure DevOps Server/TFS scenarios.
 - Azure Pipelines: `connectionType: Basic`.
-- GitHub Actions: `auth-type: basic` with `username` and `password`.
+- GitHub Actions: `auth-type: basic` with `username` and `token`.
 
 ### OIDC / Workload Identity Federation
 
@@ -87,7 +87,7 @@ For modern v6 task usage, the recommended approach is to use `connectionType: Az
     operation: publish
     connectionType: AzureRM
     connectionNameAzureRm: azure-devops-marketplace-oidc
-    publishSource: manifest
+    use: manifest
 ```
 
 If you are integrating with legacy steps expecting PAT-backed service connections, you can use the token-override pattern from Jesse’s article (`task.setendpoint` with a runtime token), but this is generally a migration/compatibility path.

@@ -14,14 +14,14 @@ inputs:
       Default: pat
 
       - pat: Use Personal Access Token (recommended for most users)
-      - basic: Use username/password authentication (for on-premises Azure DevOps Server)
+      - basic: Use username/token authentication (for on-premises Azure DevOps Server)
       - oidc: Use Azure OIDC via azure/login action (requires setup, see below)
 
       PAT Setup:
       Provide a Personal Access Token via the 'token' input
 
       Basic Auth Setup:
-      Provide username and password via 'username' and 'password' inputs
+      Provide username and token via 'username' and 'token' inputs
 
       OIDC Setup:
       Run azure/login action BEFORE this action:
@@ -39,14 +39,14 @@ inputs:
     default: pat
   token:
     description: |-
-      Personal Access Token for marketplace authentication
+      Token for marketplace authentication
 
       Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
       Default: none
 
-      Required when auth-type is 'pat'
-      Not needed for other auth types
+      Required when auth-type is 'pat' or 'basic'
+      For basic auth, provide the username in `username` and the secret in `token`
 
       Required scopes: Marketplace (Publish)
       Create a PAT at: https://dev.azure.com/_usersSettings/tokens
@@ -54,19 +54,6 @@ inputs:
   username:
     description: |-
       Username for basic authentication
-
-      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: none.
-      Default: none
-
-      Required when auth-type is 'basic'
-      Not needed for other auth types
-
-      Use for on-premises TFS or Azure DevOps Server deployments
-    required: false
-  password:
-    description: |-
-      Password for basic authentication
 
       Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
@@ -176,7 +163,6 @@ runs:
         auth-type: ${{ inputs.auth-type }}
         token: ${{ inputs.token }}
         username: ${{ inputs.username }}
-        password: ${{ inputs.password }}
         service-url: ${{ inputs.service-url }}
         tfx-version: ${{ inputs.tfx-version }}
         publisher-id: ${{ inputs.publisher-id }}

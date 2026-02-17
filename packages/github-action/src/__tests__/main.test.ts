@@ -130,7 +130,6 @@ describe('GitHub Action main entrypoint', () => {
     validateAzureCliAvailableMock.mockImplementation(async () => undefined);
     getAuthMock.mockImplementation(async () => ({
       token: 'token',
-      password: 'password',
       serviceUrl: 'https://dev.azure.com/org',
     }));
     packageExtensionMock.mockImplementation(async () => ({ vsixPath: '/tmp/ext.vsix' }));
@@ -165,7 +164,6 @@ describe('GitHub Action main entrypoint', () => {
       inputs: {
         operation: 'package',
         'tfx-version': 'built-in',
-        'root-folder': '/repo',
         'publisher-id': 'publisher',
         'extension-id': 'extension',
         'extension-version': '1.2.3',
@@ -189,7 +187,6 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(packageExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        rootFolder: '/repo',
         publisherId: 'publisher',
         extensionId: 'extension',
         extensionVersion: '1.2.3',
@@ -228,11 +225,9 @@ describe('GitHub Action main entrypoint', () => {
     expect(getAuthMock).toHaveBeenCalledWith('oidc', platform, {
       token: undefined,
       username: undefined,
-      password: undefined,
       serviceUrl: undefined,
     });
     expect(platform.setSecret).toHaveBeenCalledWith('token');
-    expect(platform.setSecret).toHaveBeenCalledWith('password');
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
     expect(publishExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({ outputPath: '/out' }),
@@ -357,7 +352,6 @@ describe('GitHub Action main entrypoint', () => {
     expect(getAuthMock).toHaveBeenCalledWith('pat', platform, {
       token: undefined,
       username: undefined,
-      password: undefined,
       serviceUrl: undefined,
     });
     expect(waitForInstallationMock).not.toHaveBeenCalled();

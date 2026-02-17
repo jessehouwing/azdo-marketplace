@@ -36,9 +36,8 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
 - `extensionTag` → `extension-id`
-- `rootFolder` → `root-folder`
 - `manifestFile` → `manifest-file`
-- `publishSource` → `publish-source`
+- `use` → `publish-source`
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 
@@ -172,7 +171,6 @@ jobs:
         uses: jessehouwing/azdo-marketplace@v6
         with:
           operation: package
-          root-folder: .
 
       - id: publish
         uses: jessehouwing/azdo-marketplace@v6

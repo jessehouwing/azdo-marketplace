@@ -6270,20 +6270,20 @@ async function waitForInstallation(options, auth, platform) {
 }
 
 // packages/github-action/src/auth/basic-auth.ts
-async function getBasicAuth(username, password, serviceUrl, platform) {
+async function getBasicAuth(username, token, serviceUrl, platform) {
   if (!username) {
     throw new Error("Username is required for basic authentication");
   }
-  if (password === void 0 || password === null) {
-    throw new Error("Password is required for basic authentication");
+  if (token === void 0 || token === null) {
+    throw new Error("Token is required for basic authentication");
   }
-  platform.setSecret(password);
+  platform.setSecret(token);
   const finalServiceUrl = serviceUrl || "https://marketplace.visualstudio.com";
   return {
     authType: "basic",
     serviceUrl: finalServiceUrl,
     username,
-    password
+    password: token
   };
 }
 
@@ -6372,10 +6372,10 @@ async function getAuth(authType, platform, options) {
       }
       return getPatAuth(options.token, finalServiceUrl, platform);
     case "basic":
-      if (!options.username || !options.password) {
-        throw new Error("Username and password are required for basic authentication");
+      if (!options.username || !options.token) {
+        throw new Error("Username and token are required for basic authentication");
       }
-      return getBasicAuth(options.username, options.password, finalServiceUrl, platform);
+      return getBasicAuth(options.username, options.token, finalServiceUrl, platform);
     case "oidc":
       return getOidcAuth(finalServiceUrl, platform);
     default:
@@ -7286,12 +7286,10 @@ async function run() {
       }
       const token = platform.getInput("token");
       const username = platform.getInput("username");
-      const password = platform.getInput("password");
       const serviceUrl = operation === "install" || operation === "wait-for-installation" ? void 0 : platform.getInput("service-url");
       auth = await getAuth(authType, platform, {
         token,
         username,
-        password,
         serviceUrl
       });
       if (auth.token) {
@@ -7368,7 +7366,6 @@ function getUpdateTasksVersionMode(platform) {
 async function runPackage(platform, tfxManager) {
   const extensionPricingInput = platform.getInput("extension-pricing");
   const options = {
-    rootFolder: platform.getInput("root-folder"),
     localizationRoot: platform.getInput("localization-root"),
     manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
     publisherId: platform.getInput("publisher-id"),
@@ -7396,7 +7393,6 @@ async function runPublish(platform, tfxManager, auth) {
       publishSource,
       vsixFile: publishSource === "vsix" ? platform.getInput("vsix-file", true) : void 0,
       manifestGlobs: publishSource === "manifest" ? platform.getDelimitedInput("manifest-file", "\n", true) : void 0,
-      rootFolder: publishSource === "manifest" ? platform.getInput("root-folder") : void 0,
       localizationRoot: publishSource === "manifest" ? platform.getInput("localization-root") : void 0,
       publisherId: platform.getInput("publisher-id"),
       extensionId: platform.getInput("extension-id"),
@@ -7505,7 +7501,6 @@ async function runWaitForValidation(platform, tfxManager, auth) {
       extensionId: platform.getInput("extension-id"),
       vsixPath: platform.getInput("vsix-path"),
       extensionVersion: platform.getInput("extension-version"),
-      rootFolder: platform.getInput("root-folder"),
       manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
       maxRetries: parseInt(platform.getInput("max-retries") || "10"),
       minTimeout: parseInt(platform.getInput("min-timeout") || "1"),

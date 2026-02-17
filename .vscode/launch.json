@@ -12,7 +12,6 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "INPUT_OPERATION": "package",
-        "INPUT_ROOT-FOLDER": "${workspaceFolder}/packages/core/src/__tests__/integration/fixtures/test-extension",
         "INPUT_OUTPUT-PATH": "${workspaceFolder}/dist",
         "INPUT_TFX-VERSION": "embedded",
         "RUNNER_TEMP": "${workspaceFolder}/.tmp",
@@ -48,7 +47,6 @@
         "INPUT_AUTH-TYPE": "pat",
         "INPUT_TOKEN": "${env:MARKETPLACE_TOKEN}",
         "INPUT_PUBLISH-SOURCE": "manifest",
-        "INPUT_ROOT-FOLDER": "${workspaceFolder}/packages/core/src/__tests__/integration/fixtures/test-extension",
         "INPUT_PUBLISHER-ID": "your-publisher",
         "INPUT_EXTENSION-ID": "your-extension",
         "INPUT_TFX-VERSION": "embedded",
@@ -117,7 +115,6 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "INPUT_OPERATION": "package",
-        "INPUT_ROOTFOLDER": "${workspaceFolder}/packages/core/src/__tests__/integration/fixtures/test-extension",
         "INPUT_OUTPUTPATH": "${workspaceFolder}/dist",
         "INPUT_TFXVERSION": "embedded",
         "AGENT_TEMPDIRECTORY": "${workspaceFolder}/.tmp",
@@ -159,8 +156,7 @@
         "INPUT_OPERATION": "publish",
         "INPUT_CONNECTIONTYPE": "connectedService:PAT",
         "INPUT_CONNECTIONNAMEPAT": "MarketplaceConnection",
-        "INPUT_PUBLISHSOURCE": "manifest",
-        "INPUT_ROOTFOLDER": "${workspaceFolder}/packages/core/src/__tests__/integration/fixtures/test-extension",
+        "INPUT_USE": "manifest",
         "INPUT_PUBLISHERID": "your-publisher",
         "INPUT_EXTENSIONID": "your-extension",
         "INPUT_TFXVERSION": "embedded",
