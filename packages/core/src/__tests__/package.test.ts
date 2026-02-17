@@ -438,7 +438,7 @@ describe('packageExtension', () => {
       expect(overridesFlagIndex).toBeGreaterThan(-1);
       expect(callArgs[overridesFlagIndex + 1]).toBe(overridesPath);
 
-      const mergedOverrides = JSON.parse(await fs.readFile(overridesPath, 'utf-8')) as {
+      const mergedOverrides = JSON.parse((await fs.readFile(overridesPath)).toString('utf-8')) as {
         description?: string;
         version?: string;
       };

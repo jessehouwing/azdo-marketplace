@@ -157,6 +157,18 @@ export class TfxManager {
     }
 
     for (const candidateDir of candidateDirs) {
+      const jsEntrypoint = path.join(
+        candidateDir,
+        'node_modules',
+        'tfx-cli',
+        '_build',
+        'tfx-cli.js'
+      );
+      if (await this.pathExists(jsEntrypoint)) {
+        this.platform.debug(`Resolved built-in tfx-cli JS entrypoint at: ${jsEntrypoint}`);
+        return jsEntrypoint;
+      }
+
       const builtInPath = path.join(candidateDir, 'node_modules', '.bin', tfxExecutable);
 
       if (await this.pathExists(builtInPath)) {
@@ -426,8 +438,16 @@ export class TfxManager {
     };
 
     // Execute tfx
-    this.platform.debug(`Executing: ${tfxPath} ${finalArgs.join(' ')}`);
-    const exitCode = await this.platform.exec(tfxPath, finalArgs, execOptions);
+    let executable = tfxPath;
+    let executableArgs = [...finalArgs];
+    if (tfxPath.endsWith('.js')) {
+      const nodePath = await this.platform.which('node', true);
+      executable = nodePath;
+      executableArgs = [tfxPath, ...finalArgs];
+    }
+
+    this.platform.debug(`Executing: ${executable} ${executableArgs.join(' ')}`);
+    const exitCode = await this.platform.exec(executable, executableArgs, execOptions);
 
     // Parse JSON if captured
     let parsedJson: unknown | undefined;

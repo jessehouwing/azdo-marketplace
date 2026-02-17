@@ -45,12 +45,12 @@ jobs:
         run: npm run build
 
       - name: Test
-        shell: bash
+        shell: pwsh
         run: |
-          stop_marker="$(uuidgen)"
-          echo "::stop-commands::$stop_marker"
+          $stopMarker = [guid]::NewGuid().ToString()
+          Write-Output "::stop-commands::$stopMarker"
           npm run test
-          echo "::$stop_marker::"
+          Write-Output "::$stopMarker::"
 
       - name: Lint
         run: npm run lint

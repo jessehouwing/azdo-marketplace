@@ -20,14 +20,18 @@ describe('TfxManager', () => {
     it('should resolve built-in tfx from nearest node_modules', async () => {
       const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-'));
       const entryFile = path.join(sandbox, 'dist', 'main.js');
-      const tfxShim =
-        process.platform === 'win32'
-          ? path.join(sandbox, 'dist', 'node_modules', '.bin', 'tfx.cmd')
-          : path.join(sandbox, 'dist', 'node_modules', '.bin', 'tfx');
-      await fs.mkdir(path.dirname(tfxShim), { recursive: true });
+      const tfxEntrypoint = path.join(
+        sandbox,
+        'dist',
+        'node_modules',
+        'tfx-cli',
+        '_build',
+        'tfx-cli.js'
+      );
+      await fs.mkdir(path.dirname(tfxEntrypoint), { recursive: true });
       await fs.mkdir(path.dirname(entryFile), { recursive: true });
       await fs.writeFile(entryFile, '', 'utf-8');
-      await fs.writeFile(tfxShim, 'echo tfx', 'utf-8');
+      await fs.writeFile(tfxEntrypoint, '#!/usr/bin/env node\nrequire("./app");\n', 'utf-8');
       process.argv[1] = entryFile;
 
       const manager = new TfxManager({
@@ -38,7 +42,7 @@ describe('TfxManager', () => {
       try {
         const tfxPath = await manager.resolve();
 
-        expect(tfxPath).toBe(tfxShim);
+        expect(tfxPath).toBe(tfxEntrypoint);
         expect(platform.infoMessages).toContain(
           'Using built-in tfx-cli from core package dependencies'
         );
@@ -74,14 +78,18 @@ describe('TfxManager', () => {
     it('should cache resolved path for subsequent calls', async () => {
       const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-cache-'));
       const entryFile = path.join(sandbox, 'dist', 'main.js');
-      const tfxShim =
-        process.platform === 'win32'
-          ? path.join(sandbox, 'dist', 'node_modules', '.bin', 'tfx.cmd')
-          : path.join(sandbox, 'dist', 'node_modules', '.bin', 'tfx');
-      await fs.mkdir(path.dirname(tfxShim), { recursive: true });
+      const tfxEntrypoint = path.join(
+        sandbox,
+        'dist',
+        'node_modules',
+        'tfx-cli',
+        '_build',
+        'tfx-cli.js'
+      );
+      await fs.mkdir(path.dirname(tfxEntrypoint), { recursive: true });
       await fs.mkdir(path.dirname(entryFile), { recursive: true });
       await fs.writeFile(entryFile, '', 'utf-8');
-      await fs.writeFile(tfxShim, 'echo tfx', 'utf-8');
+      await fs.writeFile(tfxEntrypoint, '#!/usr/bin/env node\nrequire("./app");\n', 'utf-8');
       process.argv[1] = entryFile;
 
       const manager = new TfxManager({
@@ -168,6 +176,43 @@ describe('TfxManager', () => {
       expect(platform.execCalls).toHaveLength(1);
       expect(platform.execCalls[0].tool).toBe('/usr/local/bin/tfx');
       expect(platform.execCalls[0].args).toEqual(['extension', 'create']);
+    });
+
+    it('should execute built-in JS entrypoint via node', async () => {
+      const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-js-exec-'));
+      const entryFile = path.join(sandbox, 'dist', 'main.js');
+      const tfxEntrypoint = path.join(
+        sandbox,
+        'dist',
+        'node_modules',
+        'tfx-cli',
+        '_build',
+        'tfx-cli.js'
+      );
+      await fs.mkdir(path.dirname(tfxEntrypoint), { recursive: true });
+      await fs.mkdir(path.dirname(entryFile), { recursive: true });
+      await fs.writeFile(entryFile, '', 'utf-8');
+      await fs.writeFile(tfxEntrypoint, '#!/usr/bin/env node\nrequire("./app");\n', 'utf-8');
+      process.argv[1] = entryFile;
+
+      platform.registerTool('node', '/usr/local/bin/node');
+
+      const manager = new TfxManager({
+        tfxVersion: 'built-in',
+        platform,
+      });
+
+      try {
+        await manager.execute(['extension', 'show']);
+
+        expect(platform.execCalls[0].tool).toBe('/usr/local/bin/node');
+        expect(platform.execCalls[0].args[0]).toBe(tfxEntrypoint);
+        expect(platform.execCalls[0].args.slice(1)).toEqual(['extension', 'show']);
+      } finally {
+        process.chdir(originalCwd);
+        process.argv[1] = originalArgv1;
+        await fs.rm(sandbox, { recursive: true, force: true });
+      }
     });
 
     it('should add JSON flags when captureJson is true', async () => {

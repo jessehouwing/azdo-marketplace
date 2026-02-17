@@ -4969,6 +4969,11 @@ var TfxManager = class {
       candidateDirs.push(process.cwd());
     }
     for (const candidateDir of candidateDirs) {
+      const jsEntrypoint = path2.join(candidateDir, "node_modules", "tfx-cli", "_build", "tfx-cli.js");
+      if (await this.pathExists(jsEntrypoint)) {
+        this.platform.debug(`Resolved built-in tfx-cli JS entrypoint at: ${jsEntrypoint}`);
+        return jsEntrypoint;
+      }
       const builtInPath = path2.join(candidateDir, "node_modules", ".bin", tfxExecutable);
       if (await this.pathExists(builtInPath)) {
         this.platform.debug(`Resolved built-in tfx at: ${builtInPath}`);
@@ -5154,8 +5159,15 @@ var TfxManager = class {
       outStream: jsonStream ?? stdoutStream,
       errStream: stderrStream
     };
-    this.platform.debug(`Executing: ${tfxPath} ${finalArgs.join(" ")}`);
-    const exitCode = await this.platform.exec(tfxPath, finalArgs, execOptions);
+    let executable = tfxPath;
+    let executableArgs = [...finalArgs];
+    if (tfxPath.endsWith(".js")) {
+      const nodePath = await this.platform.which("node", true);
+      executable = nodePath;
+      executableArgs = [tfxPath, ...finalArgs];
+    }
+    this.platform.debug(`Executing: ${executable} ${executableArgs.join(" ")}`);
+    const exitCode = await this.platform.exec(executable, executableArgs, execOptions);
     let parsedJson;
     if (jsonStream) {
       parsedJson = jsonStream.parseJson();
