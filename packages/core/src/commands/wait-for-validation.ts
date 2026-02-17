@@ -4,6 +4,7 @@
 
 import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
+import { resolveExtensionIdentity } from '../extension-identity.js';
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 
@@ -17,9 +18,11 @@ export type ValidationStatus = 'pending' | 'success' | 'failed' | 'error';
  */
 export interface WaitForValidationOptions {
   /** Publisher ID */
-  publisherId: string;
+  publisherId?: string;
   /** Extension ID */
-  extensionId: string;
+  extensionId?: string;
+  /** Path to VSIX file to infer publisher/extension identity */
+  vsixPath?: string;
   /** Root folder for manifest (if validating from manifest) */
   rootFolder?: string;
   /** Manifest globs (if validating from manifest) */
@@ -65,9 +68,11 @@ export async function waitForValidation(
   tfx: TfxManager,
   platform: IPlatformAdapter
 ): Promise<WaitForValidationResult> {
-  platform.info(`Validating extension ${options.publisherId}.${options.extensionId}...`);
+  const identity = await resolveExtensionIdentity(options, platform, 'wait-for-validation');
 
-  const extensionId = options.extensionId;
+  platform.info(`Validating extension ${identity.publisherId}.${identity.extensionId}...`);
+
+  const extensionId = identity.extensionId;
 
   // Retry configuration
   const maxRetries = options.maxRetries ?? 10;
@@ -87,7 +92,7 @@ export async function waitForValidation(
       .arg(['extension', 'isvalid'])
       .flag('--json')
       .flag('--no-color')
-      .option('--publisher', options.publisherId)
+      .option('--publisher', identity.publisherId)
       .option('--extension-id', extensionId);
 
     // Manifest arguments if provided
@@ -131,7 +136,7 @@ export async function waitForValidation(
               status: lastStatus,
               isValid: true,
               extensionId,
-              publisherId: options.publisherId,
+              publisherId: identity.publisherId,
               attempts,
               exitCode: result.exitCode,
             };
@@ -153,7 +158,7 @@ export async function waitForValidation(
               status: lastStatus,
               isValid: false,
               extensionId,
-              publisherId: options.publisherId,
+              publisherId: identity.publisherId,
               attempts,
               exitCode: result.exitCode,
             };
@@ -184,7 +189,7 @@ export async function waitForValidation(
     status: lastStatus,
     isValid: false,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     attempts,
     exitCode: lastExitCode,
   };

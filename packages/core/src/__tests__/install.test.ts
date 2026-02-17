@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { installExtension } from '../commands/install.js';
 import { TfxManager } from '../tfx-manager.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
+import { createIdentityVsix } from './helpers/create-test-vsix.js';
 import type { AuthCredentials } from '../auth.js';
 
 describe('installExtension', () => {
@@ -73,6 +74,41 @@ describe('installExtension', () => {
     expect(result.allSuccess).toBe(true);
     expect(result.accountResults).toHaveLength(3);
     expect(mockExecute).toHaveBeenCalledTimes(3);
+  });
+
+  it('should resolve publisher and extension from vsixPath', async () => {
+    const vsix = await createIdentityVsix({
+      publisher: 'publisher-from-vsix',
+      extensionId: 'extension-from-vsix',
+    });
+
+    try {
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: {},
+        stdout: '',
+        stderr: '',
+      });
+
+      await installExtension(
+        {
+          accounts: ['https://dev.azure.com/org1'],
+          vsixPath: vsix.vsixPath,
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      const callArgs = mockExecute.mock.calls[0][0];
+      expect(callArgs).toContain('--publisher');
+      expect(callArgs).toContain('publisher-from-vsix');
+      expect(callArgs).toContain('--extension-id');
+      expect(callArgs).toContain('extension-from-vsix');
+    } finally {
+      await vsix.cleanup();
+    }
   });
 
   it('should handle already installed extension', async () => {

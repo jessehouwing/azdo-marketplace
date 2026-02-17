@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { unpublishExtension } from '../commands/unpublish.js';
 import { TfxManager } from '../tfx-manager.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
+import { createIdentityVsix } from './helpers/create-test-vsix.js';
 import type { AuthCredentials } from '../auth.js';
 
 describe('unpublishExtension', () => {
@@ -88,6 +89,39 @@ describe('unpublishExtension', () => {
     expect(callArgs).toContain('--password');
     expect(callArgs).toContain('pass');
     expect(platform.isSecret('pass')).toBe(true);
+  });
+
+  it('resolves identity from vsixPath', async () => {
+    const vsix = await createIdentityVsix({
+      publisher: 'publisher-from-vsix',
+      extensionId: 'extension-from-vsix',
+    });
+
+    try {
+      const executeSpy = jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: {},
+        stdout: '',
+        stderr: '',
+      });
+
+      await unpublishExtension(
+        {
+          vsixPath: vsix.vsixPath,
+        },
+        patAuth,
+        tfxManager,
+        platform
+      );
+
+      const callArgs = executeSpy.mock.calls[0][0];
+      expect(callArgs).toContain('--publisher');
+      expect(callArgs).toContain('publisher-from-vsix');
+      expect(callArgs).toContain('--extension-id');
+      expect(callArgs).toContain('extension-from-vsix');
+    } finally {
+      await vsix.cleanup();
+    }
   });
 
   it('throws when tfx exits with non-zero code', async () => {

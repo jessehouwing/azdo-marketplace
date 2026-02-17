@@ -6,6 +6,7 @@ import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import type { AuthCredentials } from '../auth.js';
 import { ArgBuilder } from '../arg-builder.js';
+import { resolveExtensionIdentity } from '../extension-identity.js';
 import { normalizeOrganizationIdentifiers } from '../organization-utils.js';
 
 /**
@@ -13,9 +14,11 @@ import { normalizeOrganizationIdentifiers } from '../organization-utils.js';
  */
 export interface UnshareOptions {
   /** Publisher ID */
-  publisherId: string;
+  publisherId?: string;
   /** Extension ID */
-  extensionId: string;
+  extensionId?: string;
+  /** Path to VSIX file to infer publisher/extension identity */
+  vsixPath?: string;
   /** Array of organization names to unshare from */
   unshareWith: string[];
 }
@@ -54,11 +57,13 @@ export async function unshareExtension(
     throw new Error('unshareWith must contain at least one organization');
   }
 
+  const identity = await resolveExtensionIdentity(options, platform, 'unshare');
+
   platform.info(
-    `Unsharing extension ${options.publisherId}.${options.extensionId} from ${options.unshareWith.length} organization(s)...`
+    `Unsharing extension ${identity.publisherId}.${identity.extensionId} from ${options.unshareWith.length} organization(s)...`
   );
 
-  const extensionId = options.extensionId;
+  const extensionId = identity.extensionId;
   const normalizedOrganizations = normalizeOrganizationIdentifiers(options.unshareWith);
 
   // Build tfx arguments
@@ -66,7 +71,7 @@ export async function unshareExtension(
     .arg(['extension', 'unshare'])
     .flag('--json')
     .flag('--no-color')
-    .option('--publisher', options.publisherId)
+    .option('--publisher', identity.publisherId)
     .option('--extension-id', extensionId)
     .flag('--unshare-with');
 
@@ -100,7 +105,7 @@ export async function unshareExtension(
   return {
     success: true,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     unsharedFrom: normalizedOrganizations,
     exitCode: result.exitCode,
   };

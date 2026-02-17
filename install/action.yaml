@@ -79,7 +79,7 @@ inputs:
       - Alphanumeric with hyphens, dots, underscores only
 
       **Example:** `mycompany` or `my-publisher-id`
-    required: true
+    required: false
   extension-id:
     description: |
       **Extension ID** - unique identifier within the publisher namespace.
@@ -90,7 +90,16 @@ inputs:
       - Alphanumeric with hyphens, dots, underscores only
 
       **Example:** `my-extension` or `azure-devops-tasks`
-    required: true
+    required: false
+  vsix-path:
+    description: |
+      **Path to .vsix file** to infer extension identity.
+
+      - Optional fallback when `publisher-id` or `extension-id` is not provided
+      - Reads publisher and extension ID from VSIX metadata
+
+      **Note:** Explicit `publisher-id` and `extension-id` take precedence when both are supplied
+    required: false
   accounts:
     description: |
       **Azure DevOps accounts/organizations** (newline-separated).
@@ -126,4 +135,5 @@ runs:
         tfx-version: ${{ inputs.tfx-version }}
         publisher-id: ${{ inputs.publisher-id }}
         extension-id: ${{ inputs.extension-id }}
+        vsix-path: ${{ inputs.vsix-path }}
         accounts: ${{ inputs.accounts }}

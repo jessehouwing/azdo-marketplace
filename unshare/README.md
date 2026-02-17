@@ -31,6 +31,18 @@ Unshare an Azure DevOps extension from specific organizations.
       old-org-3
 ```
 
+### Unshare Using VSIX Identity Fallback
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/unshare@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    vsix-path: ${{ steps.package.outputs.vsix-path }}
+    accounts: |
+      old-org-1
+      old-org-2
+```
+
 ### With OIDC Authentication
 
 ```yaml
@@ -52,10 +64,13 @@ Unshare an Azure DevOps extension from specific organizations.
 
 ### Required Inputs
 
-- `publisher-id`: Publisher ID
-- `extension-id`: Extension ID
 - `accounts`: Organizations to unshare from (newline-separated)
 - `token`: Personal Access Token (required when auth-type is `pat`)
+
+Identity (choose one):
+
+- `publisher-id` + `extension-id`
+- `vsix-path` (fallback source for identity metadata)
 
 OR
 
@@ -71,6 +86,10 @@ OR
 #### TFX Configuration
 
 - `tfx-version`: Version of tfx-cli to use (default: `built-in`)
+
+#### Identity Fallback
+
+- `vsix-path`: Path to VSIX file used to infer `publisher-id` and `extension-id` when omitted
 
 ## Outputs
 

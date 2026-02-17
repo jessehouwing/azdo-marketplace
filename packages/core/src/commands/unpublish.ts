@@ -6,15 +6,18 @@ import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import type { AuthCredentials } from '../auth.js';
 import { ArgBuilder } from '../arg-builder.js';
+import { resolveExtensionIdentity } from '../extension-identity.js';
 
 /**
  * Options for unpublish command
  */
 export interface UnpublishOptions {
   /** Publisher ID */
-  publisherId: string;
+  publisherId?: string;
   /** Extension ID */
-  extensionId: string;
+  extensionId?: string;
+  /** Path to VSIX file to infer publisher/extension identity */
+  vsixPath?: string;
 }
 
 /**
@@ -45,16 +48,18 @@ export async function unpublishExtension(
   tfx: TfxManager,
   platform: IPlatformAdapter
 ): Promise<UnpublishResult> {
-  platform.info(`Unpublishing extension ${options.publisherId}.${options.extensionId}...`);
+  const identity = await resolveExtensionIdentity(options, platform, 'unpublish');
 
-  const extensionId = options.extensionId;
+  platform.info(`Unpublishing extension ${identity.publisherId}.${identity.extensionId}...`);
+
+  const extensionId = identity.extensionId;
 
   // Build tfx arguments
   const args = new ArgBuilder()
     .arg(['extension', 'unpublish'])
     .flag('--json')
     .flag('--no-color')
-    .option('--publisher', options.publisherId)
+    .option('--publisher', identity.publisherId)
     .option('--extension-id', extensionId);
 
   // Authentication
@@ -79,12 +84,12 @@ export async function unpublishExtension(
     throw new Error(`tfx extension unpublish failed with exit code ${result.exitCode}`);
   }
 
-  platform.info(`Successfully unpublished extension: ${options.publisherId}.${extensionId}`);
+  platform.info(`Successfully unpublished extension: ${identity.publisherId}.${extensionId}`);
 
   return {
     success: true,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     exitCode: result.exitCode,
   };
 }

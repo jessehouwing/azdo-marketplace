@@ -10,6 +10,7 @@ export * from './version-utils.js';
 export * from './json-output-stream.js';
 export * from './manifest-utils.js';
 export * from './organization-utils.js';
+export * from './extension-identity.js';
 export * from './tfx-manager.js';
 
 // Manifest handling (unified architecture)

@@ -6,6 +6,7 @@ import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import type { AuthCredentials } from '../auth.js';
 import { ArgBuilder } from '../arg-builder.js';
+import { resolveExtensionIdentity } from '../extension-identity.js';
 import { normalizeOrganizationIdentifiers } from '../organization-utils.js';
 
 /**
@@ -13,9 +14,11 @@ import { normalizeOrganizationIdentifiers } from '../organization-utils.js';
  */
 export interface ShareOptions {
   /** Publisher ID */
-  publisherId: string;
+  publisherId?: string;
   /** Extension ID */
-  extensionId: string;
+  extensionId?: string;
+  /** Path to VSIX file to infer publisher/extension identity */
+  vsixPath?: string;
   /** Array of organization names to share with */
   shareWith: string[];
 }
@@ -54,11 +57,13 @@ export async function shareExtension(
     throw new Error('shareWith must contain at least one organization');
   }
 
+  const identity = await resolveExtensionIdentity(options, platform, 'share');
+
   platform.info(
-    `Sharing extension ${options.publisherId}.${options.extensionId} with ${options.shareWith.length} organization(s)...`
+    `Sharing extension ${identity.publisherId}.${identity.extensionId} with ${options.shareWith.length} organization(s)...`
   );
 
-  const extensionId = options.extensionId;
+  const extensionId = identity.extensionId;
   const normalizedOrganizations = normalizeOrganizationIdentifiers(options.shareWith);
 
   // Build tfx arguments
@@ -66,7 +71,7 @@ export async function shareExtension(
     .arg(['extension', 'share'])
     .flag('--json')
     .flag('--no-color')
-    .option('--publisher', options.publisherId)
+    .option('--publisher', identity.publisherId)
     .option('--extension-id', extensionId)
     .flag('--share-with');
 
@@ -100,7 +105,7 @@ export async function shareExtension(
   return {
     success: true,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     sharedWith: normalizedOrganizations,
     exitCode: result.exitCode,
   };

@@ -94,138 +94,6 @@ var init_manifest_reader = __esm({
   }
 });
 
-// node_modules/uuid/dist-node/regex.js
-var regex_default;
-var init_regex = __esm({
-  "node_modules/uuid/dist-node/regex.js"() {
-    regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
-  }
-});
-
-// node_modules/uuid/dist-node/validate.js
-function validate(uuid) {
-  return typeof uuid === "string" && regex_default.test(uuid);
-}
-var validate_default;
-var init_validate = __esm({
-  "node_modules/uuid/dist-node/validate.js"() {
-    init_regex();
-    validate_default = validate;
-  }
-});
-
-// node_modules/uuid/dist-node/parse.js
-function parse(uuid) {
-  if (!validate_default(uuid)) {
-    throw TypeError("Invalid UUID");
-  }
-  let v;
-  return Uint8Array.of((v = parseInt(uuid.slice(0, 8), 16)) >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255, (v = parseInt(uuid.slice(9, 13), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(14, 18), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(19, 23), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(24, 36), 16)) / 1099511627776 & 255, v / 4294967296 & 255, v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255);
-}
-var parse_default;
-var init_parse = __esm({
-  "node_modules/uuid/dist-node/parse.js"() {
-    init_validate();
-    parse_default = parse;
-  }
-});
-
-// node_modules/uuid/dist-node/stringify.js
-function unsafeStringify(arr, offset = 0) {
-  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
-}
-var byteToHex;
-var init_stringify = __esm({
-  "node_modules/uuid/dist-node/stringify.js"() {
-    byteToHex = [];
-    for (let i = 0; i < 256; ++i) {
-      byteToHex.push((i + 256).toString(16).slice(1));
-    }
-  }
-});
-
-// node_modules/uuid/dist-node/v35.js
-function stringToBytes(str) {
-  str = unescape(encodeURIComponent(str));
-  const bytes = new Uint8Array(str.length);
-  for (let i = 0; i < str.length; ++i) {
-    bytes[i] = str.charCodeAt(i);
-  }
-  return bytes;
-}
-function v35(version, hash, value, namespace, buf, offset) {
-  const valueBytes = typeof value === "string" ? stringToBytes(value) : value;
-  const namespaceBytes = typeof namespace === "string" ? parse_default(namespace) : namespace;
-  if (typeof namespace === "string") {
-    namespace = parse_default(namespace);
-  }
-  if (namespace?.length !== 16) {
-    throw TypeError("Namespace must be array-like (16 iterable integer values, 0-255)");
-  }
-  let bytes = new Uint8Array(16 + valueBytes.length);
-  bytes.set(namespaceBytes);
-  bytes.set(valueBytes, namespaceBytes.length);
-  bytes = hash(bytes);
-  bytes[6] = bytes[6] & 15 | version;
-  bytes[8] = bytes[8] & 63 | 128;
-  if (buf) {
-    offset = offset || 0;
-    for (let i = 0; i < 16; ++i) {
-      buf[offset + i] = bytes[i];
-    }
-    return buf;
-  }
-  return unsafeStringify(bytes);
-}
-var DNS, URL2;
-var init_v35 = __esm({
-  "node_modules/uuid/dist-node/v35.js"() {
-    init_parse();
-    init_stringify();
-    DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
-    URL2 = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
-  }
-});
-
-// node_modules/uuid/dist-node/sha1.js
-import { createHash } from "node:crypto";
-function sha1(bytes) {
-  if (Array.isArray(bytes)) {
-    bytes = Buffer.from(bytes);
-  } else if (typeof bytes === "string") {
-    bytes = Buffer.from(bytes, "utf8");
-  }
-  return createHash("sha1").update(bytes).digest();
-}
-var sha1_default;
-var init_sha1 = __esm({
-  "node_modules/uuid/dist-node/sha1.js"() {
-    sha1_default = sha1;
-  }
-});
-
-// node_modules/uuid/dist-node/v5.js
-function v5(value, namespace, buf, offset) {
-  return v35(80, sha1_default, value, namespace, buf, offset);
-}
-var v5_default;
-var init_v5 = __esm({
-  "node_modules/uuid/dist-node/v5.js"() {
-    init_sha1();
-    init_v35();
-    v5.DNS = DNS;
-    v5.URL = URL2;
-    v5_default = v5;
-  }
-});
-
-// node_modules/uuid/dist-node/index.js
-var init_dist_node = __esm({
-  "node_modules/uuid/dist-node/index.js"() {
-    init_v5();
-  }
-});
-
 // packages/core/dist/vsix-reader.js
 var vsix_reader_exports = {};
 __export(vsix_reader_exports, {
@@ -571,6 +439,138 @@ var init_vsix_reader = __esm({
         return this.vsixPath;
       }
     };
+  }
+});
+
+// node_modules/uuid/dist-node/regex.js
+var regex_default;
+var init_regex = __esm({
+  "node_modules/uuid/dist-node/regex.js"() {
+    regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
+  }
+});
+
+// node_modules/uuid/dist-node/validate.js
+function validate(uuid) {
+  return typeof uuid === "string" && regex_default.test(uuid);
+}
+var validate_default;
+var init_validate = __esm({
+  "node_modules/uuid/dist-node/validate.js"() {
+    init_regex();
+    validate_default = validate;
+  }
+});
+
+// node_modules/uuid/dist-node/parse.js
+function parse(uuid) {
+  if (!validate_default(uuid)) {
+    throw TypeError("Invalid UUID");
+  }
+  let v;
+  return Uint8Array.of((v = parseInt(uuid.slice(0, 8), 16)) >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255, (v = parseInt(uuid.slice(9, 13), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(14, 18), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(19, 23), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(24, 36), 16)) / 1099511627776 & 255, v / 4294967296 & 255, v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255);
+}
+var parse_default;
+var init_parse = __esm({
+  "node_modules/uuid/dist-node/parse.js"() {
+    init_validate();
+    parse_default = parse;
+  }
+});
+
+// node_modules/uuid/dist-node/stringify.js
+function unsafeStringify(arr, offset = 0) {
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+}
+var byteToHex;
+var init_stringify = __esm({
+  "node_modules/uuid/dist-node/stringify.js"() {
+    byteToHex = [];
+    for (let i = 0; i < 256; ++i) {
+      byteToHex.push((i + 256).toString(16).slice(1));
+    }
+  }
+});
+
+// node_modules/uuid/dist-node/v35.js
+function stringToBytes(str) {
+  str = unescape(encodeURIComponent(str));
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; ++i) {
+    bytes[i] = str.charCodeAt(i);
+  }
+  return bytes;
+}
+function v35(version, hash, value, namespace, buf, offset) {
+  const valueBytes = typeof value === "string" ? stringToBytes(value) : value;
+  const namespaceBytes = typeof namespace === "string" ? parse_default(namespace) : namespace;
+  if (typeof namespace === "string") {
+    namespace = parse_default(namespace);
+  }
+  if (namespace?.length !== 16) {
+    throw TypeError("Namespace must be array-like (16 iterable integer values, 0-255)");
+  }
+  let bytes = new Uint8Array(16 + valueBytes.length);
+  bytes.set(namespaceBytes);
+  bytes.set(valueBytes, namespaceBytes.length);
+  bytes = hash(bytes);
+  bytes[6] = bytes[6] & 15 | version;
+  bytes[8] = bytes[8] & 63 | 128;
+  if (buf) {
+    offset = offset || 0;
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = bytes[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(bytes);
+}
+var DNS, URL2;
+var init_v35 = __esm({
+  "node_modules/uuid/dist-node/v35.js"() {
+    init_parse();
+    init_stringify();
+    DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+    URL2 = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+  }
+});
+
+// node_modules/uuid/dist-node/sha1.js
+import { createHash } from "node:crypto";
+function sha1(bytes) {
+  if (Array.isArray(bytes)) {
+    bytes = Buffer.from(bytes);
+  } else if (typeof bytes === "string") {
+    bytes = Buffer.from(bytes, "utf8");
+  }
+  return createHash("sha1").update(bytes).digest();
+}
+var sha1_default;
+var init_sha1 = __esm({
+  "node_modules/uuid/dist-node/sha1.js"() {
+    sha1_default = sha1;
+  }
+});
+
+// node_modules/uuid/dist-node/v5.js
+function v5(value, namespace, buf, offset) {
+  return v35(80, sha1_default, value, namespace, buf, offset);
+}
+var v5_default;
+var init_v5 = __esm({
+  "node_modules/uuid/dist-node/v5.js"() {
+    init_sha1();
+    init_v35();
+    v5.DNS = DNS;
+    v5.URL = URL2;
+    v5_default = v5;
+  }
+});
+
+// node_modules/uuid/dist-node/index.js
+var init_dist_node = __esm({
+  "node_modules/uuid/dist-node/index.js"() {
+    init_v5();
   }
 });
 
@@ -4844,6 +4844,28 @@ function normalizeAccountsToServiceUrls(values) {
   return values.map((value) => normalizeAccountToServiceUrl(value));
 }
 
+// packages/core/dist/extension-identity.js
+init_vsix_reader();
+async function resolveExtensionIdentity(options, platform, operationName) {
+  let publisherId = options.publisherId;
+  let extensionId = options.extensionId;
+  if ((!publisherId || !extensionId) && options.vsixPath) {
+    platform.debug(`Reading extension identity from VSIX: ${options.vsixPath}`);
+    const reader = await VsixReader.open(options.vsixPath);
+    try {
+      const metadata = await reader.getMetadata();
+      publisherId = publisherId || metadata.publisher;
+      extensionId = extensionId || metadata.extensionId;
+    } finally {
+      await reader.close();
+    }
+  }
+  if (!publisherId || !extensionId) {
+    throw new Error(`publisherId and extensionId are required for ${operationName}. Provide them directly, or provide vsixPath so they can be inferred from VSIX metadata.`);
+  }
+  return { publisherId, extensionId };
+}
+
 // packages/core/dist/tfx-manager.js
 import fs from "fs/promises";
 import path2 from "path";
@@ -5545,9 +5567,10 @@ async function publishExtension(options, auth, tfx, platform) {
 
 // packages/core/dist/commands/unpublish.js
 async function unpublishExtension(options, auth, tfx, platform) {
-  platform.info(`Unpublishing extension ${options.publisherId}.${options.extensionId}...`);
-  const extensionId = options.extensionId;
-  const args = new ArgBuilder().arg(["extension", "unpublish"]).flag("--json").flag("--no-color").option("--publisher", options.publisherId).option("--extension-id", extensionId);
+  const identity = await resolveExtensionIdentity(options, platform, "unpublish");
+  platform.info(`Unpublishing extension ${identity.publisherId}.${identity.extensionId}...`);
+  const extensionId = identity.extensionId;
+  const args = new ArgBuilder().arg(["extension", "unpublish"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId);
   args.option("--service-url", auth.serviceUrl);
   if (auth.authType === "pat") {
     args.option("--auth-type", "pat");
@@ -5564,11 +5587,11 @@ async function unpublishExtension(options, auth, tfx, platform) {
     platform.error(`tfx exited with code ${result.exitCode}`);
     throw new Error(`tfx extension unpublish failed with exit code ${result.exitCode}`);
   }
-  platform.info(`Successfully unpublished extension: ${options.publisherId}.${extensionId}`);
+  platform.info(`Successfully unpublished extension: ${identity.publisherId}.${extensionId}`);
   return {
     success: true,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     exitCode: result.exitCode
   };
 }
@@ -5578,10 +5601,11 @@ async function shareExtension(options, auth, tfx, platform) {
   if (!options.shareWith || options.shareWith.length === 0) {
     throw new Error("shareWith must contain at least one organization");
   }
-  platform.info(`Sharing extension ${options.publisherId}.${options.extensionId} with ${options.shareWith.length} organization(s)...`);
-  const extensionId = options.extensionId;
+  const identity = await resolveExtensionIdentity(options, platform, "share");
+  platform.info(`Sharing extension ${identity.publisherId}.${identity.extensionId} with ${options.shareWith.length} organization(s)...`);
+  const extensionId = identity.extensionId;
   const normalizedOrganizations = normalizeOrganizationIdentifiers(options.shareWith);
-  const args = new ArgBuilder().arg(["extension", "share"]).flag("--json").flag("--no-color").option("--publisher", options.publisherId).option("--extension-id", extensionId).flag("--share-with");
+  const args = new ArgBuilder().arg(["extension", "share"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId).flag("--share-with");
   normalizedOrganizations.forEach((org) => args.arg(org));
   args.option("--service-url", auth.serviceUrl);
   if (auth.authType === "pat") {
@@ -5603,7 +5627,7 @@ async function shareExtension(options, auth, tfx, platform) {
   return {
     success: true,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     sharedWith: normalizedOrganizations,
     exitCode: result.exitCode
   };
@@ -5614,10 +5638,11 @@ async function unshareExtension(options, auth, tfx, platform) {
   if (!options.unshareWith || options.unshareWith.length === 0) {
     throw new Error("unshareWith must contain at least one organization");
   }
-  platform.info(`Unsharing extension ${options.publisherId}.${options.extensionId} from ${options.unshareWith.length} organization(s)...`);
-  const extensionId = options.extensionId;
+  const identity = await resolveExtensionIdentity(options, platform, "unshare");
+  platform.info(`Unsharing extension ${identity.publisherId}.${identity.extensionId} from ${options.unshareWith.length} organization(s)...`);
+  const extensionId = identity.extensionId;
   const normalizedOrganizations = normalizeOrganizationIdentifiers(options.unshareWith);
-  const args = new ArgBuilder().arg(["extension", "unshare"]).flag("--json").flag("--no-color").option("--publisher", options.publisherId).option("--extension-id", extensionId).flag("--unshare-with");
+  const args = new ArgBuilder().arg(["extension", "unshare"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId).flag("--unshare-with");
   normalizedOrganizations.forEach((org) => args.arg(org));
   args.option("--service-url", auth.serviceUrl);
   if (auth.authType === "pat") {
@@ -5639,7 +5664,7 @@ async function unshareExtension(options, auth, tfx, platform) {
   return {
     success: true,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     unsharedFrom: normalizedOrganizations,
     exitCode: result.exitCode
   };
@@ -5653,14 +5678,15 @@ async function installExtension(options, auth, tfx, platform) {
   if (options.extensionVersion) {
     throw new Error("install does not support extension-version. Remove this input and install from marketplace latest, or provide a VSIX path when you need a specific package version.");
   }
+  const identity = await resolveExtensionIdentity(options, platform, "install");
   const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
-  platform.info(`Installing extension ${options.publisherId}.${options.extensionId} to ${accountUrls.length} organization(s)...`);
-  const extensionId = options.extensionId;
+  platform.info(`Installing extension ${identity.publisherId}.${identity.extensionId} to ${accountUrls.length} organization(s)...`);
+  const extensionId = identity.extensionId;
   const accountResults = [];
   let overallExitCode = 0;
   for (const account of accountUrls) {
     platform.info(`Installing to ${account}...`);
-    const args = new ArgBuilder().arg(["extension", "install"]).flag("--json").flag("--no-color").option("--publisher", options.publisherId).option("--extension-id", extensionId).option("--service-url", account);
+    const args = new ArgBuilder().arg(["extension", "install"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId).option("--service-url", account);
     args.option("--auth-type", auth.authType);
     if (auth.authType === "pat") {
       args.option("--token", auth.token);
@@ -5727,7 +5753,7 @@ async function installExtension(options, auth, tfx, platform) {
   platform.info(`Installation complete: ${successCount}/${accountUrls.length} succeeded`);
   return {
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     accountResults,
     allSuccess,
     exitCode: overallExitCode
@@ -5843,8 +5869,9 @@ async function queryVersion(options, auth, tfx, platform) {
 
 // packages/core/dist/commands/wait-for-validation.js
 async function waitForValidation(options, auth, tfx, platform) {
-  platform.info(`Validating extension ${options.publisherId}.${options.extensionId}...`);
-  const extensionId = options.extensionId;
+  const identity = await resolveExtensionIdentity(options, platform, "wait-for-validation");
+  platform.info(`Validating extension ${identity.publisherId}.${identity.extensionId}...`);
+  const extensionId = identity.extensionId;
   const maxRetries = options.maxRetries ?? 10;
   const minTimeoutMs = (options.minTimeout ?? 1) * 60 * 1e3;
   const maxTimeoutMs = (options.maxTimeout ?? 15) * 60 * 1e3;
@@ -5854,7 +5881,7 @@ async function waitForValidation(options, auth, tfx, platform) {
   while (attempts < maxRetries) {
     attempts++;
     platform.info(`Validation attempt ${attempts}/${maxRetries}...`);
-    const args = new ArgBuilder().arg(["extension", "isvalid"]).flag("--json").flag("--no-color").option("--publisher", options.publisherId).option("--extension-id", extensionId);
+    const args = new ArgBuilder().arg(["extension", "isvalid"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId);
     if (options.rootFolder) {
       args.option("--root", options.rootFolder);
     }
@@ -5886,7 +5913,7 @@ async function waitForValidation(options, auth, tfx, platform) {
               status: lastStatus,
               isValid: true,
               extensionId,
-              publisherId: options.publisherId,
+              publisherId: identity.publisherId,
               attempts,
               exitCode: result.exitCode
             };
@@ -5905,7 +5932,7 @@ async function waitForValidation(options, auth, tfx, platform) {
               status: lastStatus,
               isValid: false,
               extensionId,
-              publisherId: options.publisherId,
+              publisherId: identity.publisherId,
               attempts,
               exitCode: result.exitCode
             };
@@ -5930,7 +5957,7 @@ async function waitForValidation(options, auth, tfx, platform) {
     status: lastStatus,
     isValid: false,
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     attempts,
     exitCode: lastExitCode
   };
@@ -5942,25 +5969,6 @@ function sleep(ms) {
 // packages/core/dist/commands/wait-for-installation.js
 import { WebApi, getPersonalAccessTokenHandler } from "azure-devops-node-api";
 init_vsix_reader();
-async function resolveExtensionIdentity(options, platform) {
-  let publisherId = options.publisherId;
-  let extensionId = options.extensionId;
-  if ((!publisherId || !extensionId) && options.vsixPath) {
-    platform.debug(`Reading extension identity from VSIX: ${options.vsixPath}`);
-    const reader = await VsixReader.open(options.vsixPath);
-    try {
-      const metadata = await reader.getMetadata();
-      publisherId = publisherId || metadata.publisher;
-      extensionId = extensionId || metadata.extensionId;
-    } finally {
-      await reader.close();
-    }
-  }
-  if (!publisherId || !extensionId) {
-    throw new Error("publisherId and extensionId are required for wait-for-installation. Provide them directly, or provide vsixPath so they can be inferred from VSIX metadata.");
-  }
-  return { publisherId, extensionId };
-}
 async function resolveExpectedTasks(options, platform) {
   if (options.expectedTasks && options.expectedTasks.length > 0) {
     platform.debug(`Using ${options.expectedTasks.length} expected tasks from options`);
@@ -6020,7 +6028,7 @@ async function resolveExpectedTasks(options, platform) {
   return [];
 }
 async function waitForInstallation(options, auth, platform) {
-  const identity = await resolveExtensionIdentity(options, platform);
+  const identity = await resolveExtensionIdentity(options, platform, "wait-for-installation");
   const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
   const timeoutMs = (options.timeoutMinutes ?? 10) * 6e4;
   const pollingIntervalMs = (options.pollingIntervalSeconds ?? 30) * 1e3;
@@ -7331,8 +7339,9 @@ async function runPublish(platform, tfxManager, auth) {
 async function runUnpublish(platform, tfxManager, auth) {
   await unpublishExtension(
     {
-      publisherId: platform.getInput("publisher-id", true),
-      extensionId: platform.getInput("extension-id", true)
+      publisherId: platform.getInput("publisher-id"),
+      extensionId: platform.getInput("extension-id"),
+      vsixPath: platform.getInput("vsix-path")
     },
     auth,
     tfxManager,
@@ -7342,8 +7351,9 @@ async function runUnpublish(platform, tfxManager, auth) {
 async function runShare(platform, tfxManager, auth) {
   await shareExtension(
     {
-      publisherId: platform.getInput("publisher-id", true),
-      extensionId: platform.getInput("extension-id", true),
+      publisherId: platform.getInput("publisher-id"),
+      extensionId: platform.getInput("extension-id"),
+      vsixPath: platform.getInput("vsix-path"),
       shareWith: platform.getDelimitedInput("accounts", "\n", true)
     },
     auth,
@@ -7354,8 +7364,9 @@ async function runShare(platform, tfxManager, auth) {
 async function runUnshare(platform, tfxManager, auth) {
   await unshareExtension(
     {
-      publisherId: platform.getInput("publisher-id", true),
-      extensionId: platform.getInput("extension-id", true),
+      publisherId: platform.getInput("publisher-id"),
+      extensionId: platform.getInput("extension-id"),
+      vsixPath: platform.getInput("vsix-path"),
       unshareWith: platform.getDelimitedInput("accounts", "\n", true)
     },
     auth,
@@ -7366,8 +7377,9 @@ async function runUnshare(platform, tfxManager, auth) {
 async function runInstall(platform, tfxManager, auth) {
   const result = await installExtension(
     {
-      publisherId: platform.getInput("publisher-id", true),
-      extensionId: platform.getInput("extension-id", true),
+      publisherId: platform.getInput("publisher-id"),
+      extensionId: platform.getInput("extension-id"),
+      vsixPath: platform.getInput("vsix-path"),
       accounts: platform.getDelimitedInput("accounts", "\n", true)
     },
     auth,
@@ -7406,8 +7418,9 @@ async function runQueryVersion(platform, tfxManager, auth) {
 async function runWaitForValidation(platform, tfxManager, auth) {
   const result = await waitForValidation(
     {
-      publisherId: platform.getInput("publisher-id", true),
-      extensionId: platform.getInput("extension-id", true),
+      publisherId: platform.getInput("publisher-id"),
+      extensionId: platform.getInput("extension-id"),
+      vsixPath: platform.getInput("vsix-path"),
       rootFolder: platform.getInput("root-folder"),
       manifestGlobs: platform.getDelimitedInput("manifest-globs", "\n"),
       maxRetries: parseInt(platform.getInput("max-retries") || "10"),

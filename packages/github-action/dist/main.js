@@ -174,28 +174,32 @@ async function runPublish(platform, tfxManager, auth) {
 }
 async function runUnpublish(platform, tfxManager, auth) {
     await unpublishExtension({
-        publisherId: platform.getInput('publisher-id', true),
-        extensionId: platform.getInput('extension-id', true),
+        publisherId: platform.getInput('publisher-id'),
+        extensionId: platform.getInput('extension-id'),
+        vsixPath: platform.getInput('vsix-path'),
     }, auth, tfxManager, platform);
 }
 async function runShare(platform, tfxManager, auth) {
     await shareExtension({
-        publisherId: platform.getInput('publisher-id', true),
-        extensionId: platform.getInput('extension-id', true),
+        publisherId: platform.getInput('publisher-id'),
+        extensionId: platform.getInput('extension-id'),
+        vsixPath: platform.getInput('vsix-path'),
         shareWith: platform.getDelimitedInput('accounts', '\n', true),
     }, auth, tfxManager, platform);
 }
 async function runUnshare(platform, tfxManager, auth) {
     await unshareExtension({
-        publisherId: platform.getInput('publisher-id', true),
-        extensionId: platform.getInput('extension-id', true),
+        publisherId: platform.getInput('publisher-id'),
+        extensionId: platform.getInput('extension-id'),
+        vsixPath: platform.getInput('vsix-path'),
         unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     }, auth, tfxManager, platform);
 }
 async function runInstall(platform, tfxManager, auth) {
     const result = await installExtension({
-        publisherId: platform.getInput('publisher-id', true),
-        extensionId: platform.getInput('extension-id', true),
+        publisherId: platform.getInput('publisher-id'),
+        extensionId: platform.getInput('extension-id'),
+        vsixPath: platform.getInput('vsix-path'),
         accounts: platform.getDelimitedInput('accounts', '\n', true),
     }, auth, tfxManager, platform);
     if (!result.allSuccess) {
@@ -224,8 +228,9 @@ async function runQueryVersion(platform, tfxManager, auth) {
 }
 async function runWaitForValidation(platform, tfxManager, auth) {
     const result = await waitForValidation({
-        publisherId: platform.getInput('publisher-id', true),
-        extensionId: platform.getInput('extension-id', true),
+        publisherId: platform.getInput('publisher-id'),
+        extensionId: platform.getInput('extension-id'),
+        vsixPath: platform.getInput('vsix-path'),
         rootFolder: platform.getInput('root-folder'),
         manifestGlobs: platform.getDelimitedInput('manifest-globs', '\n'),
         maxRetries: parseInt(platform.getInput('max-retries') || '10'),

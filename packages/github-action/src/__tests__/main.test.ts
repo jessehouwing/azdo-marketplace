@@ -373,6 +373,30 @@ describe('GitHub Action main entrypoint', () => {
     expect(setFailedMock).toHaveBeenCalledWith('Unknown operation: nope');
   });
 
+  it('forwards vsix-path for identity fallback in unpublish', async () => {
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'unpublish',
+        'auth-type': 'pat',
+        'vsix-path': '/tmp/extension.vsix',
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(unpublishExtensionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        publisherId: undefined,
+        extensionId: undefined,
+        vsixPath: '/tmp/extension.vsix',
+      }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
+  });
+
   it('executes query-version and sets outputs', async () => {
     queryVersionMock.mockImplementation(async () => ({
       proposedVersion: '2.0.0',

@@ -4,6 +4,7 @@
 
 import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
+import { resolveExtensionIdentity } from '../extension-identity.js';
 import { normalizeAccountsToServiceUrls } from '../organization-utils.js';
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
@@ -13,9 +14,11 @@ import type { TfxManager } from '../tfx-manager.js';
  */
 export interface InstallOptions {
   /** Publisher ID */
-  publisherId: string;
+  publisherId?: string;
   /** Extension ID */
-  extensionId: string;
+  extensionId?: string;
+  /** Path to VSIX file to infer publisher/extension identity */
+  vsixPath?: string;
   /** Target organization names or URLs to install to */
   accounts: string[];
   /**
@@ -79,13 +82,15 @@ export async function installExtension(
     );
   }
 
+  const identity = await resolveExtensionIdentity(options, platform, 'install');
+
   const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
 
   platform.info(
-    `Installing extension ${options.publisherId}.${options.extensionId} to ${accountUrls.length} organization(s)...`
+    `Installing extension ${identity.publisherId}.${identity.extensionId} to ${accountUrls.length} organization(s)...`
   );
 
-  const extensionId = options.extensionId;
+  const extensionId = identity.extensionId;
 
   const accountResults: InstallAccountResult[] = [];
   let overallExitCode = 0;
@@ -99,7 +104,7 @@ export async function installExtension(
       .arg(['extension', 'install'])
       .flag('--json')
       .flag('--no-color')
-      .option('--publisher', options.publisherId)
+      .option('--publisher', identity.publisherId)
       .option('--extension-id', extensionId)
       .option('--service-url', account);
 
@@ -181,7 +186,7 @@ export async function installExtension(
 
   return {
     extensionId,
-    publisherId: options.publisherId,
+    publisherId: identity.publisherId,
     accountResults,
     allSuccess,
     exitCode: overallExitCode,

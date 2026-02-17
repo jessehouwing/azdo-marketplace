@@ -27,6 +27,16 @@ Validate that an Azure DevOps extension has been successfully processed by the m
     max-timeout: '30'
 ```
 
+### Validate Using VSIX Identity Fallback
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    vsix-path: ${{ steps.package.outputs.vsix-path }}
+    max-retries: '15'
+```
+
 ### With OIDC Authentication
 
 ```yaml
@@ -47,9 +57,12 @@ Validate that an Azure DevOps extension has been successfully processed by the m
 
 ### Required Inputs
 
-- `publisher-id`: Publisher ID
-- `extension-id`: Extension ID
 - `token`: Personal Access Token (required when auth-type is `pat`)
+
+Identity (choose one):
+
+- `publisher-id` + `extension-id`
+- `vsix-path` (fallback source for identity metadata)
 
 OR
 
@@ -71,6 +84,10 @@ OR
 - `max-retries`: Maximum retry attempts (default: `10`)
 - `min-timeout`: Minimum timeout between retries in minutes (default: `1`)
 - `max-timeout`: Maximum timeout between retries in minutes (default: `15`)
+
+#### Identity Fallback
+
+- `vsix-path`: Path to VSIX file used to infer `publisher-id` and `extension-id` when omitted
 
 ## Outputs
 

@@ -253,8 +253,9 @@ async function runUnpublish(
 ): Promise<void> {
   await unpublishExtension(
     {
-      publisherId: platform.getInput('publisher-id', true),
-      extensionId: platform.getInput('extension-id', true),
+      publisherId: platform.getInput('publisher-id'),
+      extensionId: platform.getInput('extension-id'),
+      vsixPath: platform.getInput('vsix-path'),
     },
     auth,
     tfxManager,
@@ -269,8 +270,9 @@ async function runShare(
 ): Promise<void> {
   await shareExtension(
     {
-      publisherId: platform.getInput('publisher-id', true),
-      extensionId: platform.getInput('extension-id', true),
+      publisherId: platform.getInput('publisher-id'),
+      extensionId: platform.getInput('extension-id'),
+      vsixPath: platform.getInput('vsix-path'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -286,8 +288,9 @@ async function runUnshare(
 ): Promise<void> {
   await unshareExtension(
     {
-      publisherId: platform.getInput('publisher-id', true),
-      extensionId: platform.getInput('extension-id', true),
+      publisherId: platform.getInput('publisher-id'),
+      extensionId: platform.getInput('extension-id'),
+      vsixPath: platform.getInput('vsix-path'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -303,8 +306,9 @@ async function runInstall(
 ): Promise<void> {
   const result = await installExtension(
     {
-      publisherId: platform.getInput('publisher-id', true),
-      extensionId: platform.getInput('extension-id', true),
+      publisherId: platform.getInput('publisher-id'),
+      extensionId: platform.getInput('extension-id'),
+      vsixPath: platform.getInput('vsix-path'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -363,8 +367,9 @@ async function runWaitForValidation(
 ): Promise<void> {
   const result = await waitForValidation(
     {
-      publisherId: platform.getInput('publisher-id', true),
-      extensionId: platform.getInput('extension-id', true),
+      publisherId: platform.getInput('publisher-id'),
+      extensionId: platform.getInput('extension-id'),
+      vsixPath: platform.getInput('vsix-path'),
       rootFolder: platform.getInput('root-folder'),
       manifestGlobs: platform.getDelimitedInput('manifest-globs', '\n'),
       maxRetries: parseInt(platform.getInput('max-retries') || '10'),

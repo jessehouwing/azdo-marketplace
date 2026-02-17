@@ -37,6 +37,18 @@ Install an Azure DevOps extension to specific accounts/organizations.
       myorg3
 ```
 
+### Install Using VSIX Identity Fallback
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/install@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    vsix-path: ${{ steps.package.outputs.vsix-path }}
+    accounts: |
+      myorg1
+      myorg2
+```
+
 ### With OIDC Authentication
 
 ```yaml
@@ -58,10 +70,13 @@ Install an Azure DevOps extension to specific accounts/organizations.
 
 ### Required Inputs
 
-- `publisher-id`: Publisher ID
-- `extension-id`: Extension ID
 - `accounts`: Azure DevOps accounts/organizations (newline-separated)
 - `token`: Personal Access Token (required when auth-type is `pat`)
+
+Identity (choose one):
+
+- `publisher-id` + `extension-id`
+- `vsix-path` (fallback source for identity metadata)
 
 OR
 
@@ -77,6 +92,10 @@ OR
 #### TFX Configuration
 
 - `tfx-version`: Version of tfx-cli to use (default: `built-in`)
+
+#### Identity Fallback
+
+- `vsix-path`: Path to VSIX file used to infer `publisher-id` and `extension-id` when omitted
 
 ## Outputs
 
