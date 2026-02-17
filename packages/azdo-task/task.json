@@ -137,7 +137,7 @@
       "label": "Localization Root Folder",
       "required": false,
       "helpMarkDown": "**Folder containing localization files** for multi-language support.\n\n- Should contain language-specific resource files\n- Typically structured as: `localization/{locale}/resources.resjson`\n- If not specified, no localization is included\n\n**Example**: `$(Build.SourcesDirectory)/localization`",
-      "visibleRule": "operation = package || use = manifest"
+      "visibleRule": "operation = package && use = manifest"
     },
     {
       "name": "manifestFile",
