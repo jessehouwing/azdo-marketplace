@@ -32,6 +32,12 @@ stages:
           - task: Npm@1
             displayName: 'Build the extension'
             inputs:
+              command: install
+              verbose: false
+
+          - task: Npm@1
+            displayName: 'Build the extension'
+            inputs:
               command: custom
               verbose: false
               customCommand: 'run build'
@@ -44,45 +50,15 @@ stages:
               customCommand: 'run bundle'
 
           - task: ExtensionTasks@6
-            displayName: 'Package Extension: $(Build.SourcesDirectory)'
-            name: 'packagebuild'
-            inputs:
-              operation: 'package'
-              rootFolder: '$(Build.SourcesDirectory)'
-              outputPath: '$(Build.ArtifactStagingDirectory)\vsts-developer-tools-build-tasks-build.vsix'
-              publisherId: 'ms-devlabs'
-              extensionId: 'vsts-developer-tools-build-tasks-build'
-              extensionName: 'Azure DevOps Extension Tasks'
-              extensionVersion: '$(Build.BuildNumber)'
-              updateTasksVersion: true
-              updateTasksVersionType: patch
-              extensionVisibility: private
-
-          - task: ExtensionTasks@6
             name: 'packageprivate'
             displayName: 'Package the private extension'
             inputs:
               operation: 'package'
               rootFolder: '$(Build.SourcesDirectory)'
               outputPath: '$(Build.ArtifactStagingDirectory)\vsts-developer-tools-build-tasks-private.vsix'
-              publisherId: 'ms-devlabs'
-              extensionName: 'Azure DevOps Extension Tasks'
-              extensionId: 'vsts-developer-tools-build-tasks-dev'
               extensionVersion: '$(Build.BuildNumber)'
               extensionVisibility: 'private'
-
-          - task: ExtensionTasks@6
-            name: 'packagedebug'
-            displayName: 'Package the private extension'
-            inputs:
-              operation: 'package'
-              rootFolder: '$(Build.SourcesDirectory)'
-              outputPath: '$(Build.ArtifactStagingDirectory)\jessehouwing.vsts-developer-tools-build-tasks-dev.vsix'
-              publisherId: 'jessehouwing'
-              extensionName: 'Azure DevOps Extension Tasks'
-              extensionId: 'vsts-developer-tools-build-tasks-dev'
-              extensionVersion: '$(Build.BuildNumber)'
-              extensionVisibility: 'private'
+              updateTasksVersion: 'patch'
 
           - task: ExtensionTasks@6
             displayName: 'Package the public extension'
@@ -128,21 +104,18 @@ stages:
                   inputs:
                     operation: 'publish'
                     connectionType: 'connectedService:AzureRM'
-                    connectionNameAzureRM: 'SecurePublishMarketplaceServiceConnection'
+                    connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     publishSource: 'vsix'
-                    publisherId: 'ms-devlabs'
-                    extensionId: 'vsts-developer-tools-build-tasks-dev'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
                     noWaitValidation: true
 
                 - task: ExtensionTasks@6
                   displayName: 'Validate the private extension on the marketplace'
                   inputs:
-                    operation: 'waitForValidation'
+                    operation: 'wait-for-validation'
                     connectionType: 'connectedService:AzureRM'
-                    connectionNameAzureRM: 'SecurePublishMarketplaceServiceConnection'
-                    publisherId: 'ms-devlabs'
-                    extensionId: 'vsts-developer-tools-build-tasks-dev'
+                    connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
+                    vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-private.vsix'
 
   - stage: PublishProd
     displayName: 'Publish publicly to MsDevLabs'
@@ -170,21 +143,18 @@ stages:
                   inputs:
                     operation: 'publish'
                     connectionType: 'connectedService:AzureRM'
-                    connectionNameAzureRM: 'SecurePublishMarketplaceServiceConnection'
+                    connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
                     publishSource: 'vsix'
-                    publisherId: 'ms-devlabs'
-                    extensionId: 'vsts-developer-tools-build-tasks'
                     vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
                     noWaitValidation: true
 
                 - task: ExtensionTasks@6
                   displayName: 'Validate the private extension on the marketplace'
                   inputs:
-                    operation: 'waitForValidation'
+                    operation: 'wait-for-validation'
                     connectionType: 'connectedService:AzureRM'
-                    connectionNameAzureRM: 'SecurePublishMarketplaceServiceConnection'
-                    publisherId: 'ms-devlabs'
-                    extensionId: 'vsts-developer-tools-build-tasks'
+                    connectionNameAzureRm: 'SecurePublishMarketplaceServiceConnection'
+                    vsixFile: '$(Pipeline.Workspace)/vsix/vsts-developer-tools-build-tasks-public.vsix'
 
                 - task: GitHubRelease@1
                   displayName: 'Publish the public extension to GitHub'
