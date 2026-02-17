@@ -6,8 +6,13 @@ branding:
   color: blue
 inputs:
   auth-type:
-    description: |
+    description: |-
       Authentication type: 'pat', 'basic', or 'oidc'
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: pat
+
       - pat: Use Personal Access Token (recommended for most users)
       - basic: Use username/password authentication (for on-premises Azure DevOps Server)
       - oidc: Use Azure OIDC via azure/login action (requires setup, see below)
@@ -30,13 +35,16 @@ inputs:
       Then use auth-type: oidc (no token needed)
 
       See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
-
-      Default: pat
     required: false
     default: pat
   token:
-    description: |
+    description: |-
       Personal Access Token for marketplace authentication
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
       Required when auth-type is 'pat'
       Not needed for other auth types
 
@@ -44,24 +52,38 @@ inputs:
       Create a PAT at: https://dev.azure.com/_usersSettings/tokens
     required: false
   username:
-    description: |
+    description: |-
       Username for basic authentication
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
       Required when auth-type is 'basic'
       Not needed for other auth types
 
       Use for on-premises TFS or Azure DevOps Server deployments
     required: false
   password:
-    description: |
+    description: |-
       Password for basic authentication
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
       Required when auth-type is 'basic'
       Not needed for other auth types
 
       Use for on-premises TFS or Azure DevOps Server deployments
     required: false
   service-url:
-    description: |
+    description: |-
       Azure DevOps service URL (optional)
+
+      Available for: publish, query-version, share, show, unpublish, unshare, wait-for-validation.
+      Required for: none.
+      Default: none
 
       - Defaults to marketplace URL for cloud operations
       - Recommended cloud format: `https://dev.azure.com/<organization>`
@@ -78,8 +100,12 @@ inputs:
       Optional for: publish, share, unshare, show, query-version, wait-for-validation
     required: false
   tfx-version:
-    description: |
+    description: |-
       **Version of tfx-cli to use:**
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: built-in
 
       - `built-in` (default): Use tfx-cli bundled with this action
       - `path`: Use tfx-cli from system PATH
@@ -89,8 +115,12 @@ inputs:
     required: false
     default: built-in
   publisher-id:
-    description: |
+    description: |-
       **Publisher ID** that owns the extension.
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: query-version, show.
+      Default: none
 
       - Must match publisher in manifest (or override it)
       - Required for command: install, query-version, share, show, unpublish, unshare, wait-for-validation.
@@ -99,8 +129,12 @@ inputs:
       **Example:** `mycompany` or `my-publisher-id`
     required: false
   extension-id:
-    description: |
+    description: |-
       **Extension ID** - unique identifier within the publisher namespace.
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: query-version, show.
+      Default: none
 
       - Must match ID in manifest (or override it)
       - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
@@ -110,8 +144,12 @@ inputs:
       **Example:** `my-extension` or `azure-devops-tasks`
     required: false
   publish-source:
-    description: |
+    description: |-
       **Source for publish operation:**
+
+      Available for: publish.
+      Required for: none.
+      Default: manifest
 
       - `manifest` (default): Build extension from manifest and source files
       - `vsix`: Publish a pre-built .vsix package
@@ -120,16 +158,24 @@ inputs:
     required: false
     default: manifest
   root-folder:
-    description: |
+    description: |-
       **Root folder** containing extension manifest and source files.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Defaults to repository root if not specified
       - All file paths in manifest are relative to this folder
       - Must contain `vss-extension.json` (or other manifest specified in manifest-globs)
     required: false
   manifest-globs:
-    description: |
+    description: |-
       **Glob patterns for manifest files** (newline-separated).
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Defaults to `vss-extension.json` if not specified
       - Can specify multiple patterns for multi-manifest scenarios
@@ -142,8 +188,12 @@ inputs:
       ```
     required: false
   vsix-file:
-    description: |
+    description: |-
       **Path to pre-built .vsix file** (for publish operation).
+
+      Available for: publish.
+      Required for: none.
+      Default: none
 
       - Use when publish-source is 'vsix'
       - File must be a valid extension package
@@ -152,8 +202,12 @@ inputs:
       **Example:** `$``{{ github.workspace }}/dist/my-extension.vsix`
     required: false
   extension-version:
-    description: |
+    description: |-
       **Override extension version** specified in manifest.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Must follow semantic versioning: `major.minor.patch`
       - Useful for CI/CD pipelines to inject build numbers
@@ -161,8 +215,12 @@ inputs:
       **Examples:** `1.2.3`, `1.0.$``{{ github.run_number }}`
     required: false
   extension-name:
-    description: |
+    description: |-
       **Override extension display name** shown in marketplace.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Does not affect the extension ID
       - Useful for creating branded variants (e.g., "My Extension (Dev)")
@@ -170,8 +228,12 @@ inputs:
       **Example:** `My Extension - Development`
     required: false
   extension-visibility:
-    description: |
+    description: |-
       **Override extension visibility** in marketplace.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - `private`: Only visible to organizations you share it with
       - `public`: Visible to everyone in the marketplace
@@ -181,8 +243,12 @@ inputs:
       **Note:** Private extensions must be explicitly shared with organizations
     required: false
   no-wait-validation:
-    description: |
+    description: |-
       **Do not wait for marketplace validation** after publishing.
+
+      Available for: publish.
+      Required for: none.
+      Default: false
 
       - By default, action waits for validation (can take several minutes)
       - Enable to publish and continue immediately
@@ -192,8 +258,12 @@ inputs:
     required: false
     default: 'false'
   update-tasks-version:
-    description: |
+    description: |-
       **Automatically update task versions** to match extension version.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: false
 
       - Updates all task.json files in the extension
       - Useful for keeping task and extension versions in sync
@@ -202,8 +272,12 @@ inputs:
     required: false
     default: 'false'
   update-tasks-id:
-    description: |
+    description: |-
       **Generate new deterministic task IDs** for all tasks.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: false
 
       - Creates UUID v5 IDs based on publisher + extension + task name
       - Use when creating extension variants (dev, test versions)
@@ -215,12 +289,12 @@ inputs:
     default: 'false'
 outputs:
   vsix-path:
-    description: |-
+    description: |
       **Path to generated .vsix file** (package operation only).
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@main
+      - uses: jessehouwing/azdo-marketplace@v6
         id: package
         with:
           operation: package

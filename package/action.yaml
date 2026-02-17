@@ -6,8 +6,12 @@ branding:
   color: blue
 inputs:
   tfx-version:
-    description: |
+    description: |-
       **Version of tfx-cli to use:**
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: built-in
 
       - `built-in` (default): Use tfx-cli bundled with this action
       - `path`: Use tfx-cli from system PATH
@@ -17,8 +21,12 @@ inputs:
     required: false
     default: built-in
   publisher-id:
-    description: |
+    description: |-
       **Publisher ID** that owns the extension.
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: query-version, show.
+      Default: none
 
       - Must match publisher in manifest (or override it)
       - Required for command: install, query-version, share, show, unpublish, unshare, wait-for-validation.
@@ -27,8 +35,12 @@ inputs:
       **Example:** `mycompany` or `my-publisher-id`
     required: false
   extension-id:
-    description: |
+    description: |-
       **Extension ID** - unique identifier within the publisher namespace.
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: query-version, show.
+      Default: none
 
       - Must match ID in manifest (or override it)
       - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
@@ -38,16 +50,24 @@ inputs:
       **Example:** `my-extension` or `azure-devops-tasks`
     required: false
   root-folder:
-    description: |
+    description: |-
       **Root folder** containing extension manifest and source files.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Defaults to repository root if not specified
       - All file paths in manifest are relative to this folder
       - Must contain `vss-extension.json` (or other manifest specified in manifest-globs)
     required: false
   manifest-globs:
-    description: |
+    description: |-
       **Glob patterns for manifest files** (newline-separated).
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Defaults to `vss-extension.json` if not specified
       - Can specify multiple patterns for multi-manifest scenarios
@@ -60,8 +80,12 @@ inputs:
       ```
     required: false
   extension-version:
-    description: |
+    description: |-
       **Override extension version** specified in manifest.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Must follow semantic versioning: `major.minor.patch`
       - Useful for CI/CD pipelines to inject build numbers
@@ -69,8 +93,12 @@ inputs:
       **Examples:** `1.2.3`, `1.0.$``{{ github.run_number }}`
     required: false
   extension-name:
-    description: |
+    description: |-
       **Override extension display name** shown in marketplace.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - Does not affect the extension ID
       - Useful for creating branded variants (e.g., "My Extension (Dev)")
@@ -78,8 +106,12 @@ inputs:
       **Example:** `My Extension - Development`
     required: false
   extension-visibility:
-    description: |
+    description: |-
       **Override extension visibility** in marketplace.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
 
       - `private`: Only visible to organizations you share it with
       - `public`: Visible to everyone in the marketplace
@@ -89,8 +121,12 @@ inputs:
       **Note:** Private extensions must be explicitly shared with organizations
     required: false
   output-path:
-    description: |
+    description: |-
       **Output directory** for generated .vsix file (package operation).
+
+      Available for: package.
+      Required for: none.
+      Default: none
 
       - Defaults to current directory if not specified
       - Directory will be created if it doesn't exist
@@ -99,8 +135,12 @@ inputs:
       **Output:** Full path stored in `vsix-path` output
     required: false
   bypass-validation:
-    description: |
+    description: |-
       **Skip extension validation checks** during package/publish.
+
+      Available for: package.
+      Required for: none.
+      Default: false
 
       - Not recommended for production use
       - Use only when validation incorrectly fails
@@ -110,8 +150,12 @@ inputs:
     required: false
     default: 'false'
   rev-version:
-    description: |
+    description: |-
       **Automatically increment the patch version** of the extension.
+
+      Available for: package.
+      Required for: none.
+      Default: false
 
       - Increments the last digit: `1.2.3` → `1.2.4`
       - Applied before packaging
@@ -121,8 +165,12 @@ inputs:
     required: false
     default: 'false'
   update-tasks-version:
-    description: |
+    description: |-
       **Automatically update task versions** to match extension version.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: false
 
       - Updates all task.json files in the extension
       - Useful for keeping task and extension versions in sync
@@ -131,8 +179,12 @@ inputs:
     required: false
     default: 'false'
   update-tasks-id:
-    description: |
+    description: |-
       **Generate new deterministic task IDs** for all tasks.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: false
 
       - Creates UUID v5 IDs based on publisher + extension + task name
       - Use when creating extension variants (dev, test versions)
@@ -144,12 +196,12 @@ inputs:
     default: 'false'
 outputs:
   vsix-path:
-    description: |-
+    description: |
       **Path to generated .vsix file** (package operation only).
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@main
+      - uses: jessehouwing/azdo-marketplace@v6
         id: package
         with:
           operation: package

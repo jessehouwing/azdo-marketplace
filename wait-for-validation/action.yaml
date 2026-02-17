@@ -6,8 +6,13 @@ branding:
   color: green
 inputs:
   auth-type:
-    description: |
+    description: |-
       Authentication type: 'pat', 'basic', or 'oidc'
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: pat
+
       - pat: Use Personal Access Token (recommended for most users)
       - basic: Use username/password authentication (for on-premises Azure DevOps Server)
       - oidc: Use Azure OIDC via azure/login action (requires setup, see below)
@@ -30,13 +35,16 @@ inputs:
       Then use auth-type: oidc (no token needed)
 
       See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
-
-      Default: pat
     required: false
     default: pat
   token:
-    description: |
+    description: |-
       Personal Access Token for marketplace authentication
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
       Required when auth-type is 'pat'
       Not needed for other auth types
 
@@ -44,24 +52,38 @@ inputs:
       Create a PAT at: https://dev.azure.com/_usersSettings/tokens
     required: false
   username:
-    description: |
+    description: |-
       Username for basic authentication
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
       Required when auth-type is 'basic'
       Not needed for other auth types
 
       Use for on-premises TFS or Azure DevOps Server deployments
     required: false
   password:
-    description: |
+    description: |-
       Password for basic authentication
+
+      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
       Required when auth-type is 'basic'
       Not needed for other auth types
 
       Use for on-premises TFS or Azure DevOps Server deployments
     required: false
   service-url:
-    description: |
+    description: |-
       Azure DevOps service URL (optional)
+
+      Available for: publish, query-version, share, show, unpublish, unshare, wait-for-validation.
+      Required for: none.
+      Default: none
 
       - Defaults to marketplace URL for cloud operations
       - Recommended cloud format: `https://dev.azure.com/<organization>`
@@ -78,8 +100,12 @@ inputs:
       Optional for: publish, share, unshare, show, query-version, wait-for-validation
     required: false
   tfx-version:
-    description: |
+    description: |-
       **Version of tfx-cli to use:**
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: built-in
 
       - `built-in` (default): Use tfx-cli bundled with this action
       - `path`: Use tfx-cli from system PATH
@@ -89,8 +115,12 @@ inputs:
     required: false
     default: built-in
   publisher-id:
-    description: |
+    description: |-
       **Publisher ID** that owns the extension.
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: query-version, show.
+      Default: none
 
       - Must match publisher in manifest (or override it)
       - Required for command: install, query-version, share, show, unpublish, unshare, wait-for-validation.
@@ -99,8 +129,12 @@ inputs:
       **Example:** `mycompany` or `my-publisher-id`
     required: false
   extension-id:
-    description: |
+    description: |-
       **Extension ID** - unique identifier within the publisher namespace.
+
+      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: query-version, show.
+      Default: none
 
       - Must match ID in manifest (or override it)
       - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
@@ -110,8 +144,12 @@ inputs:
       **Example:** `my-extension` or `azure-devops-tasks`
     required: false
   vsix-path:
-    description: |
+    description: |-
       **Path to .vsix file** for auto-extracting task versions.
+
+      Available for: install, share, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
 
       - Extracts task.json files from VSIX package
       - Most convenient when verifying immediately after packaging
@@ -119,8 +157,12 @@ inputs:
       **Note:** Use this OR expected-tasks/manifest-path, not multiple
     required: false
   max-retries:
-    description: |
+    description: |-
       **Maximum retry attempts** for extension validation.
+
+      Available for: wait-for-validation.
+      Required for: none.
+      Default: 10
 
       - Validation can take time as marketplace processes the extension
       - Task retries with exponential backoff
@@ -129,8 +171,12 @@ inputs:
     required: false
     default: '10'
   min-timeout:
-    description: |
+    description: |-
       **Minimum timeout between retry attempts** (in minutes).
+
+      Available for: wait-for-validation.
+      Required for: none.
+      Default: 1
 
       - Initial wait time before first retry
       - Increases exponentially up to max-timeout
@@ -139,8 +185,12 @@ inputs:
     required: false
     default: '1'
   max-timeout:
-    description: |
+    description: |-
       **Maximum timeout between retry attempts** (in minutes).
+
+      Available for: wait-for-validation.
+      Required for: none.
+      Default: 15
 
       - Maximum wait time between retries
       - Timeout increases exponentially from min-timeout

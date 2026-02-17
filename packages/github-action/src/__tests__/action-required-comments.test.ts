@@ -66,10 +66,11 @@ function extractOperationRequirement(
   const lines = description
     .split('\n')
     .map(normalizeLine)
-    .filter((line) => line.includes('required for command:'));
+    .filter((line) => line.includes('required for command:') || line.includes('required for:'));
 
   for (const line of lines) {
-    const afterRequiredFor = line.split('required for command:')[1] ?? '';
+    const afterRequiredFor =
+      line.split('required for command:')[1] ?? line.split('required for:')[1] ?? '';
     const matchedOperations = new Set<string>();
 
     for (const operation of knownOperations) {
@@ -134,6 +135,10 @@ describe('Main action required-for comments', () => {
         if (requiredByOperation.get(operation)?.has(inputName)) {
           requiredFromComposite.add(operation);
         }
+      }
+
+      if (requiredFromComposite.size === 0) {
+        continue;
       }
 
       if (commandScopedInputs.has(inputName) && !requiredFromComment) {
