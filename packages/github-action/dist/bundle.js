@@ -5890,7 +5890,7 @@ async function waitForValidation(options, auth, tfx, platform) {
     platform.info(`Validation attempt ${attempts}/${maxRetries}...`);
     const args = new ArgBuilder().arg(["extension", "isvalid"]).flag("--json").flag("--no-color").option("--publisher", identity.publisherId).option("--extension-id", extensionId);
     if (options.extensionVersion) {
-      args.option("--extension-version", options.extensionVersion);
+      args.option("--version", options.extensionVersion);
     }
     if (options.rootFolder) {
       args.option("--root", options.rootFolder);

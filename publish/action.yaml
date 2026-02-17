@@ -206,7 +206,7 @@ inputs:
     description: |-
       **Override extension version** specified in manifest.
 
-      Available for: package, publish.
+      Available for: package, publish, wait-for-validation.
       Required for: none.
       Default: none
 

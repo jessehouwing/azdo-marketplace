@@ -242,7 +242,7 @@ describe('waitForValidation', () => {
     );
 
     const callArgs = mockExecute.mock.calls[0][0];
-    expect(callArgs).toContain('--extension-version');
+    expect(callArgs).toContain('--version');
     expect(callArgs).toContain('1.2.3');
   });
 

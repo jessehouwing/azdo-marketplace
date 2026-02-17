@@ -145,16 +145,16 @@ inputs:
     required: false
   extension-version:
     description: |-
-      **Optional extension version** to validate.
+      **Override extension version** specified in manifest.
 
-      Available for: wait-for-validation.
+      Available for: package, publish, wait-for-validation.
       Required for: none.
       Default: none
 
-      - When provided, validates this specific extension version
-      - Useful when multiple versions may be in validation concurrently
+      - Must follow semantic versioning: `major.minor.patch`
+      - Useful for CI/CD pipelines to inject build numbers
 
-      **Example:** `1.2.3`
+      **Examples:** `1.2.3`, `1.0.$``{{ github.run_number }}`
     required: false
   vsix-path:
     description: |-

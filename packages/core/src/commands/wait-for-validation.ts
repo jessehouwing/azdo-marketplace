@@ -110,7 +110,7 @@ export async function waitForValidation(
       .option('--extension-id', extensionId);
 
     if (options.extensionVersion) {
-      args.option('--extension-version', options.extensionVersion);
+      args.option('--version', options.extensionVersion);
     }
 
     // Manifest arguments if provided
