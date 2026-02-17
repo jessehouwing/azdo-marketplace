@@ -43,9 +43,7 @@ describe('TfxManager', () => {
         const tfxPath = await manager.resolve();
 
         expect(tfxPath).toBe(tfxEntrypoint);
-        expect(platform.infoMessages).toContain(
-          'Using built-in tfx-cli from core package dependencies'
-        );
+        expect(platform.infoMessages).toContain('Using built-in tfx-cli.');
       } finally {
         process.chdir(originalCwd);
         process.argv[1] = originalArgv1;

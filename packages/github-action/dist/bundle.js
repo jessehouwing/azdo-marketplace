@@ -4956,7 +4956,7 @@ var TfxManager = class {
    * We use 'which' to locate it, which will find it in node_modules/.bin/ or PATH.
    */
   async resolveBuiltIn() {
-    this.platform.info("Using built-in tfx-cli from core package dependencies");
+    this.platform.info("Using built-in tfx-cli.");
     const entrypoint = process.argv[1];
     if (!entrypoint) {
       throw new Error("Built-in tfx-cli resolution failed: process.argv[1] is not set.");
@@ -5129,6 +5129,25 @@ var TfxManager = class {
       this.platform.debug(`[tfx ${streamName}] ${line}`);
     });
   }
+  emitFailureErrorLines(stdout, stderr) {
+    const seen = /* @__PURE__ */ new Set();
+    const allLines = `${stdout}
+${stderr}`.replace(/\r\n/g, "\n").split("\n");
+    for (const line of allLines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+      if (!/^error\b/i.test(trimmed)) {
+        continue;
+      }
+      if (seen.has(trimmed)) {
+        continue;
+      }
+      seen.add(trimmed);
+      this.platform.error(trimmed);
+    }
+  }
   /**
    * Execute tfx with given arguments
    * @param args Arguments to pass to tfx
@@ -5150,7 +5169,8 @@ var TfxManager = class {
       }
       jsonStream = new JsonOutputStream((msg) => this.platform.debug(msg));
     }
-    const defaultSilent = !this.platform.isDebugEnabled();
+    const forceNonSilentFromEnv = process.env.AZDO_TASK_FORCE_TFX_VERBOSE === "true";
+    const defaultSilent = forceNonSilentFromEnv ? false : !this.platform.isDebugEnabled();
     const execOptions = {
       cwd: options?.cwd,
       env: options?.env,
@@ -5178,6 +5198,9 @@ var TfxManager = class {
     }
     const stdout = jsonStream ? `${jsonStream.messages.join("")}${jsonStream.jsonString}` : stdoutStream.content;
     const stderr = stderrStream.content;
+    if (exitCode !== 0) {
+      this.emitFailureErrorLines(stdout, stderr);
+    }
     if (this.platform.isDebugEnabled()) {
       this.logCapturedOutput("stdout", stdout);
       this.logCapturedOutput("stderr", stderr);
@@ -5975,9 +5998,10 @@ async function waitForValidation(options, auth, tfx, platform) {
   const identity = await resolveExtensionIdentity(options, platform, "wait-for-validation");
   platform.info(`Validating extension ${identity.publisherId}.${identity.extensionId}...`);
   const extensionId = identity.extensionId;
-  const maxRetries = options.maxRetries ?? 10;
-  const minTimeoutMs = (options.minTimeout ?? 1) * 60 * 1e3;
-  const maxTimeoutMs = (options.maxTimeout ?? 15) * 60 * 1e3;
+  const timeoutMinutes = options.timeoutMinutes ?? 10;
+  const pollingIntervalSeconds = options.pollingIntervalSeconds ?? 30;
+  const maxRetries = Math.max(1, Math.ceil(timeoutMinutes * 60 / pollingIntervalSeconds));
+  const pollingIntervalMs = pollingIntervalSeconds * 1e3;
   let attempts = 0;
   let lastStatus = "pending";
   let lastExitCode = 0;
@@ -6026,9 +6050,8 @@ async function waitForValidation(options, auth, tfx, platform) {
           case "pending":
             platform.info("\u23F3 Validation pending, retrying...");
             if (attempts < maxRetries) {
-              const waitTime = Math.min(minTimeoutMs * Math.pow(2, attempts - 1), maxTimeoutMs);
-              platform.debug(`Waiting ${waitTime / 1e3}s before retry...`);
-              await sleep(waitTime);
+              platform.debug(`Waiting ${pollingIntervalSeconds}s before retry...`);
+              await sleep(pollingIntervalMs);
             }
             break;
           case "failed":
@@ -6056,7 +6079,7 @@ async function waitForValidation(options, auth, tfx, platform) {
       if (attempts >= maxRetries) {
         throw err;
       }
-      await sleep(minTimeoutMs);
+      await sleep(pollingIntervalMs);
     }
   }
   platform.error(`\u2717 Extension validation timed out after ${attempts} attempts (status: ${lastStatus})`);
@@ -7625,6 +7648,8 @@ async function runQueryVersion(platform, tfxManager, auth) {
   platform.setOutput("current-version", result.currentVersion);
 }
 async function runWaitForValidation(platform, tfxManager, auth) {
+  const timeoutMinutesInput = platform.getInput("timeout-minutes");
+  const pollingIntervalSecondsInput = platform.getInput("polling-interval-seconds");
   const result = await waitForValidation(
     {
       publisherId: platform.getInput("publisher-id"),
@@ -7632,9 +7657,8 @@ async function runWaitForValidation(platform, tfxManager, auth) {
       vsixPath: platform.getInput("vsix-path"),
       extensionVersion: platform.getInput("extension-version"),
       manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
-      maxRetries: parseInt(platform.getInput("max-retries") || "10"),
-      minTimeout: parseInt(platform.getInput("min-timeout") || "1"),
-      maxTimeout: parseInt(platform.getInput("max-timeout") || "15")
+      timeoutMinutes: timeoutMinutesInput ? parseInt(timeoutMinutesInput, 10) : void 0,
+      pollingIntervalSeconds: pollingIntervalSecondsInput ? parseInt(pollingIntervalSecondsInput, 10) : void 0
     },
     auth,
     tfxManager,
