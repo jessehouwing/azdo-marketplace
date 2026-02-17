@@ -85,11 +85,11 @@ function createPlatformMock(config: PlatformConfig = {}) {
 
   return {
     getInput: jest.fn((name: string) => inputValues[name]),
+    getPathInput: jest.fn((name: string) => inputValues[name]),
     getBoolInput: jest.fn((name: string) => boolValues[name] ?? false),
     getDelimitedInput: jest.fn((name: string, delimiter: string) => {
       return delimitedValues[`${name}|${delimiter}`] ?? [];
     }),
-    getPathInput: jest.fn(),
     setSecret: jest.fn(),
     setVariable: jest.fn(),
     info: jest.fn(),

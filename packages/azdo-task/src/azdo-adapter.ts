@@ -40,6 +40,19 @@ export class AzdoAdapter implements IPlatformAdapter {
     return tl.getInput(name, required) || undefined;
   }
 
+  getPathInput(name: string, required?: boolean): string | undefined {
+    const value = tl.getPathInput(name, required, false) || undefined;
+    if (!value) {
+      return undefined;
+    }
+
+    if (!required && !tl.filePathSupplied(name)) {
+      return undefined;
+    }
+
+    return value;
+  }
+
   getBoolInput(name: string, required?: boolean): boolean {
     return tl.getBoolInput(name, required);
   }

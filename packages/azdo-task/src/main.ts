@@ -212,10 +212,10 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
   const extensionPricingInput = platform.getInput('extensionPricing');
 
   const options = {
-    localizationRoot: platform.getInput('localizationRoot'),
+    localizationRoot: platform.getPathInput('localizationRoot'),
     manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
-    manifestFileJs: platform.getInput('manifestFileJs'),
-    overridesFile: platform.getInput('overridesFile'),
+    manifestFileJs: platform.getPathInput('manifestFileJs'),
+    overridesFile: platform.getPathInput('overridesFile'),
     publisherId: platform.getInput('publisherId'),
     extensionId: platform.getInput('extensionId'),
     extensionVersion: platform.getInput('extensionVersion'),
@@ -232,7 +232,7 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
         : undefined,
     updateTasksVersion: getUpdateTasksVersionMode(platform),
     updateTasksId: platform.getBoolInput('updateTasksId'),
-    outputPath: platform.getInput('outputPath'),
+    outputPath: platform.getPathInput('outputPath'),
     bypassValidation: platform.getBoolInput('bypassValidation'),
   };
 
@@ -254,12 +254,12 @@ async function runPublish(
   const result = await publishExtension(
     {
       publishSource: use,
-      vsixFile: use === 'vsix' ? platform.getInput('vsixFile', true) : undefined,
+      vsixFile: use === 'vsix' ? platform.getPathInput('vsixFile', true) : undefined,
       manifestGlobs:
         use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
-      manifestFileJs: use === 'manifest' ? platform.getInput('manifestFileJs') : undefined,
-      overridesFile: use === 'manifest' ? platform.getInput('overridesFile') : undefined,
-      localizationRoot: use === 'manifest' ? platform.getInput('localizationRoot') : undefined,
+      manifestFileJs: use === 'manifest' ? platform.getPathInput('manifestFileJs') : undefined,
+      overridesFile: use === 'manifest' ? platform.getPathInput('overridesFile') : undefined,
+      localizationRoot: use === 'manifest' ? platform.getPathInput('localizationRoot') : undefined,
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       extensionVersion: platform.getInput('extensionVersion'),
@@ -274,7 +274,7 @@ async function runPublish(
         extensionPricingInput && extensionPricingInput !== 'default'
           ? (extensionPricingInput as 'free' | 'paid' | 'trial')
           : undefined,
-      outputPath: platform.getInput('outputPath'),
+      outputPath: platform.getPathInput('outputPath'),
       noWaitValidation: platform.getBoolInput('noWaitValidation'),
       bypassValidation: platform.getBoolInput('bypassValidation'),
       updateTasksVersion: getUpdateTasksVersionMode(platform),
@@ -299,7 +299,7 @@ async function runUnpublish(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath: platform.getPathInput('vsixFile') || platform.getInput('vsixPath'),
     },
     auth,
     tfxManager,
@@ -316,7 +316,7 @@ async function runShare(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath: platform.getPathInput('vsixFile') || platform.getInput('vsixPath'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -336,7 +336,7 @@ async function runUnshare(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath: platform.getPathInput('vsixFile') || platform.getInput('vsixPath'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -356,7 +356,7 @@ async function runInstall(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath: platform.getPathInput('vsixFile') || platform.getInput('vsixPath'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -440,7 +440,7 @@ async function runWaitForValidation(
     {
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
-      vsixPath: platform.getInput('vsixFile') || platform.getInput('vsixPath'),
+      vsixPath: platform.getPathInput('vsixFile') || platform.getInput('vsixPath'),
       extensionVersion: platform.getInput('extensionVersion'),
       maxRetries: parseInt(platform.getInput('maxRetries') || '10'),
       minTimeout: parseInt(platform.getInput('minTimeout') || '1'),
@@ -484,7 +484,9 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentia
       manifestFiles:
         use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
       vsixPath:
-        use === 'vsix' ? platform.getInput('vsixFile') || platform.getInput('vsixPath') : undefined,
+        use === 'vsix'
+          ? platform.getPathInput('vsixFile') || platform.getInput('vsixPath')
+          : undefined,
       timeoutMinutes: parseInt(platform.getInput('timeoutMinutes') || '10'),
       pollingIntervalSeconds: parseInt(platform.getInput('pollingIntervalSeconds') || '30'),
     },
