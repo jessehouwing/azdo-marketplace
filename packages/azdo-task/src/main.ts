@@ -310,8 +310,6 @@ async function runPublish(
     platform
   );
 
-  platform.setOutput('published', String(result.published));
-
   platform.debug(`Published: ${JSON.stringify(result)}`);
 }
 
@@ -348,8 +346,6 @@ async function runShare(
     tfxManager,
     platform
   );
-
-  platform.setOutput('shared', 'true');
 }
 
 async function runUnshare(
@@ -368,8 +364,6 @@ async function runUnshare(
     tfxManager,
     platform
   );
-
-  platform.setOutput('unshared', 'true');
 }
 
 async function runInstall(
@@ -392,8 +386,6 @@ async function runInstall(
   if (!result.allSuccess) {
     throw new Error(`Some accounts failed to install the extension`);
   }
-
-  platform.setOutput('installed', 'true');
 }
 
 async function runShow(
@@ -479,8 +471,6 @@ async function runWaitForValidation(
   if (result.status !== 'success') {
     throw new Error(`Validation failed with status: ${result.status}`);
   }
-
-  platform.setOutput('waitForValidation', 'true');
 }
 
 async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentials): Promise<void> {
@@ -520,8 +510,6 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentia
   if (!result.success) {
     throw new Error(`Verification failed - not all tasks are available`);
   }
-
-  platform.setOutput('waitForInstallation', 'true');
 }
 
 // Run the task

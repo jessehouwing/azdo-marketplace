@@ -207,23 +207,14 @@ Verifies tasks are available after install.
 
 ## Outputs
 
-The task exposes output variables including:
+Declared task output variables (from `task.json`):
 
-- `extension.outputPath`
-- `extension.metadata`
-- `extension.proposedVersion`
-- `extension.currentVersion`
-- `extension.published`
-- `extension.shared`
-- `extension.unshared`
-- `extension.installed`
-- `extension.waitForValidation`
-- `extension.waitForInstallation`
+- `vsixPath`
+- `extensionMetadata`
+- `proposedVersion`
+- `currentVersion`
 
-Compatibility outputs still set by core commands:
-
-- `Extension.OutputPath`
-- `Extension.Version`
+These are referenced as step outputs, for example `$(packageExt.vsixPath)`.
 
 ## Example: package + publish
 
@@ -241,5 +232,5 @@ steps:
       connectionType: PAT
       connectionNamePAT: MyMarketplaceConnection
       use: vsix
-      vsixFile: $(packageExt.Extension.OutputPath)
+      vsixFile: $(packageExt.vsixPath)
 ```

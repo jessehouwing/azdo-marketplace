@@ -149,7 +149,7 @@ Also ensure workflow permissions include `id-token: write`.
 Azure Pipelines variable references:
 
 - `$(VarName)`
-- `$(stepName.Extension.OutputPath)`
+- `$(stepName.vsixPath)`
 
 GitHub Actions references:
 
@@ -158,10 +158,10 @@ GitHub Actions references:
 
 Typical output mapping:
 
-- Azure Pipelines `Extension.OutputPath` → GitHub Actions `vsix-path`
-- Azure Pipelines `Extension.Metadata` → GitHub Actions `extension-metadata`
-- Azure Pipelines `Extension.ProposedVersion` → GitHub Actions `proposed-version`
-- Azure Pipelines `Extension.CurrentVersion` → GitHub Actions `current-version`
+- Azure Pipelines `vsixPath` → GitHub Actions `vsix-path`
+- Azure Pipelines `extensionMetadata` → GitHub Actions `extension-metadata`
+- Azure Pipelines `proposedVersion` → GitHub Actions `proposed-version`
+- Azure Pipelines `currentVersion` → GitHub Actions `current-version`
 
 ## Status mapping
 
@@ -198,7 +198,7 @@ steps:
       connectionType: PAT
       connectionNamePAT: MyMarketplaceConnection
       use: vsix
-      vsixFile: $(packageExt.OutputPath)
+      vsixFile: $(packageExt.vsixPath)
 ```
 
 ### GitHub Actions

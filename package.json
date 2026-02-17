@@ -29,6 +29,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "docs:validate-samples": "node Scripts/validate-doc-yaml-samples.mjs",
     "sync:action-inputs": "node Scripts/sync-action-inputs.mjs",
     "sync:action-inputs:check": "node Scripts/sync-action-inputs.mjs --check",
     "bundle:azdo": "node Scripts/bundle.mjs azdo",

@@ -335,16 +335,16 @@ inputs:
 outputs:
   vsix-path:
     description: |
-      **Path to generated/final .vsix file** (publish operation only).
+      **Path to generated .vsix file** (package operation only).
 
       **Example usage:**
       ```yaml
       - uses: jessehouwing/azdo-marketplace@v6
-        id: publish
+        id: package
         with:
-          operation: publish
+          operation: package
 
-      - run: echo "VSIX at $``{{ steps.publish.outputs.vsix-path }}"
+      - run: echo "VSIX at $``{{ steps.package.outputs.vsix-path }}"
       ```
     value: ${{ steps.publish.outputs.vsix-path }}
 runs:

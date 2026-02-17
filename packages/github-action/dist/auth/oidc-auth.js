@@ -39,7 +39,7 @@ export async function getOidcAuth(serviceUrl, platform) {
     const tokenResource = serviceUrl || 'https://marketplace.visualstudio.com';
     // Use the provided service URL or default to marketplace URL
     const finalServiceUrl = serviceUrl || 'https://marketplace.visualstudio.com';
-    core.info('Getting Azure AD token via Azure CLI (requires azure/login action)...');
+    core.info('Getting Azure AD token via Azure CLI...');
     try {
         // Execute Azure CLI to get access token
         let output = '';
