@@ -4892,6 +4892,25 @@ async function resolveExtensionIdentity(options, platform, operationName) {
 // packages/core/dist/tfx-manager.js
 import fs from "fs/promises";
 import path2 from "path";
+import { Writable as Writable2 } from "stream";
+var TextCaptureStream = class extends Writable2 {
+  lineWriter;
+  content = "";
+  constructor(lineWriter) {
+    super();
+    this.lineWriter = lineWriter;
+  }
+  _write(chunk, _encoding, callback) {
+    const text = chunk.toString();
+    this.content += text;
+    text.split("\n").forEach((line) => {
+      if (line) {
+        this.lineWriter(line);
+      }
+    });
+    callback();
+  }
+};
 var TfxManager = class {
   resolvedPath;
   tfxVersion;
@@ -5094,6 +5113,17 @@ var TfxManager = class {
     }
     return path2.join(dir, "tfx");
   }
+  logCapturedOutput(streamName, content) {
+    this.platform.debug(`Captured tfx ${streamName}:`);
+    const normalized = content.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      this.platform.debug(`[tfx ${streamName}] <empty>`);
+      return;
+    }
+    normalized.split("\n").forEach((line) => {
+      this.platform.debug(`[tfx ${streamName}] ${line}`);
+    });
+  }
   /**
    * Execute tfx with given arguments
    * @param args Arguments to pass to tfx
@@ -5104,6 +5134,8 @@ var TfxManager = class {
     const tfxPath = await this.resolve();
     const finalArgs = [...args];
     let jsonStream;
+    const stdoutStream = new TextCaptureStream((msg) => this.platform.debug(msg));
+    const stderrStream = new TextCaptureStream((msg) => this.platform.debug(msg));
     if (options?.captureJson) {
       if (!finalArgs.includes("--json")) {
         finalArgs.push("--json");
@@ -5113,13 +5145,14 @@ var TfxManager = class {
       }
       jsonStream = new JsonOutputStream((msg) => this.platform.debug(msg));
     }
-    const defaultSilent = options?.captureJson ? true : !this.platform.isDebugEnabled();
+    const defaultSilent = !this.platform.isDebugEnabled();
     const execOptions = {
       cwd: options?.cwd,
       env: options?.env,
       silent: options?.silent ?? defaultSilent,
-      outStream: jsonStream,
-      errStream: void 0
+      ignoreReturnCode: true,
+      outStream: jsonStream ?? stdoutStream,
+      errStream: stderrStream
     };
     this.platform.debug(`Executing: ${tfxPath} ${finalArgs.join(" ")}`);
     const exitCode = await this.platform.exec(tfxPath, finalArgs, execOptions);
@@ -5127,11 +5160,17 @@ var TfxManager = class {
     if (jsonStream) {
       parsedJson = jsonStream.parseJson();
     }
+    const stdout = jsonStream ? `${jsonStream.messages.join("")}${jsonStream.jsonString}` : stdoutStream.content;
+    const stderr = stderrStream.content;
+    if (this.platform.isDebugEnabled()) {
+      this.logCapturedOutput("stdout", stdout);
+      this.logCapturedOutput("stderr", stderr);
+    }
     return {
       exitCode,
       json: parsedJson,
-      stdout: jsonStream?.jsonString || "",
-      stderr: ""
+      stdout,
+      stderr
     };
   }
 };
@@ -5370,8 +5409,12 @@ async function packageExtension(options, tfx, platform) {
     }
     const result = await tfx.execute(args.build(), { captureJson: true });
     if (result.exitCode !== 0) {
+      const details = (result.stderr || result.stdout || "").trim();
       platform.error(`tfx exited with code ${result.exitCode}`);
-      throw new Error(`tfx extension create failed with exit code ${result.exitCode}`);
+      if (details) {
+        platform.debug(`tfx extension create details: ${details}`);
+      }
+      throw new Error(`tfx extension create failed with exit code ${result.exitCode}${details ? `: ${details}` : ""}`);
     }
     const json = result.json;
     if (!json || !json.path) {
@@ -5818,8 +5861,12 @@ async function showExtension(options, auth, tfx, platform) {
   }
   const result = await tfx.execute(args.build(), { captureJson: true });
   if (result.exitCode !== 0) {
+    const details = (result.stderr || result.stdout || "").trim();
     platform.error(`tfx exited with code ${result.exitCode}`);
-    throw new Error(`tfx extension show failed with exit code ${result.exitCode}`);
+    if (details) {
+      platform.debug(`tfx extension show details: ${details}`);
+    }
+    throw new Error(`tfx extension show failed with exit code ${result.exitCode}${details ? `: ${details}` : ""}`);
   }
   const json = result.json;
   if (!json) {

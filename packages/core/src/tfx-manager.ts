@@ -4,8 +4,34 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { Writable } from 'stream';
 import { JsonOutputStream } from './json-output-stream.js';
 import type { IPlatformAdapter } from './platform.js';
+
+class TextCaptureStream extends Writable {
+  public content = '';
+
+  constructor(private readonly lineWriter: (message: string) => void) {
+    super();
+  }
+
+  _write(
+    chunk: Buffer | string,
+    _encoding: string,
+    callback: (error?: Error | null) => void
+  ): void {
+    const text = chunk.toString();
+    this.content += text;
+
+    text.split('\n').forEach((line) => {
+      if (line) {
+        this.lineWriter(line);
+      }
+    });
+
+    callback();
+  }
+}
 
 /**
  * Options for TfxManager
@@ -347,6 +373,19 @@ export class TfxManager {
     return path.join(dir, 'tfx');
   }
 
+  private logCapturedOutput(streamName: 'stdout' | 'stderr', content: string): void {
+    this.platform.debug(`Captured tfx ${streamName}:`);
+    const normalized = content.replace(/\r\n/g, '\n').trim();
+    if (!normalized) {
+      this.platform.debug(`[tfx ${streamName}] <empty>`);
+      return;
+    }
+
+    normalized.split('\n').forEach((line) => {
+      this.platform.debug(`[tfx ${streamName}] ${line}`);
+    });
+  }
+
   /**
    * Execute tfx with given arguments
    * @param args Arguments to pass to tfx
@@ -359,6 +398,8 @@ export class TfxManager {
     // Add JSON output flags if requested
     const finalArgs = [...args];
     let jsonStream: JsonOutputStream | undefined;
+    const stdoutStream = new TextCaptureStream((msg) => this.platform.debug(msg));
+    const stderrStream = new TextCaptureStream((msg) => this.platform.debug(msg));
 
     if (options?.captureJson) {
       // Add tfx flags for JSON output
@@ -374,13 +415,14 @@ export class TfxManager {
     }
 
     // Build exec options
-    const defaultSilent = options?.captureJson ? true : !this.platform.isDebugEnabled();
+    const defaultSilent = !this.platform.isDebugEnabled();
     const execOptions = {
       cwd: options?.cwd,
       env: options?.env,
       silent: options?.silent ?? defaultSilent,
-      outStream: jsonStream,
-      errStream: undefined as NodeJS.WritableStream | undefined,
+      ignoreReturnCode: true,
+      outStream: (jsonStream ?? stdoutStream) as unknown as NodeJS.WritableStream,
+      errStream: stderrStream as unknown as NodeJS.WritableStream,
     };
 
     // Execute tfx
@@ -393,11 +435,21 @@ export class TfxManager {
       parsedJson = jsonStream.parseJson();
     }
 
+    const stdout = jsonStream
+      ? `${jsonStream.messages.join('')}${jsonStream.jsonString}`
+      : stdoutStream.content;
+    const stderr = stderrStream.content;
+
+    if (this.platform.isDebugEnabled()) {
+      this.logCapturedOutput('stdout', stdout);
+      this.logCapturedOutput('stderr', stderr);
+    }
+
     return {
       exitCode,
       json: parsedJson,
-      stdout: jsonStream?.jsonString || '',
-      stderr: '',
+      stdout,
+      stderr,
     };
   }
 }

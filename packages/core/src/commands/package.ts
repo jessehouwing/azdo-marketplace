@@ -187,8 +187,16 @@ export async function packageExtension(
     const result = await tfx.execute(args.build(), { captureJson: true });
 
     if (result.exitCode !== 0) {
+      const details = (result.stderr || result.stdout || '').trim();
       platform.error(`tfx exited with code ${result.exitCode}`);
-      throw new Error(`tfx extension create failed with exit code ${result.exitCode}`);
+      if (details) {
+        platform.debug(`tfx extension create details: ${details}`);
+      }
+      throw new Error(
+        `tfx extension create failed with exit code ${result.exitCode}${
+          details ? `: ${details}` : ''
+        }`
+      );
     }
 
     // Parse JSON result

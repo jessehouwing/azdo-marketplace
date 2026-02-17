@@ -152,7 +152,7 @@ describe('showExtension', () => {
         tfxManager,
         platform
       )
-    ).rejects.toThrow('tfx extension show failed with exit code 1');
+    ).rejects.toThrow('tfx extension show failed with exit code 1: Error');
   });
 
   it('should throw if JSON output missing', async () => {

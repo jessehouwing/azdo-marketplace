@@ -283,7 +283,7 @@ describe('packageExtension', () => {
     });
 
     await expect(packageExtension(withManifestDefaults(), tfxManager, platform)).rejects.toThrow(
-      'tfx extension create failed with exit code 1'
+      'tfx extension create failed with exit code 1: Error message'
     );
 
     // Verify error was logged

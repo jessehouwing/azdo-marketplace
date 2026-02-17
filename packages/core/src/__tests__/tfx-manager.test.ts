@@ -243,7 +243,7 @@ describe('TfxManager', () => {
       expect(platform.execCalls[0].options?.silent).toBe(false);
     });
 
-    it('should keep captureJson executions silent in debug mode by default', async () => {
+    it('should disable silent for captureJson executions in debug mode by default', async () => {
       platform.debugEnabled = true;
       const manager = new TfxManager({
         tfxVersion: 'path',
@@ -252,7 +252,7 @@ describe('TfxManager', () => {
 
       await manager.execute(['extension', 'show'], { captureJson: true });
 
-      expect(platform.execCalls[0].options?.silent).toBe(true);
+      expect(platform.execCalls[0].options?.silent).toBe(false);
     });
 
     it('should honor explicit silent override', async () => {
@@ -293,6 +293,90 @@ describe('TfxManager', () => {
 
       // Check that outStream was provided in exec options
       expect(platform.execCalls[0].options?.outStream).toBeDefined();
+    });
+
+    it('should set ignoreReturnCode to capture failure output', async () => {
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      await manager.execute(['extension', 'create'], { captureJson: true });
+
+      expect(platform.execCalls[0].options?.ignoreReturnCode).toBe(true);
+    });
+
+    it('should capture stderr and stdout output from exec streams', async () => {
+      jest.spyOn(platform, 'exec').mockImplementation(async (_tool, _args, options) => {
+        options?.outStream?.write('stdout-data\n');
+        options?.errStream?.write('stderr-data\n');
+        return 1;
+      });
+
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      const result = await manager.execute(['extension', 'create']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain('stdout-data');
+      expect(result.stderr).toContain('stderr-data');
+    });
+
+    it('should replay captured stdout/stderr to debug logs before returning in debug mode', async () => {
+      platform.debugEnabled = true;
+      jest.spyOn(platform, 'exec').mockImplementation(async (_tool, _args, options) => {
+        options?.outStream?.write('unique-stdout-line\n');
+        options?.errStream?.write('unique-stderr-line\n');
+        return 1;
+      });
+
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      await manager.execute(['extension', 'create']);
+
+      expect(
+        platform.debugMessages.some((m) => m.includes('[tfx stdout] unique-stdout-line'))
+      ).toBe(true);
+      expect(
+        platform.debugMessages.some((m) => m.includes('[tfx stderr] unique-stderr-line'))
+      ).toBe(true);
+    });
+
+    it('should return non-json stdout content when captureJson is enabled', async () => {
+      jest.spyOn(platform, 'exec').mockImplementation(async (_tool, _args, options) => {
+        options?.outStream?.write('non-json-output\n');
+        return 1;
+      });
+
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      const result = await manager.execute(['extension', 'show'], { captureJson: true });
+
+      expect(result.stdout).toContain('non-json-output');
+    });
+
+    it('should log explicit empty markers for stdout/stderr in debug mode when streams are empty', async () => {
+      platform.debugEnabled = true;
+      jest.spyOn(platform, 'exec').mockImplementation(async () => 0);
+
+      const manager = new TfxManager({
+        tfxVersion: 'path',
+        platform,
+      });
+
+      await manager.execute(['extension', 'show'], { captureJson: true });
+
+      expect(platform.debugMessages.some((m) => m.includes('[tfx stdout] <empty>'))).toBe(true);
+      expect(platform.debugMessages.some((m) => m.includes('[tfx stderr] <empty>'))).toBe(true);
     });
   });
 

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json.schemastore.org/vss-extension",
   "manifestVersion": 1,
-  "id": "azdo-marketplace-extension",
+  "id": "azure-pipelines-demo-ping-task",
   "publisher": "jessehouwing",
   "name": "azdo marketplace extension",
   "version": "6.0.0",
@@ -72,6 +72,1486 @@
     {
       "path": "Metadata/Images/permissions.png",
       "addressable": true
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/crc32",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/dateformat",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/glob",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/is-docker",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/is-inside-container",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/mkdirp",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/node-which",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/resolve",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/semver",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/tfx",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/.bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/abort-controller/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/core-auth/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/core-client/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/core-rest-pipeline/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/core-tracing/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/core-util/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/identity/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/logger/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/msal-browser/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/msal-common/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/msal-node/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/msal-node/node_modules/.bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@azure/msal-node/node_modules/uuid/dist/bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@colors/colors/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@nodelib/fs.scandir/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@nodelib/fs.stat/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@nodelib/fs.walk/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@pkgjs/parseargs/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/fs-extra/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/jsonwebtoken/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/mocha/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/node/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/q/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/semver/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@types/uuid/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@typespec/ts-http-runtime/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/@typespec/ts-http-runtime/node_modules/https-proxy-agent/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/abort-controller/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/adm-zip/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/agent-base/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/ansi-regex/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/ansi-styles/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/app-root-path/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver-utils/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver-utils/node_modules/.bin/glob",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver-utils/node_modules/brace-expansion/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver-utils/node_modules/glob/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver-utils/node_modules/lru-cache/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/archiver-utils/node_modules/minimatch/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/array-buffer-byte-length/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/array.prototype.reduce/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/arraybuffer.prototype.slice/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/async/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/async-function/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/async-mutex/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/available-typed-arrays/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-devops-node-api/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-task-lib/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-artifacts-common/node_modules/.bin/semver",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-artifacts-common/node_modules/azure-devops-node-api/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-artifacts-common/node_modules/semver/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-azure-arm-rest/node_modules/@types/node/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-azure-arm-rest/node_modules/azure-devops-node-api/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-azure-arm-rest/node_modules/azure-devops-node-api/node_modules/typed-rest-client/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tasks-azure-arm-rest/node_modules/typed-rest-client/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/.bin/shjs",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/azure-pipelines-task-lib/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/glob/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/glob/node_modules/minimatch/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/shelljs/bin/shjs",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/shelljs/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/azure-pipelines-tool-lib/node_modules/typed-rest-client/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/b4a/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/bare-events/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/base64-js/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/brace-expansion/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/braces/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/buffer-crc32/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/bundle-name/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/call-bind/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/call-bind-apply-helpers/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/call-bound/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/fallbacks/linux/xsel",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/execa/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/get-stream/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/human-signals/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/is-stream/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/mimic-fn/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/npm-run-path/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/onetime/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/path-key/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/clipboardy/node_modules/strip-final-newline/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/color-convert/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/color-name/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/colors/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/compress-commons/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/concat-map/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/core-util-is/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/crc-32/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/crc32-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/cross-spawn/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/data-view-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/data-view-byte-length/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/data-view-byte-offset/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/dateformat/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/debug/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/default-browser/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/default-browser-id/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/define-data-property/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/define-lazy-prop/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/define-properties/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/dunder-proto/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/ecdsa-sig-formatter/CODEOWNERS",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/ecdsa-sig-formatter/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-abstract/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-array-method-boxes-properly/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-define-property/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-errors/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-object-atoms/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-set-tostringtag/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/es-to-primitive/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/event-target-shim/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/events/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/events-universal/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/execa/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/eyes/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/eyes/Makefile",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/fast-fifo/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/fast-glob/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/fastq/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/fill-range/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/follow-redirects/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/for-each/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/foreground-child/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/fs-extra/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/fs.realpath/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/function-bind/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/function.prototype.name/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/functions-have-names/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/get-intrinsic/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/get-proto/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/get-stdin/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/get-stream/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/get-symbol-description/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/glob/node_modules/brace-expansion/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/glob-parent/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/globalthis/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/gopd/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/graceful-fs/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/has-bigints/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/has-property-descriptors/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/has-proto/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/has-symbols/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/has-tostringtag/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/hasown/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/http-proxy-agent/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/human-signals/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/ieee754/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/inflight/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/inherits/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/internal-slot/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/interpret/CHANGELOG",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/interpret/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-array-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-async-function/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-bigint/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-boolean-object/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-callable/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-core-module/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-data-view/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-date-object/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-docker/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-extglob/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-finalizationregistry/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-fullwidth-code-point/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-generator-function/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-glob/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-inside-container/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-map/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-negative-zero/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-number/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-number-object/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-regex/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-set/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-shared-array-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-stream/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-string/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-symbol/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-typed-array/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-weakmap/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-weakref/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-weakset/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is-wsl/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/is64bit/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/isarray/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/isexe/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jju/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jju/Makefile",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jsonfile/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jsonwebtoken/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jsonwebtoken/node_modules/.bin/semver",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jsonwebtoken/node_modules/semver/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jszip/node_modules/isarray/Makefile",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jszip/node_modules/readable-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jszip/node_modules/safe-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jszip/node_modules/string_decoder/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jwa/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/jws/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lazystream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lazystream/node_modules/isarray/Makefile",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lazystream/node_modules/readable-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lazystream/node_modules/safe-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lazystream/node_modules/string_decoder/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.includes/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.isboolean/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.isinteger/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.isnumber/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.isplainobject/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.isstring/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/lodash.once/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/math-intrinsics/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/meow/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/merge-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/merge2/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/micromatch/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/mime-db/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/mime-types/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/mimic-fn/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/minimalistic-assert/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/minimatch/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/minimist/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/minipass/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/mkdirp/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv1/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv1/node_modules/.bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv1/node_modules/@azure/msal-common/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv1/node_modules/uuid/dist/bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv2/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv2/node_modules/.bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv2/node_modules/@azure/msal-common/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv2/node_modules/uuid/dist/bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv3/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv3/node_modules/.bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/msalv3/node_modules/uuid/dist/bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/mute-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/normalize-path/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/npm-run-path/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/object-inspect/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/object-keys/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/object.assign/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/object.getownpropertydescriptors/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/once/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/onetime/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/open/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/open/xdg-open",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/os-homedir/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/own-keys/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/pako/lib/zlib/README",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/pako/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/path-is-absolute/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/path-key/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/path-parse/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/picomatch/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/possible-typed-array-names/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/process/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/prompt/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/prompt/node_modules/async/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/q/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/queue-microtask/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/read/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/readable-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/readdir-glob/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/readdir-glob/node_modules/brace-expansion/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/readdir-glob/node_modules/minimatch/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/rechoir/CHANGELOG",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/rechoir/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/reflect.getprototypeof/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/regexp.prototype.flags/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/resolve/bin/resolve",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/resolve/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/reusify/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/revalidator/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/run-applescript/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/run-parallel/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/safe-array-concat/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/safe-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/safe-push-apply/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/safe-regex-test/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/sanitize-filename/AUTHORS",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/semver/bin/semver",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/semver/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/semver-compare/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/set-function-length/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/set-function-name/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/set-proto/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/shebang-command/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/shebang-regex/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/shelljs/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/side-channel/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/side-channel-list/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/side-channel-map/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/side-channel-weakmap/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/stack-trace/License",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/stack-trace/Makefile",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/stop-iteration-iterator/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/streamx/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string-width/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string-width-cjs/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string-width-cjs/node_modules/ansi-regex/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string-width-cjs/node_modules/strip-ansi/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string.prototype.trim/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string.prototype.trimend/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string.prototype.trimstart/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/string_decoder/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/strip-ansi/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/strip-ansi-cjs/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/strip-ansi-cjs/node_modules/ansi-regex/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/strip-final-newline/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/supports-preserve-symlinks-flag/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/system-architecture/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tar-stream/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/text-decoder/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tfx-cli/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tfx-cli/node_modules/.bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tfx-cli/node_modules/azure-devops-node-api/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tfx-cli/node_modules/uuid/dist-node/bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tfx-cli/node_modules/xml2js/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tmp/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/to-regex-range/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/truncate-utf8-bytes/AUTHORS",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/tunnel/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/typed-array-buffer/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/typed-array-byte-length/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/typed-array-byte-offset/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/typed-array-length/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/typed-rest-client/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/unbox-primitive/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/underscore/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/universalify/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/utf8-byte-length/AUTHORS",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/util-deprecate/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/util.promisify/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/uuid/AUTHORS",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/uuid/bin/uuid",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/validator/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/which/bin/node-which",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/which/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/which-boxed-primitive/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/which-builtin-type/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/which-collection/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/which-typed-array/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/winston/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/winston/node_modules/async/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrap-ansi/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrap-ansi-cjs/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrap-ansi-cjs/node_modules/ansi-regex/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrap-ansi-cjs/node_modules/ansi-styles/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrap-ansi-cjs/node_modules/string-width/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrap-ansi-cjs/node_modules/strip-ansi/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wrappy/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/wsl-utils/license",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/xml2js/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/xmlbuilder/LICENSE",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "packages/azdo-task/dist/node_modules/zip-stream/LICENSE",
+      "contentType": "application/octet-stream"
     }
   ],
   "contributions": [
