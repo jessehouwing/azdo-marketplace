@@ -59,14 +59,14 @@ When creating a PAT for pipeline automation, include at least the following scop
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace@v6
-	id: publish
-	with:
-		operation: publish
-		auth-type: pat
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		manifest-file: vss-extension.json
+  id: publish
+  with:
+    operation: publish
+    auth-type: pat
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    manifest-file: vss-extension.json
 
 - run: echo "VSIX: ${{ steps.publish.outputs.vsix-path }}"
 ```
@@ -120,11 +120,11 @@ When creating a PAT for pipeline automation, include at least the following scop
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/package@v6
-	id: package
-	with:
-		publisher-id: my-publisher
-		extension-id: my-extension
-		manifest-file: vss-extension.json
+  id: package
+  with:
+    publisher-id: my-publisher
+    extension-id: my-extension
+    manifest-file: vss-extension.json
 
 - run: echo "Packaged: ${{ steps.package.outputs.vsix-path }}"
 ```
@@ -133,65 +133,65 @@ When creating a PAT for pipeline automation, include at least the following scop
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/publish@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		manifest-file: vss-extension.json
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    manifest-file: vss-extension.json
 ```
 
 ### install
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/install@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		accounts: myorg
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: myorg
 ```
 
 ### share
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/share@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		accounts: customer-org
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: customer-org
 ```
 
 ### unshare
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/unshare@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		accounts: old-customer-org
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: old-customer-org
 ```
 
 ### unpublish
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/unpublish@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
 ```
 
 ### show
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/show@v6
-	id: show
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
+  id: show
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
 
 - run: echo '${{ steps.show.outputs.extension-metadata }}'
 ```
@@ -200,12 +200,12 @@ When creating a PAT for pipeline automation, include at least the following scop
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/query-version@v6
-	id: query
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		version-action: Patch
+  id: query
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    version-action: Patch
 
 - run: echo "Next: ${{ steps.query.outputs.proposed-version }}"
 ```
@@ -214,23 +214,23 @@ When creating a PAT for pipeline automation, include at least the following scop
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		max-retries: '10'
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    max-retries: '10'
 ```
 
 ### wait-for-installation
 
 ```yaml
 - uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
-	with:
-		token: ${{ secrets.MARKETPLACE_TOKEN }}
-		publisher-id: my-publisher
-		extension-id: my-extension
-		accounts: myorg
-		manifest-file: vss-extension.json
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: my-publisher
+    extension-id: my-extension
+    accounts: myorg
+    manifest-file: vss-extension.json
 ```
 
 ## Contribute
