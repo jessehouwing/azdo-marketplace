@@ -3395,6 +3395,9 @@ var init_filesystem_manifest_writer = __esm({
         if (manifestMods.galleryFlags) {
           overrides.galleryFlags = manifestMods.galleryFlags;
         }
+        if (typeof manifestMods.public === "boolean") {
+          overrides.public = manifestMods.public;
+        }
         const tempDir = this.platform.getTempDir();
         await mkdir(tempDir, { recursive: true });
         this.overridesPath = path4.join(tempDir, `overrides-${Date.now()}.json`);
@@ -3560,6 +3563,7 @@ var init_manifest_editor = __esm({
         } else if (visibility === "private_preview") {
           flags.push("Private", "Preview");
         }
+        this.manifestModifications.public = visibility === "public" || visibility === "public_preview";
         return this;
       }
       /**

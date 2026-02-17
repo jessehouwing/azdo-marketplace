@@ -520,6 +520,10 @@ export class FilesystemManifestWriter {
       overrides.galleryFlags = manifestMods.galleryFlags;
     }
 
+    if (typeof (manifestMods as { public?: unknown }).public === 'boolean') {
+      overrides.public = (manifestMods as { public?: boolean }).public;
+    }
+
     // Write to temp directory
     const tempDir = this.platform.getTempDir();
     await mkdir(tempDir, { recursive: true });

@@ -344,11 +344,16 @@ describe('ManifestEditor.applyOptions()', () => {
     const testCases: Array<{
       visibility: 'public' | 'private' | 'public_preview' | 'private_preview';
       expectedFlags: string[];
+      expectedPublic: boolean;
     }> = [
-      { visibility: 'public', expectedFlags: ['Public'] },
-      { visibility: 'private', expectedFlags: ['Private'] },
-      { visibility: 'public_preview', expectedFlags: ['Public', 'Preview'] },
-      { visibility: 'private_preview', expectedFlags: ['Private', 'Preview'] },
+      { visibility: 'public', expectedFlags: ['Public'], expectedPublic: true },
+      { visibility: 'private', expectedFlags: ['Private'], expectedPublic: false },
+      { visibility: 'public_preview', expectedFlags: ['Public', 'Preview'], expectedPublic: true },
+      {
+        visibility: 'private_preview',
+        expectedFlags: ['Private', 'Preview'],
+        expectedPublic: false,
+      },
     ];
 
     for (const testCase of testCases) {
@@ -362,6 +367,7 @@ describe('ManifestEditor.applyOptions()', () => {
       for (const flag of testCase.expectedFlags) {
         expect(mods.galleryFlags).toContain(flag);
       }
+      expect((mods as { public?: boolean }).public).toBe(testCase.expectedPublic);
     }
 
     await reader.close();

@@ -289,6 +289,7 @@ describe('FilesystemManifestWriter', () => {
 
       expect(overrides.galleryFlags).toContain('Public');
       expect(overrides.galleryFlags).toContain('Free');
+      expect(overrides.public).toBe(true);
 
       await writer.close();
       await reader.close();

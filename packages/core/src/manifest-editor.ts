@@ -237,6 +237,10 @@ export class ManifestEditor {
       flags.push('Private', 'Preview');
     }
 
+    // Keep legacy vss-extension.json field in sync for compatibility.
+    (this.manifestModifications as { public?: boolean }).public =
+      visibility === 'public' || visibility === 'public_preview';
+
     return this;
   }
 
