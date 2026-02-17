@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { createWriteStream } from 'fs';
-import { promises as fs } from 'fs';
+import { createWriteStream, promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import yazl from 'yazl';
@@ -359,57 +358,6 @@ describe('publishExtension', () => {
     });
   });
 
-  describe('sharing', () => {
-    it('should share with specified organizations', async () => {
-      const mockExecute = jest.spyOn(tfxManager, 'execute');
-      mockExecute.mockResolvedValue({
-        exitCode: 0,
-        json: { published: true, packaged: '/out/ext.vsix' },
-        stdout: '',
-        stderr: '',
-      });
-
-      await publishExtension(
-        withManifestDefaults({
-          shareWith: ['org1', 'org2'],
-          extensionVisibility: 'private',
-        }),
-        auth,
-        tfxManager,
-        platform
-      );
-
-      const callArgs = mockExecute.mock.calls[0][0];
-      expect(callArgs).toContain('--share-with');
-      expect(callArgs).toContain('org1');
-      expect(callArgs).toContain('org2');
-    });
-
-    it('should not share public extensions', async () => {
-      const mockExecute = jest.spyOn(tfxManager, 'execute');
-      mockExecute.mockResolvedValue({
-        exitCode: 0,
-        json: { published: true, packaged: '/out/ext.vsix' },
-        stdout: '',
-        stderr: '',
-      });
-
-      await publishExtension(
-        withManifestDefaults({
-          shareWith: ['org1'],
-          extensionVisibility: 'public',
-        }),
-        auth,
-        tfxManager,
-        platform
-      );
-
-      const callArgs = mockExecute.mock.calls[0][0];
-      expect(callArgs).not.toContain('--share-with');
-      expect(platform.warningMessages.some((m) => m.includes('public extensions'))).toBe(true);
-    });
-  });
-
   describe('flags', () => {
     it('should include no-wait-validation flag', async () => {
       const mockExecute = jest.spyOn(tfxManager, 'execute');
@@ -534,7 +482,7 @@ describe('publishExtension', () => {
         rootFolder: root,
         manifestGlobs: ['vss-extension.json'],
         extensionVersion: '2.0.0',
-        updateTasksVersion: true,
+        updateTasksVersion: 'major',
       }),
       auth,
       tfxManager,

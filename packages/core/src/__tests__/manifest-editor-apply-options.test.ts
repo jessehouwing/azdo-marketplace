@@ -187,8 +187,7 @@ describe('ManifestEditor.applyOptions()', () => {
 
     await editor.applyOptions({
       extensionVersion: '2.3.4',
-      updateTasksVersion: true,
-      updateTasksVersionType: 'major',
+      updateTasksVersion: 'major',
     });
 
     const taskMods = editor.getTaskManifestModifications();
@@ -210,8 +209,7 @@ describe('ManifestEditor.applyOptions()', () => {
 
     await editor.applyOptions({
       extensionVersion: '3.0.0',
-      updateTasksVersion: true,
-      // No updateTasksVersionType specified
+      updateTasksVersion: 'major',
     });
 
     const taskMods = editor.getTaskManifestModifications();
@@ -258,8 +256,7 @@ describe('ManifestEditor.applyOptions()', () => {
       extensionVersion: '2.0.0',
       extensionName: 'New Name',
       extensionVisibility: 'private',
-      updateTasksVersion: true,
-      updateTasksVersionType: 'minor',
+      updateTasksVersion: 'minor',
       updateTasksId: true,
     });
 
@@ -302,7 +299,7 @@ describe('ManifestEditor.applyOptions()', () => {
     const editor = ManifestEditor.fromReader(reader);
 
     await editor.applyOptions({
-      updateTasksVersion: true,
+      updateTasksVersion: 'major',
       // No extensionVersion provided
     });
 

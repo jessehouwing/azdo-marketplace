@@ -361,8 +361,7 @@ describe('packageExtension', () => {
         rootFolder: root,
         manifestGlobs: ['vss-extension.json'],
         extensionVersion: '2.0.0',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'major',
+        updateTasksVersion: 'major',
       },
       tfxManager,
       platform
@@ -383,7 +382,7 @@ describe('packageExtension', () => {
           rootFolder: join(tmpdir(), 'missing-manifest-folder'),
           manifestGlobs: ['vss-extension.json'],
           extensionVersion: '2.0.0',
-          updateTasksVersion: true,
+          updateTasksVersion: 'major',
         },
         tfxManager,
         platform

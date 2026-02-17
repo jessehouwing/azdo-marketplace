@@ -42,8 +42,7 @@ export interface ApplyManifestOptions {
   extensionPricing?: 'free' | 'paid' | 'trial';
 
   // Task updates
-  updateTasksVersion?: boolean;
-  updateTasksVersionType?: 'major' | 'minor' | 'patch';
+  updateTasksVersion?: 'none' | 'major' | 'minor' | 'patch';
   updateTasksId?: boolean;
 
   // Manifest file updates
@@ -140,9 +139,12 @@ export class ManifestEditor {
     }
 
     // Apply task updates
-    if (options.updateTasksVersion && options.extensionVersion) {
-      const versionType = options.updateTasksVersionType || 'major';
-      await this.updateAllTaskVersions(options.extensionVersion, versionType);
+    if (
+      options.updateTasksVersion &&
+      options.updateTasksVersion !== 'none' &&
+      options.extensionVersion
+    ) {
+      await this.updateAllTaskVersions(options.extensionVersion, options.updateTasksVersion);
     }
 
     if (options.updateTasksId) {

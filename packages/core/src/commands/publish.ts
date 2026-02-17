@@ -23,6 +23,7 @@ export interface PublishOptions {
 
   // Manifest source (when publishSource = 'manifest')
   rootFolder?: string;
+  localizationRoot?: string;
   manifestGlobs?: string[];
   overridesFile?: string;
 
@@ -38,12 +39,8 @@ export interface PublishOptions {
   extensionPricing?: 'free' | 'paid' | 'trial';
 
   // Task patching
-  updateTasksVersion?: boolean;
-  updateTasksVersionType?: 'major' | 'minor' | 'patch';
+  updateTasksVersion?: 'none' | 'major' | 'minor' | 'patch';
   updateTasksId?: boolean;
-
-  // Sharing
-  shareWith?: string[]; // Array of organization names to share with
 
   // Behavior
   noWaitValidation?: boolean;
@@ -78,20 +75,6 @@ async function executeTfxPublish(
   options: PublishOptions,
   publishedVsixPath?: string
 ): Promise<PublishResult> {
-  // Sharing
-  if (options.shareWith && options.shareWith.length > 0) {
-    // Only share if extension is not public
-    const isPublic =
-      options.extensionVisibility === 'public' || options.extensionVisibility === 'public_preview';
-
-    if (isPublic) {
-      platform.warning('Ignoring shareWith - not available for public extensions');
-    } else {
-      args.flag('--share-with');
-      options.shareWith.forEach((org) => args.arg(org));
-    }
-  }
-
   // Flags
   if (options.noWaitValidation) {
     args.flag('--no-wait-validation');
@@ -211,6 +194,10 @@ export async function publishExtension(
       args.option('--root', options.rootFolder);
     }
 
+    if (options.localizationRoot) {
+      args.option('--loc-root', options.localizationRoot);
+    }
+
     if (options.manifestGlobs && options.manifestGlobs.length > 0) {
       args.flag('--manifest-globs');
       options.manifestGlobs.forEach((glob) => args.arg(glob));
@@ -250,7 +237,7 @@ export async function publishExtension(
     const synchronizeBinaryFileEntries = true;
 
     if (
-      options.updateTasksVersion ||
+      (options.updateTasksVersion && options.updateTasksVersion !== 'none') ||
       options.updateTasksId ||
       options.extensionPricing ||
       synchronizeBinaryFileEntries
@@ -282,7 +269,6 @@ export async function publishExtension(
           extensionVisibility: options.extensionVisibility,
           extensionPricing: options.extensionPricing,
           updateTasksVersion: options.updateTasksVersion,
-          updateTasksVersionType: options.updateTasksVersionType,
           updateTasksId: options.updateTasksId,
           synchronizeBinaryFileEntries,
         });
@@ -339,7 +325,7 @@ export async function publishExtension(
       options.extensionName ||
       options.extensionVisibility ||
       options.extensionPricing ||
-      options.updateTasksVersion ||
+      (options.updateTasksVersion && options.updateTasksVersion !== 'none') ||
       options.updateTasksId;
 
     let vsixPathToPublish = options.vsixFile;
@@ -360,7 +346,6 @@ export async function publishExtension(
         extensionVisibility: options.extensionVisibility,
         extensionPricing: options.extensionPricing,
         updateTasksVersion: options.updateTasksVersion,
-        updateTasksVersionType: options.updateTasksVersionType,
         updateTasksId: options.updateTasksId,
       });
 

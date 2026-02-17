@@ -3480,9 +3480,8 @@ var init_manifest_editor = __esm({
         if (options.extensionPricing) {
           this.setPricing(options.extensionPricing);
         }
-        if (options.updateTasksVersion && options.extensionVersion) {
-          const versionType = options.updateTasksVersionType || "major";
-          await this.updateAllTaskVersions(options.extensionVersion, versionType);
+        if (options.updateTasksVersion && options.updateTasksVersion !== "none" && options.extensionVersion) {
+          await this.updateAllTaskVersions(options.extensionVersion, options.updateTasksVersion);
         }
         if (options.updateTasksId) {
           await this.updateAllTaskIds();
@@ -5273,6 +5272,9 @@ async function packageExtension(options, tfx, platform) {
   if (options.rootFolder) {
     args.option("--root", options.rootFolder);
   }
+  if (options.localizationRoot) {
+    args.option("--loc-root", options.localizationRoot);
+  }
   if (options.manifestGlobs && options.manifestGlobs.length > 0) {
     args.flag("--manifest-globs");
     options.manifestGlobs.forEach((glob) => args.arg(glob));
@@ -5298,7 +5300,7 @@ async function packageExtension(options, tfx, platform) {
   }
   let cleanupWriter = null;
   const synchronizeBinaryFileEntries = true;
-  const shouldApplyManifestOptions = options.updateTasksVersion || options.updateTasksId || options.extensionVersion || options.extensionName || options.extensionVisibility || options.extensionPricing || synchronizeBinaryFileEntries;
+  const shouldApplyManifestOptions = options.updateTasksVersion && options.updateTasksVersion !== "none" || options.updateTasksId || options.extensionVersion || options.extensionName || options.extensionVisibility || options.extensionPricing || synchronizeBinaryFileEntries;
   if (shouldApplyManifestOptions) {
     platform.info("Updating task manifests before packaging...");
     try {
@@ -5318,7 +5320,6 @@ async function packageExtension(options, tfx, platform) {
         extensionVisibility: options.extensionVisibility,
         extensionPricing: options.extensionPricing,
         updateTasksVersion: options.updateTasksVersion,
-        updateTasksVersionType: options.updateTasksVersionType,
         updateTasksId: options.updateTasksId,
         synchronizeBinaryFileEntries
       });
@@ -5369,15 +5370,6 @@ async function packageExtension(options, tfx, platform) {
 init_manifest_editor();
 init_vsix_reader();
 async function executeTfxPublish(tfx, args, platform, options, publishedVsixPath) {
-  if (options.shareWith && options.shareWith.length > 0) {
-    const isPublic = options.extensionVisibility === "public" || options.extensionVisibility === "public_preview";
-    if (isPublic) {
-      platform.warning("Ignoring shareWith - not available for public extensions");
-    } else {
-      args.flag("--share-with");
-      options.shareWith.forEach((org) => args.arg(org));
-    }
-  }
   if (options.noWaitValidation) {
     args.flag("--no-wait-validation");
   }
@@ -5448,6 +5440,9 @@ async function publishExtension(options, auth, tfx, platform) {
     if (options.rootFolder) {
       args.option("--root", options.rootFolder);
     }
+    if (options.localizationRoot) {
+      args.option("--loc-root", options.localizationRoot);
+    }
     if (options.manifestGlobs && options.manifestGlobs.length > 0) {
       args.flag("--manifest-globs");
       options.manifestGlobs.forEach((glob) => args.arg(glob));
@@ -5473,7 +5468,7 @@ async function publishExtension(options, auth, tfx, platform) {
     }
     let cleanupWriter = null;
     const synchronizeBinaryFileEntries = true;
-    if (options.updateTasksVersion || options.updateTasksId || options.extensionPricing || synchronizeBinaryFileEntries) {
+    if (options.updateTasksVersion && options.updateTasksVersion !== "none" || options.updateTasksId || options.extensionPricing || synchronizeBinaryFileEntries) {
       platform.info("Updating task manifests before publishing...");
       try {
         const { FilesystemManifestReader: FilesystemManifestReader2 } = await Promise.resolve().then(() => (init_filesystem_manifest_reader(), filesystem_manifest_reader_exports));
@@ -5494,7 +5489,6 @@ async function publishExtension(options, auth, tfx, platform) {
           extensionVisibility: options.extensionVisibility,
           extensionPricing: options.extensionPricing,
           updateTasksVersion: options.updateTasksVersion,
-          updateTasksVersionType: options.updateTasksVersionType,
           updateTasksId: options.updateTasksId,
           synchronizeBinaryFileEntries
         });
@@ -5530,7 +5524,7 @@ async function publishExtension(options, auth, tfx, platform) {
     if (!fileExists) {
       throw new Error(`VSIX file not found: ${options.vsixFile}`);
     }
-    const needsModification = options.publisherId || options.extensionId || options.extensionVersion || options.extensionName || options.extensionVisibility || options.extensionPricing || options.updateTasksVersion || options.updateTasksId;
+    const needsModification = options.publisherId || options.extensionId || options.extensionVersion || options.extensionName || options.extensionVisibility || options.extensionPricing || options.updateTasksVersion && options.updateTasksVersion !== "none" || options.updateTasksId;
     let vsixPathToPublish = options.vsixFile;
     if (needsModification) {
       platform.info("Modifying VSIX before publishing...");
@@ -5544,7 +5538,6 @@ async function publishExtension(options, auth, tfx, platform) {
         extensionVisibility: options.extensionVisibility,
         extensionPricing: options.extensionPricing,
         updateTasksVersion: options.updateTasksVersion,
-        updateTasksVersionType: options.updateTasksVersionType,
         updateTasksId: options.updateTasksId
       });
       const writer = await editor.toWriter();
@@ -7288,16 +7281,31 @@ async function run() {
     core6.setFailed(message);
   }
 }
+function getUpdateTasksVersionMode(platform) {
+  const value = platform.getInput("update-tasks-version");
+  if (!value) {
+    return void 0;
+  }
+  if (value === "none" || value === "major" || value === "minor" || value === "patch") {
+    return value;
+  }
+  throw new Error(
+    `Invalid update-tasks-version value '${value}'. Expected one of: none, major, minor, patch.`
+  );
+}
 async function runPackage(platform, tfxManager) {
+  const extensionPricingInput = platform.getInput("extension-pricing");
   const options = {
     rootFolder: platform.getInput("root-folder"),
+    localizationRoot: platform.getInput("localization-root"),
     manifestGlobs: platform.getDelimitedInput("manifest-globs", "\n"),
     publisherId: platform.getInput("publisher-id"),
     extensionId: platform.getInput("extension-id"),
     extensionVersion: platform.getInput("extension-version"),
     extensionName: platform.getInput("extension-name"),
     extensionVisibility: platform.getInput("extension-visibility"),
-    updateTasksVersion: platform.getBoolInput("update-tasks-version"),
+    extensionPricing: extensionPricingInput && extensionPricingInput !== "default" ? extensionPricingInput : void 0,
+    updateTasksVersion: getUpdateTasksVersionMode(platform),
     updateTasksId: platform.getBoolInput("update-tasks-id"),
     outputPath: platform.getInput("output-path"),
     bypassValidation: platform.getBoolInput("bypass-validation"),
@@ -7310,21 +7318,23 @@ async function runPackage(platform, tfxManager) {
 }
 async function runPublish(platform, tfxManager, auth) {
   const publishSource = platform.getInput("publish-source", true);
+  const extensionPricingInput = platform.getInput("extension-pricing");
   const result = await publishExtension(
     {
       publishSource,
       vsixFile: publishSource === "vsix" ? platform.getInput("vsix-file", true) : void 0,
       manifestGlobs: publishSource === "manifest" ? platform.getDelimitedInput("manifest-globs", "\n", true) : void 0,
       rootFolder: publishSource === "manifest" ? platform.getInput("root-folder") : void 0,
+      localizationRoot: publishSource === "manifest" ? platform.getInput("localization-root") : void 0,
       publisherId: platform.getInput("publisher-id"),
       extensionId: platform.getInput("extension-id"),
       extensionVersion: platform.getInput("extension-version"),
       extensionName: platform.getInput("extension-name"),
       extensionVisibility: platform.getInput("extension-visibility"),
-      shareWith: platform.getDelimitedInput("share-with", "\n"),
+      extensionPricing: extensionPricingInput && extensionPricingInput !== "default" ? extensionPricingInput : void 0,
       noWaitValidation: platform.getBoolInput("no-wait-validation"),
       bypassValidation: platform.getBoolInput("bypass-validation"),
-      updateTasksVersion: platform.getBoolInput("update-tasks-version"),
+      updateTasksVersion: getUpdateTasksVersionMode(platform),
       updateTasksId: platform.getBoolInput("update-tasks-id")
     },
     auth,

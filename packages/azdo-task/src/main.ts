@@ -1,5 +1,7 @@
 import {
+  AuthCredentials,
   installExtension,
+  normalizeAccountToServiceUrl,
   packageExtension,
   publishExtension,
   queryVersion,
@@ -18,8 +20,6 @@ import {
   validateVersion,
   waitForInstallation,
   waitForValidation,
-  normalizeAccountToServiceUrl,
-  AuthCredentials,
 } from '@extension-tasks/core';
 import * as tl from 'azure-pipelines-task-lib/task.js';
 import { ConnectionType, getAuth } from './auth/index.js';
@@ -165,11 +165,29 @@ async function run(): Promise<void> {
   }
 }
 
+function getUpdateTasksVersionMode(
+  platform: AzdoAdapter
+): 'none' | 'major' | 'minor' | 'patch' | undefined {
+  const value = platform.getInput('updateTasksVersion');
+  if (!value) {
+    return undefined;
+  }
+
+  if (value === 'none' || value === 'major' || value === 'minor' || value === 'patch') {
+    return value;
+  }
+
+  throw new Error(
+    `Invalid updateTasksVersion value '${value}'. Expected one of: none, major, minor, patch.`
+  );
+}
+
 async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promise<void> {
   const extensionPricingInput = platform.getInput('extensionPricing');
 
   const options = {
     rootFolder: platform.getInput('rootFolder'),
+    localizationRoot: platform.getInput('localizationRoot'),
     manifestGlobs: platform.getDelimitedInput('manifestGlobs', '\n'),
     publisherId: platform.getInput('publisherId'),
     extensionId: platform.getInput('extensionId'),
@@ -185,12 +203,7 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
       extensionPricingInput && extensionPricingInput !== 'default'
         ? (extensionPricingInput as 'free' | 'paid' | 'trial')
         : undefined,
-    updateTasksVersion: platform.getBoolInput('updateTasksVersion'),
-    updateTasksVersionType: platform.getInput('updateTasksVersionType') as
-      | 'major'
-      | 'minor'
-      | 'patch'
-      | undefined,
+    updateTasksVersion: getUpdateTasksVersionMode(platform),
     updateTasksId: platform.getBoolInput('updateTasksId'),
     outputPath: platform.getInput('outputPath'),
     bypassValidation: platform.getBoolInput('bypassValidation'),
@@ -221,6 +234,8 @@ async function runPublish(
           ? platform.getDelimitedInput('manifestGlobs', '\n', true)
           : undefined,
       rootFolder: publishSource === 'manifest' ? platform.getInput('rootFolder') : undefined,
+      localizationRoot:
+        publishSource === 'manifest' ? platform.getInput('localizationRoot') : undefined,
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       extensionVersion: platform.getInput('extensionVersion'),
@@ -235,15 +250,9 @@ async function runPublish(
         extensionPricingInput && extensionPricingInput !== 'default'
           ? (extensionPricingInput as 'free' | 'paid' | 'trial')
           : undefined,
-      shareWith: platform.getDelimitedInput('shareWith', '\n'),
       noWaitValidation: platform.getBoolInput('noWaitValidation'),
       bypassValidation: platform.getBoolInput('bypassValidation'),
-      updateTasksVersion: platform.getBoolInput('updateTasksVersion'),
-      updateTasksVersionType: platform.getInput('updateTasksVersionType') as
-        | 'major'
-        | 'minor'
-        | 'patch'
-        | undefined,
+      updateTasksVersion: getUpdateTasksVersionMode(platform),
       updateTasksId: platform.getBoolInput('updateTasksId'),
     },
     auth,
@@ -263,8 +272,9 @@ async function runUnpublish(
 ): Promise<void> {
   await unpublishExtension(
     {
-      publisherId: platform.getInput('publisherId', true),
-      extensionId: platform.getInput('extensionId', true),
+      publisherId: platform.getInput('publisherId'),
+      extensionId: platform.getInput('extensionId'),
+      vsixPath: platform.getInput('vsixPath'),
     },
     auth,
     tfxManager,
@@ -279,8 +289,9 @@ async function runShare(
 ): Promise<void> {
   await shareExtension(
     {
-      publisherId: platform.getInput('publisherId', true),
-      extensionId: platform.getInput('extensionId', true),
+      publisherId: platform.getInput('publisherId'),
+      extensionId: platform.getInput('extensionId'),
+      vsixPath: platform.getInput('vsixPath'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -298,8 +309,9 @@ async function runUnshare(
 ): Promise<void> {
   await unshareExtension(
     {
-      publisherId: platform.getInput('publisherId', true),
-      extensionId: platform.getInput('extensionId', true),
+      publisherId: platform.getInput('publisherId'),
+      extensionId: platform.getInput('extensionId'),
+      vsixPath: platform.getInput('vsixPath'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -317,8 +329,9 @@ async function runInstall(
 ): Promise<void> {
   const result = await installExtension(
     {
-      publisherId: platform.getInput('publisherId', true),
-      extensionId: platform.getInput('extensionId', true),
+      publisherId: platform.getInput('publisherId'),
+      extensionId: platform.getInput('extensionId'),
+      vsixPath: platform.getInput('vsixPath'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
     auth,
@@ -400,8 +413,9 @@ async function runWaitForValidation(
 ): Promise<void> {
   const result = await waitForValidation(
     {
-      publisherId: platform.getInput('publisherId', true),
-      extensionId: platform.getInput('extensionId', true),
+      publisherId: platform.getInput('publisherId'),
+      extensionId: platform.getInput('extensionId'),
+      vsixPath: platform.getInput('vsixPath'),
       rootFolder: platform.getInput('rootFolder'),
       manifestGlobs: platform.getDelimitedInput('manifestGlobs', '\n'),
       maxRetries: parseInt(platform.getInput('maxRetries') || '10'),

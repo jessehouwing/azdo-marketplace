@@ -165,9 +165,9 @@ describe('Azure DevOps main entrypoint', () => {
         extensionName: 'Name',
         extensionVisibility: 'private_preview',
         extensionPricing: 'free',
+        updateTasksVersion: 'major',
       },
       boolInputs: {
-        updateTasksVersion: true,
         updateTasksId: true,
       },
       delimitedInputs: {
@@ -186,8 +186,7 @@ describe('Azure DevOps main entrypoint', () => {
         extensionName: 'Name',
         extensionVisibility: 'private_preview',
         extensionPricing: 'free',
-        updateTasksVersion: true,
-        updateTasksVersionType: undefined,
+        updateTasksVersion: 'major',
         updateTasksId: true,
       }),
       expect.anything(),
@@ -273,10 +272,9 @@ describe('Azure DevOps main entrypoint', () => {
         rootFolder: '/repo',
         extensionVisibility: 'public_preview',
         extensionPricing: 'paid',
-        updateTasksVersionType: 'patch',
+        updateTasksVersion: 'patch',
       },
       boolInputs: {
-        updateTasksVersion: true,
         updateTasksId: true,
       },
       delimitedInputs: {
@@ -293,8 +291,7 @@ describe('Azure DevOps main entrypoint', () => {
         rootFolder: '/repo',
         extensionVisibility: 'public_preview',
         extensionPricing: 'paid',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'patch',
+        updateTasksVersion: 'patch',
         updateTasksId: true,
       }),
       expect.anything(),

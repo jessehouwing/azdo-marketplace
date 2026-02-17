@@ -127,16 +127,31 @@ async function run() {
         core.setFailed(message);
     }
 }
+function getUpdateTasksVersionMode(platform) {
+    const value = platform.getInput('update-tasks-version');
+    if (!value) {
+        return undefined;
+    }
+    if (value === 'none' || value === 'major' || value === 'minor' || value === 'patch') {
+        return value;
+    }
+    throw new Error(`Invalid update-tasks-version value '${value}'. Expected one of: none, major, minor, patch.`);
+}
 async function runPackage(platform, tfxManager) {
+    const extensionPricingInput = platform.getInput('extension-pricing');
     const options = {
         rootFolder: platform.getInput('root-folder'),
+        localizationRoot: platform.getInput('localization-root'),
         manifestGlobs: platform.getDelimitedInput('manifest-globs', '\n'),
         publisherId: platform.getInput('publisher-id'),
         extensionId: platform.getInput('extension-id'),
         extensionVersion: platform.getInput('extension-version'),
         extensionName: platform.getInput('extension-name'),
         extensionVisibility: platform.getInput('extension-visibility'),
-        updateTasksVersion: platform.getBoolInput('update-tasks-version'),
+        extensionPricing: extensionPricingInput && extensionPricingInput !== 'default'
+            ? extensionPricingInput
+            : undefined,
+        updateTasksVersion: getUpdateTasksVersionMode(platform),
         updateTasksId: platform.getBoolInput('update-tasks-id'),
         outputPath: platform.getInput('output-path'),
         bypassValidation: platform.getBoolInput('bypass-validation'),
@@ -149,6 +164,7 @@ async function runPackage(platform, tfxManager) {
 }
 async function runPublish(platform, tfxManager, auth) {
     const publishSource = platform.getInput('publish-source', true);
+    const extensionPricingInput = platform.getInput('extension-pricing');
     const result = await publishExtension({
         publishSource,
         vsixFile: publishSource === 'vsix' ? platform.getInput('vsix-file', true) : undefined,
@@ -156,15 +172,18 @@ async function runPublish(platform, tfxManager, auth) {
             ? platform.getDelimitedInput('manifest-globs', '\n', true)
             : undefined,
         rootFolder: publishSource === 'manifest' ? platform.getInput('root-folder') : undefined,
+        localizationRoot: publishSource === 'manifest' ? platform.getInput('localization-root') : undefined,
         publisherId: platform.getInput('publisher-id'),
         extensionId: platform.getInput('extension-id'),
         extensionVersion: platform.getInput('extension-version'),
         extensionName: platform.getInput('extension-name'),
         extensionVisibility: platform.getInput('extension-visibility'),
-        shareWith: platform.getDelimitedInput('share-with', '\n'),
+        extensionPricing: extensionPricingInput && extensionPricingInput !== 'default'
+            ? extensionPricingInput
+            : undefined,
         noWaitValidation: platform.getBoolInput('no-wait-validation'),
         bypassValidation: platform.getBoolInput('bypass-validation'),
-        updateTasksVersion: platform.getBoolInput('update-tasks-version'),
+        updateTasksVersion: getUpdateTasksVersionMode(platform),
         updateTasksId: platform.getBoolInput('update-tasks-id'),
     }, auth, tfxManager, platform);
     if (result.vsixPath) {

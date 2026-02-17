@@ -1,6 +1,8 @@
 import * as core from '@actions/core';
 import {
+  AuthCredentials,
   installExtension,
+  normalizeAccountToServiceUrl,
   packageExtension,
   publishExtension,
   queryVersion,
@@ -20,8 +22,6 @@ import {
   validateVersion,
   waitForInstallation,
   waitForValidation,
-  normalizeAccountToServiceUrl,
-  AuthCredentials,
 } from '@extension-tasks/core';
 import { AuthType, getAuth } from './auth/index.js';
 import { GitHubAdapter } from './github-adapter.js';
@@ -179,9 +179,29 @@ async function run(): Promise<void> {
   }
 }
 
+function getUpdateTasksVersionMode(
+  platform: GitHubAdapter
+): 'none' | 'major' | 'minor' | 'patch' | undefined {
+  const value = platform.getInput('update-tasks-version');
+  if (!value) {
+    return undefined;
+  }
+
+  if (value === 'none' || value === 'major' || value === 'minor' || value === 'patch') {
+    return value;
+  }
+
+  throw new Error(
+    `Invalid update-tasks-version value '${value}'. Expected one of: none, major, minor, patch.`
+  );
+}
+
 async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Promise<void> {
+  const extensionPricingInput = platform.getInput('extension-pricing');
+
   const options = {
     rootFolder: platform.getInput('root-folder'),
+    localizationRoot: platform.getInput('localization-root'),
     manifestGlobs: platform.getDelimitedInput('manifest-globs', '\n'),
     publisherId: platform.getInput('publisher-id'),
     extensionId: platform.getInput('extension-id'),
@@ -193,7 +213,11 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
       | 'private_preview'
       | 'public_preview'
       | undefined,
-    updateTasksVersion: platform.getBoolInput('update-tasks-version'),
+    extensionPricing:
+      extensionPricingInput && extensionPricingInput !== 'default'
+        ? (extensionPricingInput as 'free' | 'paid' | 'trial')
+        : undefined,
+    updateTasksVersion: getUpdateTasksVersionMode(platform),
     updateTasksId: platform.getBoolInput('update-tasks-id'),
     outputPath: platform.getInput('output-path'),
     bypassValidation: platform.getBoolInput('bypass-validation'),
@@ -213,6 +237,7 @@ async function runPublish(
   auth: AuthCredentials
 ): Promise<void> {
   const publishSource = platform.getInput('publish-source', true) as 'manifest' | 'vsix';
+  const extensionPricingInput = platform.getInput('extension-pricing');
 
   const result = await publishExtension(
     {
@@ -223,15 +248,20 @@ async function runPublish(
           ? platform.getDelimitedInput('manifest-globs', '\n', true)
           : undefined,
       rootFolder: publishSource === 'manifest' ? platform.getInput('root-folder') : undefined,
+      localizationRoot:
+        publishSource === 'manifest' ? platform.getInput('localization-root') : undefined,
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
       extensionVersion: platform.getInput('extension-version'),
       extensionName: platform.getInput('extension-name'),
       extensionVisibility: platform.getInput('extension-visibility') as any,
-      shareWith: platform.getDelimitedInput('share-with', '\n'),
+      extensionPricing:
+        extensionPricingInput && extensionPricingInput !== 'default'
+          ? (extensionPricingInput as 'free' | 'paid' | 'trial')
+          : undefined,
       noWaitValidation: platform.getBoolInput('no-wait-validation'),
       bypassValidation: platform.getBoolInput('bypass-validation'),
-      updateTasksVersion: platform.getBoolInput('update-tasks-version'),
+      updateTasksVersion: getUpdateTasksVersionMode(platform),
       updateTasksId: platform.getBoolInput('update-tasks-id'),
     },
     auth,

@@ -42,6 +42,21 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 
+### Consolidated/renamed inputs to watch
+
+| Legacy pattern                                            | GitHub Actions v6 input                                    | Notes                                                                                      |
+| --------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `shareWith`, `unshareWith`, install target account lists  | `accounts`                                                 | Single newline-separated input for `install`, `share`, `unshare`, `wait-for-installation`. |
+| `updateTasksVersion` (boolean) + `updateTasksVersionType` | `update-tasks-version` (`none`\|`major`\|`minor`\|`patch`) | `none` is the disabled mode.                                                               |
+| `serviceUrl` for install/wait-install style flows         | `accounts`                                                 | `install` and `wait-for-installation` use `accounts` instead of `service-url`.             |
+| `extensionTag`                                            | _(removed)_                                                | Compose full `extension-id` yourself.                                                      |
+
+Package/publish metadata inputs available in v6:
+
+- `localization-root` for localization files in manifest-based package/publish flows.
+- `extension-pricing` (`default`, `free`, `paid`) to override marketplace pricing metadata.
+- Publish-time sharing input is removed; run `operation: share` with `accounts` after publish.
+
 ## Account input migration
 
 For account-targeted operations in GitHub Actions:

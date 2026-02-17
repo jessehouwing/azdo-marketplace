@@ -51,6 +51,14 @@ Common input mappings:
 - `publishSource` → `publish-source`
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
+- `localizationRoot` → `localization-root`
+- `extensionPricing` → `extension-pricing`
+- `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) → `update-tasks-version` (`none`\|`major`\|`minor`\|`patch`)
+
+### Consolidated inputs
+
+- Use `accounts` for `install`, `share`, `unshare`, and `wait-for-installation` on both platforms.
+- Do not map any publish sharing input; publish-time sharing was removed. Use a dedicated `share` step with `accounts`.
 
 ## Account input mapping
 
@@ -168,6 +176,8 @@ Legacy v5/v6 status-style task outputs are not used in GitHub Actions. Use built
 
 Use `${{ steps.<step_id>.conclusion }}` when `continue-on-error: true` is involved and you need post-step branching based on final conclusion semantics.
 
+Current Azure Pipelines v6 task outputs are `vsixPath`, `extensionMetadata`, `proposedVersion`, and `currentVersion`; status-style outputs are legacy and should not be relied on.
+
 ## End-to-end example
 
 ### Azure Pipelines
@@ -187,7 +197,7 @@ steps:
       connectionType: connectedService:VsTeam
       connectionName: MyMarketplaceConnection
       publishSource: vsix
-      vsixFile: $(packageExt.Extension.OutputPath)
+      vsixFile: $(packageExt.OutputPath)
 ```
 
 ### GitHub Actions

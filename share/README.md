@@ -121,6 +121,6 @@ jobs:
 ## See Also
 
 - [Unshare](../unshare) - Unshare extension from organizations
-- [Publish](../publish) - Publish extension (with share option)
+- [Publish](../publish) - Publish extension
 - [Install](../install) - Install extension to accounts
 - [Main Action](../) - All-in-one action with all commands

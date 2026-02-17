@@ -71,6 +71,24 @@ When migrating to v6, update account-related inputs as follows:
 - For Azure DevOps Server/TFS, provide the full collection URL in `accounts` (for example `https://myserver/tfs/DefaultCollection`).
 - `share` and `unshare` also use the `accounts` input in v6 for consistency.
 
+### Renamed and consolidated inputs (v5 → v6)
+
+Use this mapping carefully when updating YAML:
+
+| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                    |
+| ------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `wait-for-installation`.                      |
+| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                         |
+| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `wait-for-installation` no longer take `serviceUrl`; each account resolves to service URL. |
+| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                          |
+| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                              |
+
+Additional v6 package/publish inputs:
+
+- `localizationRoot` for localization files in manifest-based flows.
+- `extensionPricing` (`default`, `free`, `paid`) to override pricing metadata.
+- Publish-time sharing input has been removed; use separate `share` operation with `accounts`.
+
 ## `extensionTag` in v6
 
 In v6, `extensionTag` is no longer supported. Supply the full `extensionId` value yourself.
@@ -145,12 +163,6 @@ Azure Pipelines v6 task outputs:
 - `extensionMetadata`
 - `proposedVersion`
 - `currentVersion`
-- `published`
-- `shared`
-- `unshared`
-- `installed`
-- `waitForValidation`
-- `waitForInstallation`
 
 If your v5 pipeline referenced legacy output variable names, update those references to the v6 names.
 

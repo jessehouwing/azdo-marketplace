@@ -261,6 +261,35 @@ inputs:
 
       **Note:** Private extensions must be explicitly shared with organizations
     required: false
+  localization-root:
+    description: |-
+      **Folder containing localization files** for multi-language support.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: none
+
+      - Should contain language-specific resource files
+      - Typical structure: `localization/{locale}/resources.resjson`
+      - If not specified, no localization is included
+
+      **Example:** `$``{{ github.workspace }}/localization`
+    required: false
+  extension-pricing:
+    description: |-
+      **Override extension pricing model**.
+
+      Available for: package, publish.
+      Required for: none.
+      Default: default
+
+      - `default`: Use pricing from manifest
+      - `free`: Extension is free to use
+      - `paid`: Extension requires payment
+
+      **Note:** Paid extensions require additional marketplace publisher verification
+    required: false
+    default: default
   output-path:
     description: |-
       **Output directory** for generated .vsix file (package operation).
@@ -322,18 +351,20 @@ inputs:
     default: 'false'
   update-tasks-version:
     description: |-
-      **Automatically update task versions** to match extension version.
+      **How to update task versions** to match extension version.
 
       Available for: package, publish.
       Required for: none.
-      Default: false
+      Default: none
 
-      - Updates all task.json files in the extension
-      - Useful for keeping task and extension versions in sync
+      - `none`: Do not update task versions
+      - `major`: Replace major, minor, patch
+      - `minor`: Replace minor, patch
+      - `patch`: Replace patch only
 
-      **Default:** `false`
+      **Default:** `none`
     required: false
-    default: 'false'
+    default: none
   update-tasks-id:
     description: |-
       **Generate new deterministic task IDs** for all tasks.

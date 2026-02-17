@@ -160,7 +160,7 @@ jobs:
         with:
           root-folder: './extension'
           extension-version: ${{ github.ref_name }}
-          update-tasks-version: 'true'
+          update-tasks-version: 'patch'
 
       - name: Publish Extension
         uses: jessehouwing/azdo-marketplace/publish@v6

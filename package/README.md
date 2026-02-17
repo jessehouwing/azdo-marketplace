@@ -30,7 +30,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
   with:
     root-folder: './my-extension'
     extension-version: ${{ github.ref_name }}
-    update-tasks-version: 'true'
+    update-tasks-version: 'patch'
     output-path: './dist'
 ```
 
@@ -69,13 +69,15 @@ None - all inputs are optional with sensible defaults.
 - `extension-version`: Override extension version
 - `extension-name`: Override extension name
 - `extension-visibility`: Override visibility (`private`, `public`, `private_preview`, `public_preview`)
+- `localization-root`: Localization folder root for `resources.resjson` files
+- `extension-pricing`: Override pricing (`default`, `free`, `paid`)
 
 #### Package Options
 
 - `output-path`: Output directory for .vsix file
 - `bypass-validation`: Skip extension validation (default: `false`)
 - `rev-version`: Auto-increment patch version (default: `false`)
-- `update-tasks-version`: Update task versions to match extension version (default: `false`)
+- `update-tasks-version`: Task version update mode (`none`, `major`, `minor`, `patch`, default: `none`)
 - `update-tasks-id`: Generate deterministic task IDs (default: `false`)
 
 ## Outputs
@@ -102,7 +104,7 @@ jobs:
         with:
           root-folder: './extension'
           extension-version: '1.0.${{ github.run_number }}'
-          update-tasks-version: 'true'
+          update-tasks-version: 'patch'
           output-path: './dist'
 
       - name: Upload VSIX

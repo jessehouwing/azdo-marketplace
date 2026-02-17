@@ -14,6 +14,7 @@ import type { TfxManager } from '../tfx-manager.js';
 export interface PackageOptions {
   // Manifest source
   rootFolder?: string;
+  localizationRoot?: string;
   manifestGlobs?: string[];
   overridesFile?: string;
 
@@ -26,8 +27,7 @@ export interface PackageOptions {
   extensionPricing?: 'free' | 'paid' | 'trial';
 
   // Task patching
-  updateTasksVersion?: boolean;
-  updateTasksVersionType?: 'major' | 'minor' | 'patch';
+  updateTasksVersion?: 'none' | 'major' | 'minor' | 'patch';
   updateTasksId?: boolean;
 
   // Output
@@ -76,6 +76,10 @@ export async function packageExtension(
     args.option('--root', options.rootFolder);
   }
 
+  if (options.localizationRoot) {
+    args.option('--loc-root', options.localizationRoot);
+  }
+
   if (options.manifestGlobs && options.manifestGlobs.length > 0) {
     args.flag('--manifest-globs');
     options.manifestGlobs.forEach((glob) => args.arg(glob));
@@ -115,7 +119,7 @@ export async function packageExtension(
   const synchronizeBinaryFileEntries = true;
 
   const shouldApplyManifestOptions =
-    options.updateTasksVersion ||
+    (options.updateTasksVersion && options.updateTasksVersion !== 'none') ||
     options.updateTasksId ||
     options.extensionVersion ||
     options.extensionName ||
@@ -147,7 +151,6 @@ export async function packageExtension(
         extensionVisibility: options.extensionVisibility,
         extensionPricing: options.extensionPricing,
         updateTasksVersion: options.updateTasksVersion,
-        updateTasksVersionType: options.updateTasksVersionType,
         updateTasksId: options.updateTasksId,
         synchronizeBinaryFileEntries,
       });

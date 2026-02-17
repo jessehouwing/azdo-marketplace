@@ -56,10 +56,9 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 - uses: jessehouwing/azdo-marketplace/publish@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
-    publish-source: 'vsix'
-    vsix-file: './extension.vsix'
+    root-folder: './my-extension'
     extension-version: '2.0.0'
-    update-tasks-version: 'true'
+    update-tasks-version: 'minor'
     update-tasks-id: 'true'
 ```
 
@@ -110,11 +109,13 @@ OR
 - `extension-version`: Override extension version
 - `extension-name`: Override extension name
 - `extension-visibility`: Override visibility (`private`, `public`, `private_preview`, `public_preview`)
+- `localization-root`: Localization folder root for `resources.resjson` files (manifest source)
+- `extension-pricing`: Override pricing (`default`, `free`, `paid`)
 
 #### Publish Options
 
 - `no-wait-validation`: Don't wait for validation (default: `false`)
-- `update-tasks-version`: Update task versions to match extension version (default: `false`)
+- `update-tasks-version`: Task version update mode (`none`, `major`, `minor`, `patch`, default: `none`)
 - `update-tasks-id`: Generate deterministic task IDs (default: `false`)
 
 ## Outputs
@@ -143,7 +144,7 @@ jobs:
           root-folder: './extension'
           extension-version: ${{ github.ref_name }}
           extension-visibility: 'public'
-          update-tasks-version: 'true'
+          update-tasks-version: 'major'
 ```
 
 ## See Also

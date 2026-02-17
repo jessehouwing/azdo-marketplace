@@ -65,8 +65,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
       await editor.applyOptions({
         extensionVersion: '2.0.0',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'major',
+        updateTasksVersion: 'major',
       });
 
       // Write changes
@@ -231,8 +230,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
       await editor.applyOptions({
         extensionVersion: '3.5.7',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'minor',
+        updateTasksVersion: 'minor',
       });
 
       // Write changes
@@ -394,8 +392,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
       await editor.applyOptions({
         extensionVersion: '2.5.0',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'major',
+        updateTasksVersion: 'major',
       });
 
       // Write changes
@@ -455,8 +452,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
       await editor.applyOptions({
         extensionVersion: '3.0.0',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'major',
+        updateTasksVersion: 'major',
       });
 
       // Write changes
@@ -533,8 +529,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
       await editor.applyOptions({
         extensionVersion: '4.2.1',
-        updateTasksVersion: true,
-        updateTasksVersionType: 'major',
+        updateTasksVersion: 'major',
       });
 
       // Write changes
