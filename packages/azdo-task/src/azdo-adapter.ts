@@ -154,11 +154,11 @@ export class AzdoAdapter implements IPlatformAdapter {
   }
 
   async readFile(filePath: string): Promise<string> {
-    return fs.readFile(filePath, 'utf-8');
+    return fs.readFile(filePath, 'utf8');
   }
 
   async writeFile(filePath: string, content: string): Promise<void> {
-    await fs.writeFile(filePath, content, 'utf-8');
+    await fs.writeFile(filePath, content, 'utf8');
   }
 
   async mkdirP(dirPath: string): Promise<void> {

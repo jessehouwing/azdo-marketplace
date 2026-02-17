@@ -21,7 +21,7 @@ describe('GitHubAdapter', () => {
   let originalInputItems: string | undefined;
   let originalInputBypassValidation: string | undefined;
   let originalToken: string | undefined;
-  let originalExitCode: string | number | undefined;
+  let originalExitCode: number | undefined;
   let originalActionsStepDebug: string | undefined;
   let originalActionsRunnerDebug: string | undefined;
   let originalRunnerDebug: string | undefined;
@@ -217,7 +217,7 @@ describe('GitHubAdapter', () => {
     });
 
     const code = await adapter.exec(process.execPath, ['-e', "process.stdout.write('ok')"], {
-      outStream,
+      outStream: outStream as unknown as NodeJS.WritableStream,
     });
 
     expect(code).toBe(0);

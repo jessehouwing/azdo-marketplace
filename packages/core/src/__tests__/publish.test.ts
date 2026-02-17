@@ -302,7 +302,7 @@ describe('publishExtension', () => {
         expect(overridesFlagIndex).toBeGreaterThan(-1);
         expect(callArgs[overridesFlagIndex + 1]).toBe(overridesPath);
 
-        const mergedOverrides = JSON.parse(await fs.readFile(overridesPath, 'utf-8')) as {
+        const mergedOverrides = JSON.parse((await fs.readFile(overridesPath)).toString('utf8')) as {
           description?: string;
           version?: string;
         };
@@ -461,7 +461,7 @@ describe('publishExtension', () => {
 
       await new Promise<void>((resolve, reject) => {
         zipFile.outputStream
-          .pipe(createWriteStream(vsixPath))
+          .pipe(createWriteStream(vsixPath) as unknown as NodeJS.WritableStream)
           .on('finish', resolve)
           .on('error', reject);
         zipFile.end();

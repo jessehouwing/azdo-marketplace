@@ -194,14 +194,14 @@ export class MockPlatformAdapter implements IPlatformAdapter {
       return content;
     }
 
-    return fs.readFile(this.resolveFsPath(path), 'utf-8');
+    return (await fs.readFile(this.resolveFsPath(path))).toString('utf8');
   }
 
   async writeFile(path: string, content: string): Promise<void> {
     this.files.set(path, content);
     const fsPath = this.resolveFsPath(path);
     await fs.mkdir(dirname(fsPath), { recursive: true });
-    await fs.writeFile(fsPath, content, 'utf-8');
+    await fs.writeFile(fsPath, content, 'utf8');
   }
 
   async mkdirP(path: string): Promise<void> {
