@@ -44,7 +44,7 @@
       "options": {
         "PAT": "Visual Studio Marketplace"
       },
-      "visibleRule": "operation = wait-for-validation"
+      "visibleRule": "operation = 'wait-for-validation'"
     },
     {
       "name": "connectedServiceName",
@@ -52,7 +52,7 @@
       "label": "Visual Studio Marketplace",
       "required": true,
       "helpMarkDown": "Service endpoint connection to install the extension.",
-      "visibleRule": "operation = wait-for-validation && connectionType = PAT"
+      "visibleRule": "operation = 'wait-for-validation' && connectionType = PAT"
     },
     {
       "name": "publisherId",
@@ -61,7 +61,7 @@
       "defaultValue": "",
       "required": true,
       "helpMarkDown": "Publisher ID of the extension to be installed.",
-      "visibleRule": "operation = wait-for-validation"
+      "visibleRule": "operation = 'wait-for-validation'"
     },
     {
       "name": "extensionId",
@@ -70,7 +70,7 @@
       "defaultValue": "",
       "helpMarkDown": "Extension ID of the extension to be installed",
       "required": true,
-      "visibleRule": "operation = wait-for-validation"
+      "visibleRule": "operation = 'wait-for-validation'"
     },
     {
       "name": "extensionVersion",
@@ -79,7 +79,7 @@
       "defaultValue": "latest",
       "helpMarkDown": "Extension version (enter 'latest' or leave the value empty to check the last submitted version).",
       "required": false,
-      "visibleRule": "operation = wait-for-validation"
+      "visibleRule": "operation = 'wait-for-validation'"
     }
   ],
   "execution": {
