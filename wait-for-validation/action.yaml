@@ -152,7 +152,7 @@ runs:
   using: composite
   steps:
     - id: wait-for-validation
-      uses: jessehouwing/azdo-marketplace@v6
+      uses: jessehouwing/azdo-marketplace@main
       with:
         operation: wait-for-validation
         auth-type: ${{ inputs.auth-type }}

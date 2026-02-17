@@ -122,7 +122,7 @@ outputs:
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@v6
+      - uses: jessehouwing/azdo-marketplace@main
         id: show
         with:
           operation: show
@@ -136,7 +136,7 @@ runs:
   using: composite
   steps:
     - id: show
-      uses: jessehouwing/azdo-marketplace@v6
+      uses: jessehouwing/azdo-marketplace@main
       with:
         operation: show
         auth-type: ${{ inputs.auth-type }}
