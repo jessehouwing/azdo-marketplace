@@ -5367,6 +5367,8 @@ async function packageExtension(options, tfx, platform) {
 }
 
 // packages/core/dist/commands/publish.js
+import { copyFile, mkdir as mkdir2 } from "fs/promises";
+import { basename, join } from "path";
 init_manifest_editor();
 init_vsix_reader();
 async function executeTfxPublish(tfx, args, platform, options, publishedVsixPath) {
@@ -5411,7 +5413,19 @@ async function executeTfxPublish(tfx, args, platform, options, publishedVsixPath
   extensionId = extensionId || options.extensionId || "";
   extensionVersion = extensionVersion || options.extensionVersion || "";
   publisherId = publisherId || options.publisherId || "";
-  const vsixPath = options.publishSource === "manifest" ? json.packaged ?? "" : publishedVsixPath ?? options.vsixFile ?? "";
+  let vsixPath = options.publishSource === "manifest" ? json.packaged ?? "" : publishedVsixPath ?? options.vsixFile ?? "";
+  if (options.outputPath && vsixPath) {
+    const sourceExists = await platform.fileExists(vsixPath);
+    if (sourceExists) {
+      const outputVsixPath = join(options.outputPath, basename(vsixPath));
+      await mkdir2(options.outputPath, { recursive: true });
+      await copyFile(vsixPath, outputVsixPath);
+      platform.debug(`Copied published VSIX to output path: ${outputVsixPath}`);
+      vsixPath = outputVsixPath;
+    } else {
+      platform.warning(`Could not copy VSIX to output path because source file was not found: ${vsixPath}`);
+    }
+  }
   platform.info(`Published extension: ${extensionId || "(unknown id)"} v${extensionVersion || "(unknown version)"}`);
   return {
     published: json.published === true,
@@ -5967,35 +5981,45 @@ async function resolveExpectedTasks(options, platform) {
     platform.debug(`Using ${options.expectedTasks.length} expected tasks from options`);
     return options.expectedTasks;
   }
-  if (options.manifestPath) {
+  if (options.manifestFiles && options.manifestFiles.length > 0) {
     try {
-      platform.debug(`Reading task versions from manifest: ${options.manifestPath}`);
-      const manifest = await readManifest(options.manifestPath, platform);
-      const taskPaths = resolveTaskManifestPaths(manifest, options.manifestPath, platform);
-      const tasks = [];
-      for (const taskPath of taskPaths) {
+      platform.debug(`Reading task versions from ${options.manifestFiles.length} manifest file(s)`);
+      const expectedByTask = /* @__PURE__ */ new Map();
+      for (const manifestFile of options.manifestFiles) {
         try {
-          const taskManifest = await readManifest(taskPath, platform);
-          if (taskManifest.name && taskManifest.version) {
-            const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
-            tasks.push({
-              name: taskManifest.name,
-              versions: [version]
-            });
-            platform.debug(`Found task ${taskManifest.name} v${version}`);
+          const manifest = await readManifest(manifestFile, platform);
+          const taskPaths = resolveTaskManifestPaths(manifest, manifestFile, platform);
+          for (const taskPath of taskPaths) {
+            try {
+              const taskManifest = await readManifest(taskPath, platform);
+              if (taskManifest.name && taskManifest.version) {
+                const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
+                const existing = expectedByTask.get(taskManifest.name) ?? /* @__PURE__ */ new Set();
+                existing.add(version);
+                expectedByTask.set(taskManifest.name, existing);
+                platform.debug(`Found task ${taskManifest.name} v${version}`);
+              }
+            } catch (error2) {
+              const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+              platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
+            }
           }
         } catch (error2) {
           const errorMessage = error2 instanceof Error ? error2.message : String(error2);
-          platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
+          platform.warning(`Failed to read manifest ${manifestFile}: ${errorMessage}`);
         }
       }
+      const tasks = [...expectedByTask.entries()].map(([name, versions]) => ({
+        name,
+        versions: [...versions]
+      }));
       if (tasks.length > 0) {
-        platform.debug(`Resolved ${tasks.length} tasks from manifest`);
+        platform.debug(`Resolved ${tasks.length} task(s) from manifest file(s)`);
         return tasks;
       }
     } catch (error2) {
       const errorMessage = error2 instanceof Error ? error2.message : String(error2);
-      platform.warning(`Failed to read manifest ${options.manifestPath}: ${errorMessage}`);
+      platform.warning(`Failed to resolve tasks from manifest files: ${errorMessage}`);
     }
   }
   if (options.vsixPath) {
@@ -6532,8 +6556,8 @@ var Path = class {
         let remaining = itemPath;
         let dir = dirname2(remaining);
         while (dir !== remaining) {
-          const basename3 = path6.basename(remaining);
-          this.segments.unshift(basename3);
+          const basename4 = path6.basename(remaining);
+          this.segments.unshift(basename4);
           remaining = dir;
           dir = dirname2(remaining);
         }
@@ -7298,7 +7322,7 @@ async function runPackage(platform, tfxManager) {
   const options = {
     rootFolder: platform.getInput("root-folder"),
     localizationRoot: platform.getInput("localization-root"),
-    manifestGlobs: platform.getDelimitedInput("manifest-globs", "\n"),
+    manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
     publisherId: platform.getInput("publisher-id"),
     extensionId: platform.getInput("extension-id"),
     extensionVersion: platform.getInput("extension-version"),
@@ -7323,7 +7347,7 @@ async function runPublish(platform, tfxManager, auth) {
     {
       publishSource,
       vsixFile: publishSource === "vsix" ? platform.getInput("vsix-file", true) : void 0,
-      manifestGlobs: publishSource === "manifest" ? platform.getDelimitedInput("manifest-globs", "\n", true) : void 0,
+      manifestGlobs: publishSource === "manifest" ? platform.getDelimitedInput("manifest-file", "\n", true) : void 0,
       rootFolder: publishSource === "manifest" ? platform.getInput("root-folder") : void 0,
       localizationRoot: publishSource === "manifest" ? platform.getInput("localization-root") : void 0,
       publisherId: platform.getInput("publisher-id"),
@@ -7332,6 +7356,7 @@ async function runPublish(platform, tfxManager, auth) {
       extensionName: platform.getInput("extension-name"),
       extensionVisibility: platform.getInput("extension-visibility"),
       extensionPricing: extensionPricingInput && extensionPricingInput !== "default" ? extensionPricingInput : void 0,
+      outputPath: platform.getInput("output-path"),
       noWaitValidation: platform.getBoolInput("no-wait-validation"),
       bypassValidation: platform.getBoolInput("bypass-validation"),
       updateTasksVersion: getUpdateTasksVersionMode(platform),
@@ -7432,7 +7457,7 @@ async function runWaitForValidation(platform, tfxManager, auth) {
       extensionId: platform.getInput("extension-id"),
       vsixPath: platform.getInput("vsix-path"),
       rootFolder: platform.getInput("root-folder"),
-      manifestGlobs: platform.getDelimitedInput("manifest-globs", "\n"),
+      manifestGlobs: platform.getDelimitedInput("manifest-file", "\n"),
       maxRetries: parseInt(platform.getInput("max-retries") || "10"),
       minTimeout: parseInt(platform.getInput("min-timeout") || "1"),
       maxTimeout: parseInt(platform.getInput("max-timeout") || "15")
@@ -7464,7 +7489,7 @@ async function runWaitForInstallation(platform, auth) {
       extensionId: platform.getInput("extension-id"),
       accounts: platform.getDelimitedInput("accounts", "\n", true),
       expectedTasks,
-      manifestPath: platform.getInput("manifest-path"),
+      manifestFiles: platform.getDelimitedInput("manifest-file", "\n"),
       vsixPath: platform.getInput("vsix-path"),
       timeoutMinutes: parseInt(platform.getInput("timeout-minutes") || "10"),
       pollingIntervalSeconds: parseInt(platform.getInput("polling-interval-seconds") || "30")
