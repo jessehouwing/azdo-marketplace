@@ -81,12 +81,14 @@ async function run(): Promise<void> {
 
       // Get the appropriate connection name based on type
       let connectionName: string | undefined;
-      if (normalizedConnectionType === 'vsteam') {
-        connectionName = platform.getInput('connectionName', true);
+      if (normalizedConnectionType === 'pat') {
+        connectionName = platform.getInput('connectionNamePAT', true);
+      } else if (normalizedConnectionType === 'workloadidentity') {
+        connectionName = platform.getInput('connectionNameWorkloadIdentity', true);
       } else if (normalizedConnectionType === 'azurerm') {
         connectionName = platform.getInput('connectionNameAzureRm', true);
-      } else if (normalizedConnectionType === 'generic') {
-        connectionName = platform.getInput('connectionNameGeneric', true);
+      } else if (normalizedConnectionType === 'basic') {
+        connectionName = platform.getInput('connectionNameBasic', true);
       }
 
       if (!connectionName) {

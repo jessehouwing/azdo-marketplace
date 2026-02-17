@@ -25,9 +25,9 @@ Most non-package operations require a service connection (`connectionType` + cor
 - `unshare`
 - `install`
 - `show`
-- `QueryVersion`
-- `waitForValidation`
-- `waitForInstallation`
+- `query-version`
+- `wait-for-validation`
+- `wait-for-installation`
 
 ## Common inputs
 
@@ -35,10 +35,11 @@ These appear across multiple operations.
 
 ### Authentication
 
-- `connectionType` (`connectedService:VsTeam` | `connectedService:AzureRM` | `connectedService:Generic`)
-- `connectionName` (when `connectionType = connectedService:VsTeam`)
-- `connectionNameAzureRM` (when `connectionType = connectedService:AzureRM`)
-- `connectionNameGeneric` (when `connectionType = connectedService:Generic`)
+- `connectionType` (`PAT` | `WorkloadIdentity` | `AzureRM` | `Basic`)
+- `connectionNamePAT` (when `connectionType = PAT`)
+- `connectionNameWorkloadIdentity` (when `connectionType = WorkloadIdentity`)
+- `connectionNameAzureRm` (when `connectionType = AzureRM`)
+- `connectionNameBasic` (when `connectionType = Basic`)
 
 ### Identity and tooling
 
@@ -62,7 +63,6 @@ These appear across multiple operations.
 - `extensionPricing`
 - `bypassValidation`
 - `updateTasksVersion`
-- `updateTasksVersionType`
 - `updateTasksId`
 
 ## Command reference (operations and inputs)
@@ -97,9 +97,9 @@ Publishes to Marketplace from manifest or prebuilt VSIX.
   - `rootFolder`, `manifestFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
-  - `shareWith`, `noWaitValidation`
+  - `noWaitValidation`
   - `bypassValidation`
-  - `updateTasksVersion`, `updateTasksVersionType`, `updateTasksId`
+  - `updateTasksVersion`, `updateTasksId`
   - `tfxVersion`
 
 ### `unpublish`
@@ -121,7 +121,7 @@ Shares a private extension with organizations.
   - `operation: share`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
-  - `shareWith` (newline-separated)
+  - `accounts` (newline-separated)
 - Optional:
   - `tfxVersion`
 
@@ -133,7 +133,7 @@ Revokes sharing from organizations.
   - `operation: unshare`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
-  - `unshareWith` (newline-separated)
+  - `accounts` (newline-separated)
 - Optional:
   - `tfxVersion`
 
@@ -162,12 +162,12 @@ Fetches extension metadata.
   - none
   - `tfxVersion`
 
-### `QueryVersion`
+### `query-version`
 
 Queries current Marketplace version and optionally increments it.
 
 - Required:
-  - `operation: QueryVersion`
+  - `operation: query-version`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
@@ -176,12 +176,12 @@ Queries current Marketplace version and optionally increments it.
   - `setBuildNumber`
   - `tfxVersion`
 
-### `waitForValidation`
+### `wait-for-validation`
 
 Polls Marketplace validation result.
 
 - Required:
-  - `operation: waitForValidation`
+  - `operation: wait-for-validation`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
 - Optional:
@@ -189,12 +189,12 @@ Polls Marketplace validation result.
   - `maxRetries`, `minTimeout`, `maxTimeout`
   - `tfxVersion`
 
-### `waitForInstallation`
+### `wait-for-installation`
 
 Verifies tasks are available after install.
 
 - Required:
-  - `operation: waitForInstallation`
+  - `operation: wait-for-installation`
   - `connectionType` + matching connection input
   - `publisherId`, `extensionId`
   - `accounts`
@@ -202,7 +202,7 @@ Verifies tasks are available after install.
   - task expectations via one of:
     - `expectedTasks` (JSON)
     - `manifestFile`
-    - `vsixPath`
+    - `vsixFile`
   - `timeoutMinutes`, `pollingIntervalSeconds`
   - `tfxVersion`
 
@@ -240,8 +240,8 @@ steps:
   - task: azdo-marketplace@6
     inputs:
       operation: publish
-      connectionType: connectedService:VsTeam
-      connectionName: MyMarketplaceConnection
+      connectionType: PAT
+      connectionNamePAT: MyMarketplaceConnection
       publishSource: vsix
       vsixFile: $(packageExt.Extension.OutputPath)
 ```

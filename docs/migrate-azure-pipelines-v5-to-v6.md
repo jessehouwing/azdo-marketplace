@@ -30,16 +30,17 @@ Supported v6 operations:
 
 ## Migration checklist
 
-1. Install/update to extension version 6 in your Azure DevOps organization.
-2. Replace each v5 task invocation with `azdo-marketplace@6`.
-3. Set `operation` to the equivalent command.
-4. Move authentication inputs to v6 connection inputs:
-   - `connectionType`
-   - `connectionName` (PAT)
-   - `connectionNameAzureRM` (OIDC / Entra workload federation)
-   - `connectionNameGeneric` (basic auth)
-5. Update output variable references to v6 output names.
-6. Run the pipeline and verify publish/install/validation behavior.
+- Install/update to extension version 6 in your Azure DevOps organization.
+- Replace each v5 task invocation with `azdo-marketplace@6`.
+- Set `operation` to the equivalent command.
+- Move authentication inputs to v6 connection inputs:
+- `connectionType`
+- `connectionNamePAT` (PAT)
+- `connectionNameWorkloadIdentity` (Azure DevOps Workload Identity federation)
+- `connectionNameAzureRm` (AzureRM OIDC / Entra workload federation)
+- `connectionNameBasic` (basic auth)
+- Update output variable references to v6 output names.
+- Run the pipeline and verify publish/install/validation behavior.
 
 ## Command mapping (v5 to v6)
 
@@ -75,14 +76,14 @@ When migrating to v6, update account-related inputs as follows:
 
 Use this mapping carefully when updating YAML:
 
-| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                    |
-| ------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `wait-for-installation`.                      |
-| `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, waitForValidation, and waitForInstallation.   |
-| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                         |
-| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `wait-for-installation` no longer take `serviceUrl`; each account resolves to service URL. |
-| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                          |
-| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                              |
+| v5 input pattern                                             | v6 input                                                 | Notes                                                                                                      |
+| ------------------------------------------------------------ | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `shareWith`, `unshareWith`, operation-specific account lists | `accounts`                                               | Single multi-line input for `install`, `share`, `unshare`, `wait-for-installation`.                        |
+| `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, wait-for-validation, and wait-for-installation. |
+| `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                           |
+| `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `wait-for-installation` no longer take `serviceUrl`; each account resolves to service URL.   |
+| `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                            |
+| `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                                |
 
 Additional v6 package/publish inputs:
 
@@ -137,19 +138,20 @@ steps:
   - task: azdo-marketplace@6
     inputs:
       operation: publish
-      connectionType: connectedService:VsTeam
-      connectionName: MyMarketplaceConnection
+      connectionType: PAT
+      connectionNamePAT: MyMarketplaceConnection
       publishSource: vsix
       vsixFile: $(packageExt.vsixPath)
 ```
 
 ## Authentication changes
 
-v6 supports three connection modes for non-package commands:
+v6 supports four connection modes for non-package commands:
 
-- PAT via `connectedService:VsTeam`
-- OIDC via `connectedService:AzureRM`
-- Basic auth via `connectedService:Generic`
+- PAT via `PAT`
+- Workload Identity via `WorkloadIdentity`
+- OIDC via `AzureRM`
+- Basic auth via `Basic`
 
 For OIDC setup and Entra workload federation details, see:
 
@@ -170,5 +172,5 @@ If your v5 pipeline referenced legacy output variable names, update those refere
 ## Notes and compatibility
 
 - Keep migration incremental: convert one operation at a time if needed.
-- Prefer OIDC (`connectedService:AzureRM`) for cloud-hosted pipelines to avoid long-lived PAT secrets.
+- Prefer OIDC (`AzureRM`) for cloud-hosted pipelines to avoid long-lived PAT secrets.
 - Validate required PAT scopes when using PAT-based connections.

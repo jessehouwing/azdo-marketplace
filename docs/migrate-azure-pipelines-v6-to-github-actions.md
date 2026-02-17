@@ -109,8 +109,10 @@ Use standard step outputs only:
 
 Azure Pipelines:
 
-- `connectionType: connectedService:AzureRM`
-- `connectionNameAzureRM: <arm-oidc-service-connection>`
+- `connectionType: WorkloadIdentity`
+- `connectionNameWorkloadIdentity: <azure-devops-workload-identity-service-connection>`
+- `connectionType: AzureRM`
+- `connectionNameAzureRm: <arm-oidc-service-connection>`
 
 GitHub Actions:
 
@@ -122,8 +124,8 @@ GitHub Actions:
 
 Azure Pipelines (service connection):
 
-- `connectionType: connectedService:VsTeam`
-- `connectionName: <service-connection-name>`
+- `connectionType: PAT`
+- `connectionNamePAT: <service-connection-name>`
 
 GitHub Actions (secrets):
 
@@ -194,8 +196,8 @@ steps:
   - task: azdo-marketplace@6
     inputs:
       operation: publish
-      connectionType: connectedService:VsTeam
-      connectionName: MyMarketplaceConnection
+      connectionType: PAT
+      connectionNamePAT: MyMarketplaceConnection
       publishSource: vsix
       vsixFile: $(packageExt.OutputPath)
 ```

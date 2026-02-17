@@ -39,20 +39,20 @@
       "type": "pickList",
       "label": "Connection Type",
       "required": true,
-      "defaultValue": "VsTeam",
+      "defaultValue": "PAT",
       "helpMarkDown": "Authentication method for marketplace operations.",
       "options": {
-        "VsTeam": "Visual Studio Marketplace"
+        "PAT": "Visual Studio Marketplace"
       },
       "visibleRule": "operation = wait-for-validation"
     },
     {
       "name": "connectedServiceName",
-      "type": "connectedService:VstsMarketplacePublishing",
+      "type": "connectedService:cloud-marketplace-endpoint",
       "label": "Visual Studio Marketplace",
       "required": true,
       "helpMarkDown": "Service endpoint connection to install the extension.",
-      "visibleRule": "operation = wait-for-validation && connectionType = VsTeam"
+      "visibleRule": "operation = wait-for-validation && connectionType = PAT"
     },
     {
       "name": "publisherId",

@@ -90,11 +90,11 @@
       }
     },
     {
-      "id": "vsts-marketplace-endpoint-type",
+      "id": "cloud-marketplace-endpoint-type",
       "type": "ms.vss-endpoint.service-endpoint-type",
       "targets": ["ms.vss-endpoint.endpoint-types"],
       "properties": {
-        "name": "VstsMarketplacePublishing",
+        "name": "cloud-marketplace-endpoint",
         "displayName": "Visual Studio Marketplace",
         "url": {
           "displayName": "Marketplace URL",
@@ -140,11 +140,11 @@
       }
     },
     {
-      "id": "tfs-marketplace-endpoint-type",
+      "id": "server-marketplace-endpoint-type",
       "type": "ms.vss-endpoint.service-endpoint-type",
       "targets": ["ms.vss-endpoint.endpoint-types"],
       "properties": {
-        "name": "TFSMarketplacePublishing",
+        "name": "server-marketplace-endpoint",
         "displayName": "Azure DevOps Server Extension Local Gallery",
         "helpMarkDown": "",
         "url": {

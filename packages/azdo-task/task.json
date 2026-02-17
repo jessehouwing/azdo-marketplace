@@ -44,19 +44,32 @@
       "helpMarkDown": "**Authentication method** for marketplace operations:\n\n- **Visual Studio Team Services (PAT)**: Use Personal Access Token (recommended for most users)\n- **Azure Resource Manager (OIDC)**: Use workload identity federation with Azure CLI (no secrets needed, requires Azure RM service connection)\n- **Generic (Basic Auth)**: Use username/password authentication (for on-premises TFS/Azure DevOps Server)\n\n**Note**: Package operation does not require authentication.",
       "visibleRule": "operation != package",
       "options": {
-        "VsTeam": "Visual Studio Team Services (PAT)",
+        "PAT": "Azure DevOps Cloud (PAT)",
+        "WorkloadIdentity": "Azure DevOps Cloud (WorkloadIdentity)",
         "AzureRM": "Azure Resource Manager (OIDC)",
-        "Generic": "Generic (Basic Auth)"
+        "Basic": "Azure DevOps Server (Basic Auth)"
       },
-      "defaultValue": "VsTeam"
+      "defaultValue": "PAT"
     },
     {
-      "name": "connectionName",
-      "type": "connectedService:VsTeam",
+      "name": "connectionNamePAT",
+      "type": "connectedService:cloud-marketplace-endpoint",
       "label": "Service Connection",
       "required": true,
       "helpMarkDown": "**Visual Studio Team Services service connection** configured with a Personal Access Token (PAT).\n\n**Required scopes**: Marketplace (Publish)\n\nCreate a PAT at: https://dev.azure.com/_usersSettings/tokens",
-      "visibleRule": "operation != package && connectionType = VsTeam"
+      "visibleRule": "operation != package && connectionType = PAT"
+    },
+    {
+      "name": "connectionNameWorkloadIdentity",
+      "label": "'Azure DevOps Service Connection",
+      "helpMarkDown": "**Azure DevOps Workload Identity service connection** used to authenticate marketplace operations without PAT secrets.\n\nUse this connection when `connectionType = WorkloadIdentity` for operations such as `publish`, `install`, `share`, and validation commands.",
+      "type": "connectedService:workloadidentityuser",
+      "required": false,
+      "properties": {
+        "EditableOptions": "False",
+        "MultiSelectFlatList": "False"
+      },
+      "visibleRule": "operation != package && connectionType = WorkloadIdentity"
     },
     {
       "name": "connectionNameAzureRm",
@@ -67,12 +80,12 @@
       "visibleRule": "operation != package && connectionType = AzureRM"
     },
     {
-      "name": "connectionNameGeneric",
-      "type": "connectedService:Generic",
-      "label": "Generic Connection",
+      "name": "connectionNameBasic",
+      "type": "connectedService:server-marketplace-endpoint",
+      "label": "Basic Connection",
       "required": true,
-      "helpMarkDown": "**Generic service connection** for basic authentication (username/password).\n\n**Use case**: On-premises TFS or Azure DevOps Server deployments\n\n**Note**: Not recommended for cloud-hosted Azure DevOps - use PAT authentication instead",
-      "visibleRule": "operation != package && connectionType = Generic"
+      "helpMarkDown": "**Basic service connection** for basic authentication (username/password).\n\n**Use case**: On-premises TFS or Azure DevOps Server deployments\n\n**Note**: Not recommended for cloud-hosted Azure DevOps - use PAT authentication instead",
+      "visibleRule": "operation != package && connectionType = Basic"
     },
     {
       "name": "tfxVersion",

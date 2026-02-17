@@ -7,21 +7,23 @@ This project supports multiple authentication methods across Azure Pipelines and
 ### PAT (Personal Access Token)
 
 - Best for quick setup and local experimentation.
-- Azure Pipelines: `connectionType: connectedService:VsTeam` with a VsTeam service connection.
+- Azure Pipelines: `connectionType: PAT` with a cloud marketplace endpoint service connection (`connectionNamePAT`).
 - GitHub Actions: `auth-type: pat` with `token`.
 - Typical required scopes depend on operation (publish/share/install/etc.).
 
 ### Basic Auth
 
 - Intended for on-prem Azure DevOps Server/TFS scenarios.
-- Azure Pipelines: `connectionType: connectedService:Generic`.
+- Azure Pipelines: `connectionType: Basic`.
 - GitHub Actions: `auth-type: basic` with `username` and `password`.
 
 ### OIDC / Workload Identity Federation
 
 - Preferred for CI/CD in cloud environments.
 - Avoids long-lived PAT secrets by minting short-lived tokens at runtime.
-- Azure Pipelines: `connectionType: connectedService:AzureRM`.
+- Azure Pipelines:
+  - `connectionType: WorkloadIdentity` with `connectionNameWorkloadIdentity` (Azure DevOps Workload Identity service connection)
+  - `connectionType: AzureRM` with `connectionNameAzureRm` (Azure Resource Manager OIDC connection)
 - GitHub Actions: `auth-type: oidc` (with Azure federated identity setup).
 
 ---
@@ -77,18 +79,18 @@ This section follows the approach from Jesse Houwing’s guide:
 
 ### 7) Configure the pipeline to request a token and use it
 
-For modern v6 task usage, the recommended approach is to use `connectionType: connectedService:AzureRM` directly on `azdo-marketplace@6` with your OIDC ARM connection.
+For modern v6 task usage, the recommended approach is to use `connectionType: AzureRM` directly on `azdo-marketplace@6` with your OIDC ARM connection.
 
 ```yaml
 - task: azdo-marketplace@6
   inputs:
     operation: publish
-    connectionType: connectedService:AzureRM
-    connectionNameAzureRM: azure-devops-marketplace-oidc
+    connectionType: AzureRM
+    connectionNameAzureRm: azure-devops-marketplace-oidc
     publishSource: manifest
 ```
 
-If you are integrating with legacy steps expecting PAT-backed VsTeam service connections, you can use the token-override pattern from Jesse’s article (`task.setendpoint` with a runtime token), but this is generally a migration/compatibility path.
+If you are integrating with legacy steps expecting PAT-backed service connections, you can use the token-override pattern from Jesse’s article (`task.setendpoint` with a runtime token), but this is generally a migration/compatibility path.
 
 ---
 

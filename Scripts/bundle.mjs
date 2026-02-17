@@ -18,6 +18,7 @@ const targets = [
     external: [
       'azure-pipelines-task-lib',
       'azure-pipelines-tool-lib',
+      'azure-pipelines-tasks-artifacts-common',
       'azure-pipelines-tasks-azure-arm-rest',
       'azure-devops-node-api',
       'tfx-cli',

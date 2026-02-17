@@ -7,6 +7,8 @@ const getAzureRmAuthMock =
   jest.fn<(connectionName: string, platform: IPlatformAdapter) => Promise<AuthCredentials>>();
 const getBasicAuthMock =
   jest.fn<(connectionName: string, platform: IPlatformAdapter) => Promise<AuthCredentials>>();
+const getWorkloadIdentityAuthMock =
+  jest.fn<(connectionName: string, platform: IPlatformAdapter) => Promise<AuthCredentials>>();
 
 jest.unstable_mockModule('../../auth/pat-auth.js', () => ({
   getPatAuth: getPatAuthMock,
@@ -18,6 +20,10 @@ jest.unstable_mockModule('../../auth/azurerm-auth.js', () => ({
 
 jest.unstable_mockModule('../../auth/basic-auth.js', () => ({
   getBasicAuth: getBasicAuthMock,
+}));
+
+jest.unstable_mockModule('../../auth/workloadidentity-auth.js', () => ({
+  getWorkloadIdentityAuth: getWorkloadIdentityAuthMock,
 }));
 
 let getAuth: (typeof import('../../auth/index.js'))['getAuth'];
@@ -33,14 +39,14 @@ describe('Azure Pipelines getAuth router', () => {
     jest.clearAllMocks();
   });
 
-  it('routes VsTeam connections to PAT auth', async () => {
+  it('routes PAT connections to PAT auth', async () => {
     getPatAuthMock.mockResolvedValue({
       authType: 'pat',
       serviceUrl: 'https://marketplace.visualstudio.com',
       token: 'pat-token',
     });
 
-    const result = await getAuth('VsTeam', 'MyConn', platform);
+    const result = await getAuth('PAT', 'MyConn', platform);
 
     expect(getPatAuthMock).toHaveBeenCalledWith('MyConn', platform);
     expect(result.authType).toBe('pat');
@@ -59,7 +65,20 @@ describe('Azure Pipelines getAuth router', () => {
     expect(result.token).toBe('aad-token');
   });
 
-  it('routes Generic connections to Basic auth', async () => {
+  it('routes WorkloadIdentity connections to workload identity auth', async () => {
+    getWorkloadIdentityAuthMock.mockResolvedValue({
+      authType: 'pat',
+      serviceUrl: 'https://marketplace.visualstudio.com',
+      token: 'wif-token',
+    });
+
+    const result = await getAuth('WorkloadIdentity', 'WifConn', platform);
+
+    expect(getWorkloadIdentityAuthMock).toHaveBeenCalledWith('WifConn', platform);
+    expect(result.token).toBe('wif-token');
+  });
+
+  it('routes Basic connections to Basic auth', async () => {
     getBasicAuthMock.mockResolvedValue({
       authType: 'basic',
       serviceUrl: 'https://marketplace.visualstudio.com',
@@ -67,7 +86,7 @@ describe('Azure Pipelines getAuth router', () => {
       password: 'pass',
     });
 
-    const result = await getAuth('Generic', 'GenericConn', platform);
+    const result = await getAuth('Basic', 'GenericConn', platform);
 
     expect(getBasicAuthMock).toHaveBeenCalledWith('GenericConn', platform);
     expect(result.authType).toBe('basic');
@@ -75,7 +94,7 @@ describe('Azure Pipelines getAuth router', () => {
 
   it('throws on unsupported connection type', async () => {
     await expect(getAuth('unsupported:type' as any, 'BadConn', platform)).rejects.toThrow(
-      'Unsupported connection type: unsupported:type. Expected one of: VsTeam, AzureRM, Generic'
+      'Unsupported connection type: unsupported:type. Expected one of: PAT, WorkloadIdentity, AzureRM, Basic'
     );
   });
 
@@ -86,8 +105,8 @@ describe('Azure Pipelines getAuth router', () => {
       token: 'pat-token',
     });
 
-    await getAuth('vsteam', 'MyConn', platform);
-    await getAuth('VSTEAM', 'MyConn', platform);
+    await getAuth('pat', 'MyConn', platform);
+    await getAuth('PAT', 'MyConn', platform);
 
     expect(getPatAuthMock).toHaveBeenCalledTimes(2);
   });
