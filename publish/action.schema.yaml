@@ -1,0 +1,111 @@
+# Schema for action-example-checker
+# See: https://github.com/jessehouwing/actions-example-checker
+
+# Define reusable custom types
+types:
+  url:
+    type: string
+    match: '^https?://.*'
+  semver:
+    type: string
+    match: '^\d+\.\d+\.\d+$'
+  identifier:
+    type: string
+    match: '^[a-zA-Z0-9._-]+$'
+
+# Validate inputs
+inputs:
+  auth-type:
+    type: choice
+    options:
+      - pat
+      - basic
+      - oidc
+
+  token:
+    type: string
+
+  username:
+    type: string
+
+  service-url:
+    type: url
+
+  tfx-version:
+    type: string
+
+  publisher-id:
+    type: identifier
+
+  extension-id:
+    type: identifier
+
+  publish-source:
+    type: choice
+    options:
+      - manifest
+      - vsix
+
+  manifest-file:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  manifest-file-js:
+    type: string
+
+  overrides-file:
+    type: string
+
+  vsix-file:
+    type: string
+
+  extension-version:
+    type: semver
+
+  extension-name:
+    type: string
+
+  extension-visibility:
+    type: choice
+    options:
+      - private
+      - public
+      - private_preview
+      - public_preview
+
+  localization-root:
+    type: string
+
+  extension-pricing:
+    type: choice
+    options:
+      - default
+      - free
+      - paid
+
+  output-path:
+    type: string
+
+  bypass-validation:
+    type: boolean
+
+  update-tasks-version:
+    type: choice
+    options:
+      - none
+      - major
+      - minor
+      - patch
+
+  update-tasks-id:
+    type: boolean
+
+# Validate outputs
+outputs:
+  vsix-path:
+    type: string
+
+  published:
+    type: boolean
