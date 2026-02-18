@@ -1,0 +1,80 @@
+# Schema for action-example-checker
+# See: https://github.com/jessehouwing/actions-example-checker
+
+# Define reusable custom types
+types:
+  semver:
+    type: string
+    match: '^\d+\.\d+\.\d+$'
+  identifier:
+    type: string
+    match: '^[a-zA-Z0-9._-]+$'
+
+# Validate inputs
+inputs:
+  tfx-version:
+    type: string
+
+  publisher-id:
+    type: identifier
+
+  extension-id:
+    type: identifier
+
+  manifest-file:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  manifest-file-js:
+    type: string
+
+  overrides-file:
+    type: string
+
+  extension-version:
+    type: semver
+
+  extension-name:
+    type: string
+
+  extension-visibility:
+    type: choice
+    options:
+      - private
+      - public
+      - private_preview
+      - public_preview
+
+  localization-root:
+    type: string
+
+  extension-pricing:
+    type: choice
+    options:
+      - default
+      - free
+      - paid
+
+  output-path:
+    type: string
+
+  bypass-validation:
+    type: boolean
+
+  update-tasks-version:
+    type: choice
+    options:
+      - none
+      - major
+      - minor
+      - patch
+
+  update-tasks-id:
+    type: boolean
+
+# Validate outputs
+outputs:
+  vsix-path:
+    type: string

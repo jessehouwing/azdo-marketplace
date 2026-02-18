@@ -1,0 +1,64 @@
+# Schema for action-example-checker
+# See: https://github.com/jessehouwing/actions-example-checker
+
+# Define reusable custom types
+types:
+  identifier:
+    type: string
+    match: '^[a-zA-Z0-9._-]+$'
+
+# Validate inputs
+inputs:
+  auth-type:
+    type: choice
+    options:
+      - pat
+      - basic
+      - oidc
+
+  token:
+    type: string
+
+  username:
+    type: string
+
+  tfx-version:
+    type: string
+
+  publisher-id:
+    type: identifier
+
+  extension-id:
+    type: identifier
+
+  vsix-path:
+    type: string
+
+  manifest-file:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  expected-tasks:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  accounts:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  installation-timeout:
+    type: number
+
+  installation-poll-interval:
+    type: number
+
+# Validate outputs
+outputs:
+  verify-install:
+    type: boolean

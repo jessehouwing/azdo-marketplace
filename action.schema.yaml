@@ -1,0 +1,193 @@
+# Schema for action-example-checker
+# See: https://github.com/jessehouwing/actions-example-checker
+
+# Define reusable custom types
+types:
+  url:
+    type: string
+    match: '^https?://.*'
+  semver:
+    type: string
+    match: '^\d+\.\d+\.\d+$'
+  identifier:
+    type: string
+    match: '^[a-zA-Z0-9._-]+$'
+
+# Validate inputs
+inputs:
+  operation:
+    type: choice
+    options:
+      - package
+      - publish
+      - unpublish
+      - share
+      - unshare
+      - install
+      - show
+      - query-version
+      - wait-for-validation
+      - wait-for-installation
+
+  auth-type:
+    type: choice
+    options:
+      - pat
+      - basic
+      - oidc
+
+  token:
+    type: string
+
+  username:
+    type: string
+
+  service-url:
+    type: url
+
+  tfx-version:
+    type: string
+
+  publisher-id:
+    type: identifier
+
+  extension-id:
+    type: identifier
+
+  manifest-file:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  manifest-file-js:
+    type: string
+
+  overrides-file:
+    type: string
+
+  vsix-file:
+    type: string
+
+  publish-source:
+    type: choice
+    options:
+      - manifest
+      - vsix
+
+  extension-version:
+    type: semver
+
+  extension-name:
+    type: string
+
+  extension-visibility:
+    type: choice
+    options:
+      - private
+      - public
+      - private_preview
+      - public_preview
+
+  localization-root:
+    type: string
+
+  extension-pricing:
+    type: choice
+    options:
+      - default
+      - free
+      - paid
+
+  output-path:
+    type: string
+
+  bypass-validation:
+    type: boolean
+
+  extension-tag:
+    type: string
+
+  update-tasks-version:
+    type: choice
+    options:
+      - none
+      - major
+      - minor
+      - patch
+
+  update-tasks-id:
+    type: boolean
+
+  accounts:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  vsix-path:
+    type: string
+
+  validation-timeout:
+    type: number
+
+  validation-poll-interval:
+    type: number
+
+  skip-validation:
+    type: boolean
+
+  expected-tasks:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+  installation-timeout:
+    type: number
+
+  installation-poll-interval:
+    type: number
+
+  increment-version:
+    type: choice
+    options:
+      - major
+      - minor
+      - patch
+      - none
+
+  tag-prefix:
+    type: string
+
+# Validate outputs
+outputs:
+  vsix-path:
+    type: string
+
+  metadata:
+    type: string
+
+  published:
+    type: boolean
+
+  shared:
+    type: boolean
+
+  unshared:
+    type: boolean
+
+  installed:
+    type: boolean
+
+  is-valid:
+    type: boolean
+
+  verify-install:
+    type: boolean
+
+  extension-version:
+    type: semver
+
+  new-version:
+    type: semver

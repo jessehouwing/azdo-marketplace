@@ -1,0 +1,52 @@
+# Schema for action-example-checker
+# See: https://github.com/jessehouwing/actions-example-checker
+
+# Define reusable custom types
+types:
+  url:
+    type: string
+    match: '^https?://.*'
+  identifier:
+    type: string
+    match: '^[a-zA-Z0-9._-]+$'
+
+# Validate inputs
+inputs:
+  auth-type:
+    type: choice
+    options:
+      - pat
+      - basic
+      - oidc
+
+  token:
+    type: string
+
+  username:
+    type: string
+
+  service-url:
+    type: url
+
+  tfx-version:
+    type: string
+
+  publisher-id:
+    type: identifier
+
+  extension-id:
+    type: identifier
+
+  vsix-path:
+    type: string
+
+  accounts:
+    type: string
+    separators: newline
+    items:
+      type: string
+
+# Validate outputs
+outputs:
+  unshared:
+    type: boolean
