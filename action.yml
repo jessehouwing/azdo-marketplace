@@ -1,4 +1,4 @@
-name: Azure DevOps Extension Tasks
+name: Azdo Marketplace Action
 description: Package, publish, and manage Azure DevOps extensions and Visual Studio Marketplace extensions
 author: Jesse Houwing
 branding:
