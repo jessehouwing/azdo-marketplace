@@ -359,6 +359,33 @@ describe('GitHub Action main entrypoint', () => {
     );
   });
 
+  it('allows use and publish-source when set to the same value', async () => {
+    const vsixPath = '/repo/original.vsix';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        'tfx-version': 'built-in',
+        'auth-type': 'pat',
+        use: 'vsix',
+        'publish-source': 'vsix',
+        'vsix-file': vsixPath,
+      },
+      fileExists: {
+        [vsixPath]: true,
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    // Should proceed past the conflicting-inputs validation
+    expect(setFailedMock).not.toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Inputs 'use' and 'publish-source' are both set and have different values"
+      )
+    );
+    expect(publishExtensionMock).toHaveBeenCalled();
+  });
   it('fails early when manifest-file-js does not exist', async () => {
     const missingPath = '/repo/missing-manifest.js';
     const platform = createPlatformMock({
