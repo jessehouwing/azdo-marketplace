@@ -108,7 +108,7 @@ jobs:
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
-          publish-source: vsix
+          use: vsix
           vsix-file: ${{ steps.package.outputs.vsix-path }}
           no-wait-validation: true
 

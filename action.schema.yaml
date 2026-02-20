@@ -12,6 +12,11 @@ types:
   identifier:
     type: string
     match: '^[a-zA-Z0-9._-]+$'
+  publish-source:
+    type: choice
+    options:
+      - manifest
+      - vsix
 
 # Validate inputs
 inputs:
@@ -69,11 +74,11 @@ inputs:
   vsix-file:
     type: string
 
+  use:
+    type: publish-source
+
   publish-source:
-    type: choice
-    options:
-      - manifest
-      - vsix
+    type: publish-source
 
   extension-version:
     type: semver

@@ -46,7 +46,7 @@
         "INPUT_OPERATION": "publish",
         "INPUT_AUTH-TYPE": "pat",
         "INPUT_TOKEN": "${env:MARKETPLACE_TOKEN}",
-        "INPUT_PUBLISH-SOURCE": "manifest",
+        "INPUT_USE": "manifest",
         "INPUT_PUBLISHER-ID": "your-publisher",
         "INPUT_EXTENSION-ID": "your-extension",
         "INPUT_TFX-VERSION": "embedded",

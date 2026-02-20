@@ -1,5 +1,5 @@
 ---
-applyTo: 'vss-extension.json,**/vss-extension.json,packages/**/task.json,action.yml,**/action.yaml'
+applyTo: 'vss-extension.json,**/vss-extension.json,packages/**/task.json'
 description: Guidance for Azure DevOps extension and task manifests
 ---
 
@@ -28,19 +28,3 @@ description: Guidance for Azure DevOps extension and task manifests
 - YAML pipelines do **not** enforce `visibleRule`, so users can provide inputs even when those inputs would be hidden in the UI.
 - Runtime code must always validate allowed/required input combinations independent of `visibleRule` results.
 - When changing a selector input (for example renaming or narrowing scope), re-check all dependent inputs’ `visibleRule` values to prevent accidental UI regressions.
-
-## Action wrapper synchronization strategy
-
-- Treat root `action.yml` as the source of truth for shared input/output metadata.
-- Keep every composite wrapper `*/action.yaml` synchronized for:
-  - input names and defaults
-  - forwarded `runs.steps[0].with` mappings
-  - input/output descriptions (wrapper descriptions must include root descriptions)
-  - operation-scoped required flags comments
-- After any change to root `action.yml` or any wrapper `action.yaml`, run the synchronization tests:
-  - `packages/github-action/src/__tests__/action-wrapper-contract.test.ts`
-  - `packages/github-action/src/__tests__/action-metadata-parity.test.ts`
-  - `packages/github-action/src/__tests__/action-required-comments.test.ts`
-- Preferred command:
-  - `npm test -- packages/github-action/src/__tests__/action-wrapper-contract.test.ts packages/github-action/src/__tests__/action-metadata-parity.test.ts packages/github-action/src/__tests__/action-required-comments.test.ts`
-- Do not merge wrapper metadata/input changes until these tests pass.

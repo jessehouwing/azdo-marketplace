@@ -47,7 +47,7 @@ Common input mappings:
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
 - `manifestFile` → `manifest-file`
-- `use` → `publish-source` (publish flows)
+- `use` → `use` (publish flows; `publish-source` is a deprecated alias)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 - `localizationRoot` → `localization-root`
@@ -235,7 +235,7 @@ jobs:
         with:
           operation: publish
           auth-type: oidc
-          publish-source: vsix
+          use: vsix
           vsix-file: ${{ steps.package.outputs.vsix-path }}
 ```
 

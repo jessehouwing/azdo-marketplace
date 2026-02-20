@@ -37,7 +37,7 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 - `extensionId` → `extension-id`
 - `extensionTag` → `extension-id`
 - `manifestFile` → `manifest-file`
-- `use` → `publish-source` (publish flows)
+- `use` → `use` (publish flows; `publish-source` is a deprecated alias)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 
@@ -177,7 +177,7 @@ jobs:
         with:
           operation: publish
           auth-type: oidc
-          publish-source: vsix
+          use: vsix
           vsix-file: ${{ steps.package.outputs.vsix-path }}
 ```
 

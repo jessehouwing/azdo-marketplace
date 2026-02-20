@@ -200,26 +200,34 @@ inputs:
       Required for: none.
       Default: none
 
-      - Use when publish-source is 'vsix'
+      - Use when `use` is 'vsix'
       - File must be a valid extension package
       - Supports GitHub Actions expressions
 
       **Example:** `$``{{ github.workspace }}/dist/my-extension.vsix`
     required: false
-  publish-source:
+  use:
     description: |-
       **Source for publish operation:**
 
       Available for: publish.
       Required for: none.
-      Default: manifest
+      Default: none
 
       - `manifest` (default): Build extension from manifest and source files
       - `vsix`: Publish a pre-built .vsix package
 
       **Use VSIX when:** You've already packaged the extension separately
     required: false
-    default: manifest
+  publish-source:
+    description: |-
+      - Supported values: `manifest`, `vsix`
+
+      Available for: publish.
+      Required for: none.
+      Default: none
+    required: false
+    deprecationMessage: Use `use` instead.
   extension-version:
     description: |-
       **Override extension version** specified in manifest.

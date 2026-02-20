@@ -47,7 +47,8 @@ This repository ships a **unified JavaScript action** and **composite command wr
 - `manifest-file`
 - `manifest-file-js`
 - `overrides-file`
-- `publish-source` (`manifest` or `vsix`)
+- `use` (`manifest` or `vsix`)
+- `publish-source` (deprecated alias for `use`)
 - `vsix-file`
 - `extension-version`, `extension-name`, `extension-visibility`
 - `output-path`
@@ -83,8 +84,8 @@ This repository ships a **unified JavaScript action** and **composite command wr
 - Required:
   - `operation: publish`
   - auth inputs (`auth-type` + credentials)
-  - `publish-source`
-  - `vsix-file` when `publish-source=vsix`
+  - `use`
+  - `vsix-file` when `use=vsix`
 - Optional:
   - identity inputs
   - manifest inputs (`manifest-file`, `manifest-file-js`, `overrides-file`)
@@ -235,7 +236,7 @@ steps:
     with:
       operation: publish
       auth-type: oidc
-      publish-source: vsix
+      use: vsix
       vsix-file: ${{ steps.package.outputs.vsix-path }}
 ```
 
