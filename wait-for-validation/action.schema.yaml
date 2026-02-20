@@ -46,16 +46,11 @@ inputs:
   extension-version:
     type: semver
 
-  validation-timeout:
+  max-retries:
     type: number
 
-  validation-poll-interval:
+  min-timeout:
     type: number
 
-  skip-validation:
-    type: boolean
-
-# Validate outputs
-outputs:
-  is-valid:
-    type: boolean
+  max-timeout:
+    type: number

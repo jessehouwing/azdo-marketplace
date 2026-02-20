@@ -37,9 +37,6 @@ inputs:
   extension-id:
     type: identifier
 
-  vsix-path:
-    type: string
-
 # Validate outputs
 outputs:
   metadata:
