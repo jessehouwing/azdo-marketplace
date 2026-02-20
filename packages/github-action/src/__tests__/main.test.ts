@@ -215,7 +215,7 @@ describe('GitHub Action main entrypoint', () => {
         operation: 'publish',
         'tfx-version': '^0.17.0',
         'auth-type': 'oidc',
-        'publish-source': 'manifest',
+        use: 'manifest',
         'output-path': '/out',
         'manifest-file-js': 'manifests/build-manifest.js',
         'overrides-file': 'manifests/overrides.json',
@@ -250,6 +250,35 @@ describe('GitHub Action main entrypoint', () => {
     expect(platform.setOutput).toHaveBeenCalledWith('vsix-path', '/tmp/published.vsix');
   });
 
+  it('defaults publish source to manifest when use and publish-source are both omitted', async () => {
+    publishExtensionMock.mockImplementation(async () => ({ vsixPath: '/tmp/published.vsix' }));
+
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        'tfx-version': 'built-in',
+        'auth-type': 'pat',
+        'output-path': '/out',
+      },
+      delimitedInputs: {
+        'manifest-file|\n': ['vss-extension.json'],
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(publishExtensionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        publishSource: 'manifest',
+      }),
+      expect.anything(),
+      expect.anything(),
+      platform
+    );
+    expect(setFailedMock).not.toHaveBeenCalled();
+  });
+
   it('executes publish from vsix and emits modified vsix path output', async () => {
     publishExtensionMock.mockImplementation(async () => ({
       vsixPath: '/tmp/temp-12345.vsix',
@@ -260,7 +289,7 @@ describe('GitHub Action main entrypoint', () => {
         operation: 'publish',
         'tfx-version': 'built-in',
         'auth-type': 'pat',
-        'publish-source': 'vsix',
+        use: 'vsix',
         'vsix-file': '/repo/original.vsix',
       },
     });
@@ -307,6 +336,56 @@ describe('GitHub Action main entrypoint', () => {
     );
   });
 
+  it('fails when use and publish-source are both set with different values', async () => {
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        'tfx-version': 'built-in',
+        'auth-type': 'pat',
+        use: 'manifest',
+        'publish-source': 'vsix',
+        'vsix-file': '/repo/original.vsix',
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(publishExtensionMock).not.toHaveBeenCalled();
+    expect(setFailedMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Inputs 'use' and 'publish-source' are both set and have different values"
+      )
+    );
+  });
+
+  it('allows use and publish-source when set to the same value', async () => {
+    const vsixPath = '/repo/original.vsix';
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'publish',
+        'tfx-version': 'built-in',
+        'auth-type': 'pat',
+        use: 'vsix',
+        'publish-source': 'vsix',
+        'vsix-file': vsixPath,
+      },
+      fileExists: {
+        [vsixPath]: true,
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    // Should proceed past the conflicting-inputs validation
+    expect(setFailedMock).not.toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Inputs 'use' and 'publish-source' are both set and have different values"
+      )
+    );
+    expect(publishExtensionMock).toHaveBeenCalled();
+  });
   it('fails early when manifest-file-js does not exist', async () => {
     const missingPath = '/repo/missing-manifest.js';
     const platform = createPlatformMock({

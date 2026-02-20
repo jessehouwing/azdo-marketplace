@@ -177,7 +177,16 @@ async function runPackage(platform, tfxManager) {
     }
 }
 async function runPublish(platform, tfxManager, auth) {
-    const publishSource = platform.getInput('publish-source', true);
+    const useInput = platform.getInput('use');
+    const deprecatedPublishSourceInput = platform.getInput('publish-source');
+    if (useInput && deprecatedPublishSourceInput && useInput !== deprecatedPublishSourceInput) {
+        throw new Error("Inputs 'use' and 'publish-source' are both set and have different values. Use only 'use' or set both to the same value.");
+    }
+    const publishSourceInput = useInput || deprecatedPublishSourceInput;
+    if (!useInput && deprecatedPublishSourceInput) {
+        platform.warning("Input 'publish-source' is deprecated. Use 'use' instead.");
+    }
+    const publishSource = (publishSourceInput || 'manifest');
     const extensionPricingInput = platform.getInput('extension-pricing');
     const result = await publishExtension({
         publishSource,

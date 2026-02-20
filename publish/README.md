@@ -19,7 +19,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 - uses: jessehouwing/azdo-marketplace/publish@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
-    publish-source: 'vsix'
+    use: 'vsix'
     vsix-file: './dist/my-extension.vsix'
 ```
 
@@ -92,15 +92,16 @@ OR
 
 #### Source Selection
 
-- `publish-source`: Source type (`manifest` or `vsix`, default: `manifest`)
+- `use`: Source type (`manifest` or `vsix`, default: `manifest`)
+- `publish-source`: Deprecated alias for `use`
 
-#### Manifest Source (when publish-source is manifest)
+#### Manifest Source (when use is manifest)
 
 - `manifest-file`: Manifest file path(s), newline-separated
 - `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
 - `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
 
-#### VSIX Source (when publish-source is vsix)
+#### VSIX Source (when use is vsix)
 
 - `vsix-file`: Path to .vsix file
 
@@ -168,7 +169,8 @@ jobs:
 - `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Overrides publisher identity used for publish.
 - `extension-id`: Overrides extension identity used for publish.
-- `publish-source`: Chooses publish source (`manifest` or `vsix`).
+- `use`: Chooses publish source (`manifest` or `vsix`).
+- `publish-source`: Deprecated alias for `use`.
 - `manifest-file`: Provides one or more manifest files for manifest publishing.
 - `manifest-file-js`: Provides a JS manifest module for `tfx --manifest-js`.
 - `overrides-file`: Provides an overrides JSON file merged into manifest publishing.

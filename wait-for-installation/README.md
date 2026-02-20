@@ -166,7 +166,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/publish@v6
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
-          publish-source: 'vsix'
+          use: 'vsix'
           vsix-file: ${{ steps.package.outputs.vsix-path }}
 
       - name: Install to Production Org

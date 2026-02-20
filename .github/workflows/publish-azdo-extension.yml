@@ -108,7 +108,7 @@ jobs:
         uses: ./publish
         with:
           auth-type: oidc
-          publish-source: vsix
+          use: vsix
           vsix-file: ${{ steps.package.outputs.vsix-path }}
           no-wait-validation: true
 

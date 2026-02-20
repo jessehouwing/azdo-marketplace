@@ -12,6 +12,11 @@ types:
   identifier:
     type: string
     match: '^[a-zA-Z0-9._-]+$'
+  publish-source:
+    type: choice
+    options:
+      - manifest
+      - vsix
 
 # Validate inputs
 inputs:
@@ -40,11 +45,11 @@ inputs:
   extension-id:
     type: identifier
 
+  use:
+    type: publish-source
+
   publish-source:
-    type: choice
-    options:
-      - manifest
-      - vsix
+    type: publish-source
 
   manifest-file:
     type: string
