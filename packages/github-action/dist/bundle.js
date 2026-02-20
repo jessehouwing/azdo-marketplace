@@ -7616,7 +7616,7 @@ async function runShow(platform, tfxManager, auth) {
   };
   const result = await showExtension(options, auth, tfxManager, platform);
   if (result.metadata) {
-    platform.setOutput("extension-metadata", JSON.stringify(result.metadata));
+    platform.setOutput("metadata", JSON.stringify(result.metadata));
   }
 }
 async function runQueryVersion(platform, tfxManager, auth) {
