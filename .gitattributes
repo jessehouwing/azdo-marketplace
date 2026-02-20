@@ -1,0 +1,7 @@
+# Keep generated dist artifacts normalized across OS environments
+packages/*/dist/**/*.js text eol=lf
+packages/*/dist/**/*.json text eol=lf
+packages/*/dist/**/*.map text eol=lf
+packages/*/dist/**/*.d.ts text eol=lf
+packages/*/dist/**/*.cmd text eol=lf
+packages/*/dist/**/*.ps1 text eol=lf

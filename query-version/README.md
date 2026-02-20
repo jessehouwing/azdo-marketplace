@@ -54,7 +54,7 @@ Use `extension-version-override` to point to an env var that contains a version.
 - `token`: Provides PAT/secret token for authenticated query operations.
 - `username`: Provides username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint, `path` uses `tfx` from PATH.
 - `publisher-id`: Identifies the publisher that owns the extension to query.
 - `extension-id`: Identifies the extension to query.
 - `version-action`: Selects version increment strategy (`None`, `Major`, `Minor`, `Patch`).

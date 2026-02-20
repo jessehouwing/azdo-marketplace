@@ -110,7 +110,7 @@ jobs:
 - `token`: Provides PAT/secret token for authenticated show operations.
 - `username`: Provides username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Identifies the publisher that owns the extension to query.
 - `extension-id`: Identifies the extension to query.
 

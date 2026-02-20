@@ -63,11 +63,11 @@ describe('Package Command Integration Test', () => {
   beforeEach(async () => {
     platform = new RealExecPlatformAdapter();
 
-    // Mock tfx tool location - use actual tfx from node_modules
-    const tfxPath =
-      process.platform === 'win32'
-        ? path.resolve(__dirname, '../../../../../node_modules/.bin/tfx.cmd')
-        : path.resolve(__dirname, '../../../../../node_modules/.bin/tfx');
+    // Built-in mode resolves the JS entrypoint directly
+    const tfxPath = path.resolve(
+      __dirname,
+      '../../../../../node_modules/tfx-cli/_build/tfx-cli.js'
+    );
     platform.setToolLocation('tfx', tfxPath);
 
     try {

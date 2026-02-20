@@ -65,7 +65,7 @@ OR
 
 #### TFX Configuration
 
-- `tfx-version`: Version of tfx-cli to use (default: `built-in`)
+- `tfx-version`: Version of tfx-cli to use (default: `built-in`; bundled JS entrypoint, no `.bin` shim fallback)
 
 #### Identity Fallback
 
@@ -115,7 +115,7 @@ jobs:
 - `token`: Provides PAT/secret token for authenticated unpublish operations.
 - `username`: Provides username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Identifies the publisher that owns the extension to unpublish.
 - `extension-id`: Identifies the extension to unpublish.
 - `vsix-path`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.

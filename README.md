@@ -78,7 +78,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - `token`: Provides the secret token used for `pat` and `basic` authentication.
 - `username`: Provides the username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint for supported operations.
-- `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec).
+- `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec); `built-in` uses the bundled JS entrypoint, while `path` uses `tfx` from PATH.
 - `publisher-id`: Sets or overrides the extension publisher identifier.
 - `extension-id`: Sets or overrides the extension identifier inside the publisher namespace.
 - `manifest-file`: Points to one or more manifest files used for manifest-based operations.

@@ -66,6 +66,20 @@ async function readJson(relativePath) {
   return JSON.parse(raw);
 }
 
+let cachedRootLockfile;
+
+async function readRootLockfile() {
+  if (!cachedRootLockfile) {
+    cachedRootLockfile = await readJson('package-lock.json');
+  }
+
+  return cachedRootLockfile;
+}
+
+function resolveLockedVersion(name, lockfile) {
+  return lockfile?.packages?.[`node_modules/${name}`]?.version;
+}
+
 function resolveVersion(name, manifests) {
   for (const manifest of manifests) {
     if (manifest.dependencies?.[name]) {
@@ -84,11 +98,13 @@ function resolveVersion(name, manifests) {
 
 async function writeRuntimeDependencyManifest(target) {
   const manifests = await Promise.all(target.manifestSources.map((source) => readJson(source)));
+  const lockfile = await readRootLockfile();
   const packageManifest = manifests[0];
   const dependencies = {};
 
   for (const dependency of target.external) {
-    const version = resolveVersion(dependency, manifests);
+    const version =
+      resolveLockedVersion(dependency, lockfile) ?? resolveVersion(dependency, manifests);
     if (!version) {
       throw new Error(
         `Unable to resolve version for external dependency '${dependency}' in ${target.name}`
@@ -192,7 +208,9 @@ async function installRuntimeDependencies(target) {
   const installArgs = [
     'install',
     '--omit=dev',
+    '--omit=optional',
     '--no-package-lock',
+    '--no-bin-links',
     '--install-links',
     'false',
     '--ignore-scripts',

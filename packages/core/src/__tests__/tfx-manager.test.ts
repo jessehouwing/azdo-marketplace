@@ -65,7 +65,7 @@ describe('TfxManager', () => {
       });
 
       try {
-        await expect(manager.resolve()).rejects.toThrow(/Built-in tfx-cli not found/);
+        await expect(manager.resolve()).rejects.toThrow(/Built-in tfx-cli JS entrypoint not found/);
       } finally {
         process.chdir(originalCwd);
         process.argv[1] = originalArgv1;

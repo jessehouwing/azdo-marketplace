@@ -45,7 +45,7 @@ These appear across multiple operations.
 
 - `publisherId`
 - `extensionId`
-- `tfxVersion` (`built-in`, `path`, or npm version spec)
+- `tfxVersion` (`built-in`, `path`, or npm version spec); `built-in` resolves the bundled `tfx-cli` JS entrypoint, `path` resolves `tfx` from PATH
 
 ### Manifest / package source
 

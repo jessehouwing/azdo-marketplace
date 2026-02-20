@@ -135,7 +135,7 @@ jobs:
 - `token`: Provides PAT/secret token for authenticated share operations.
 - `username`: Provides username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Identifies the publisher that owns the extension to share.
 - `extension-id`: Identifies the extension to share.
 - `vsix-path`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
