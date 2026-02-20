@@ -222,6 +222,43 @@ async function installRuntimeDependencies(target) {
   await runCommand(npmCommand, installArgs, distDir);
 }
 
+async function normalizeTextLineEndings(directory) {
+  const stack = [directory];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
+    }
+
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      const content = await fs.readFile(fullPath);
+
+      // Skip likely binary files.
+      if (content.includes(0)) {
+        continue;
+      }
+
+      const normalized = content.toString('utf8').replace(/\r\n/g, '\n');
+      if (normalized !== content.toString('utf8')) {
+        await fs.writeFile(fullPath, normalized, 'utf8');
+      }
+    }
+  }
+}
+
 async function ensureExecutableBinScripts(target) {
   const binDir = path.join(rootDir, target.packageDir, 'dist', 'node_modules', '.bin');
 
@@ -330,6 +367,7 @@ async function bundle() {
 
     await writeRuntimeDependencyManifest(target);
     await installRuntimeDependencies(target);
+    await normalizeTextLineEndings(path.join(rootDir, target.packageDir, 'dist', 'node_modules'));
     await ensureExecutableBinScripts(target);
     console.log(`✓ ${target.name} bundled`);
   }

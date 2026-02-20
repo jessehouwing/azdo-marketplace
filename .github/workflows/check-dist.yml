@@ -33,7 +33,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build and bundle
         run: |
@@ -48,7 +48,7 @@ jobs:
 
       - name: Compare the expected and actual dist/ directories
         run: |
-          if [ "$(git diff --ignore-cr-at-eol --ignore-space-at-eol packages/*/dist/ | wc -l)" -gt "0" ]; then
+          if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet -- packages/*/dist/; then
             echo "Detected uncommitted changes after build. See status below:"
             git diff
             exit 1
