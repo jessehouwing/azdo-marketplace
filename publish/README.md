@@ -165,7 +165,7 @@ jobs:
 - `token`: Provides PAT/secret token for authenticated publish operations.
 - `username`: Provides username when `auth-type` is `basic`.
 - `service-url`: Overrides the service endpoint for cloud/on-prem publish.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Overrides publisher identity used for publish.
 - `extension-id`: Overrides extension identity used for publish.
 - `publish-source`: Chooses publish source (`manifest` or `vsix`).

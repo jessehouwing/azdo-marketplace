@@ -128,7 +128,7 @@ OR
 
 #### TFX Configuration
 
-- `tfx-version`: Version of tfx-cli to use (default: `built-in`)
+- `tfx-version`: Version of tfx-cli to use (default: `built-in`; bundled JS entrypoint, no `.bin` shim fallback)
 
 #### Verification Options
 
@@ -230,7 +230,7 @@ Each task can have multiple versions. The verification succeeds if ALL specified
 - `auth-type`: Selects authentication mode (`pat`, `basic`, or `oidc`).
 - `token`: Provides PAT/secret token for authenticated verification operations.
 - `username`: Provides username when `auth-type` is `basic`.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Identifies the publisher that owns the extension to verify.
 - `extension-id`: Identifies the extension to verify.
 - `accounts`: Lists organizations/accounts where installation is verified.

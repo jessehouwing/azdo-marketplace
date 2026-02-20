@@ -78,7 +78,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - `token`: Provides the secret token used for `pat` and `basic` authentication.
 - `username`: Provides the username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint for supported operations.
-- `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec).
+- `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec); `built-in` uses the bundled JS entrypoint, while `path` uses `tfx` from PATH.
 - `publisher-id`: Sets or overrides the extension publisher identifier.
 - `extension-id`: Sets or overrides the extension identifier inside the publisher namespace.
 - `manifest-file`: Points to one or more manifest files used for manifest-based operations.
@@ -110,7 +110,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 ### Main action outputs
 
 - `vsix-path`: Returns the generated VSIX path from package/publish flows.
-- `extension-metadata`: Returns extension metadata JSON from `show`.
+- `metadata`: Returns extension metadata JSON from `show`.
 - `proposed-version`: Returns the computed version from `query-version`.
 - `current-version`: Returns the current marketplace version from `query-version`.
 
@@ -193,7 +193,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     publisher-id: my-publisher
     extension-id: my-extension
 
-- run: echo '${{ steps.show.outputs.extension-metadata }}'
+- run: echo '${{ steps.show.outputs.metadata }}'
 ```
 
 ### query-version

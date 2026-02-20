@@ -26,7 +26,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build and bundle
         run: |
@@ -41,9 +41,10 @@ jobs:
 
       - name: Compare the expected and actual dist/ directories
         run: |
-          if [ "$(git diff --ignore-space-at-eol packages/*/dist/ | wc -l)" -gt "0" ]; then
+          if ! git diff --quiet -- packages/*/dist/; then
             echo "Detected uncommitted changes after build. See status below:"
-            git diff
+            git diff --name-status -- packages/*/dist/
+            git diff -- packages/*/dist/
             exit 1
           fi
         id: diff

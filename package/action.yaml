@@ -13,8 +13,8 @@ inputs:
       Required for: none.
       Default: built-in
 
-      - `built-in` (default): Use tfx-cli bundled with this action
-      - `path`: Use tfx-cli from system PATH
+      - `built-in` (default): Use bundled tfx-cli JS entrypoint
+      - `path`: Use tfx-cli from system PATH (provided by your environment)
       - Version spec: Download specific version from npm (e.g., `^0.17`, `0.17.0`, `latest`)
 
       **Examples:** `built-in`, `path`, `^0.17`, `latest`

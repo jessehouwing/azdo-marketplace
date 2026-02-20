@@ -1,0 +1,8 @@
+# Keep first-party generated dist artifacts normalized across OS environments
+packages/*/dist/bundle.js text eol=lf
+packages/*/dist/bundle.js.map text eol=lf
+packages/*/dist/package.json text eol=lf
+packages/*/dist/runtime-dependencies.json text eol=lf
+
+# Keep vendored runtime dependencies byte-for-byte as produced by npm
+packages/*/dist/node_modules/** -text

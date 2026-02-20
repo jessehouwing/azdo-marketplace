@@ -93,7 +93,8 @@ jobs:
         run: |
           set -euo pipefail
           go install github.com/rhysd/actionlint/cmd/actionlint@latest
-          actionlint_version="$($(go env GOPATH)/bin/actionlint -version | head -n 1)"
+          gopath="$(go env GOPATH)"
+          actionlint_version="$("${gopath}/bin/actionlint" -version | head -n 1)"
           echo "version=${actionlint_version}" >> "$GITHUB_OUTPUT"
           echo "actionlint version: ${actionlint_version}"
 

@@ -6,14 +6,14 @@
  * They can be skipped in CI by filtering test patterns
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { execFile } from 'child_process';
+import { access } from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { promisify } from 'util';
 import { TfxManager } from '../../tfx-manager.js';
 import { MockPlatformAdapter } from '../helpers/mock-platform.js';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { chmod, access } from 'fs/promises';
-import path from 'path';
-import os from 'os';
 
 const execFileAsync = promisify(execFile);
 
@@ -181,62 +181,39 @@ describe('TfxManager Integration Tests', () => {
   });
 
   describe('built-in tfx execution', () => {
-    it('should execute tfx from PATH when embedded mode is used', async () => {
-      // Check if tfx is available in PATH
+    it('should resolve built-in tfx from JS entrypoint and execute via node', async () => {
+      const tfxEntrypoint = path.resolve(
+        process.cwd(),
+        'node_modules',
+        'tfx-cli',
+        '_build',
+        'tfx-cli.js'
+      );
+      const entrypoint = path.resolve(process.cwd(), 'node_modules', 'jest', 'bin', 'jest.js');
+
       try {
-        await execFileAsync('tfx', [], { timeout: 10000 });
-      } catch (error) {
-        // Skip test if tfx not in PATH
-        platform.warning('Skipping embedded test: tfx not found in PATH');
+        await access(tfxEntrypoint);
+      } catch {
+        platform.warning('Skipping built-in test: tfx-cli JS entrypoint not found in node_modules');
         return;
       }
 
-      platform.registerTool('tfx', 'tfx');
+      const originalArgv1 = process.argv[1];
+      process.argv[1] = entrypoint;
 
       const manager = new TfxManager({
         tfxVersion: 'built-in',
         platform,
       });
 
-      const tfxPath = await manager.resolve();
-      expect(tfxPath).toBeDefined();
-
-      // Execute tfx --version
-      const result = await manager.execute(['--version']);
-      expect(result.exitCode).toBe(0);
-
-      platform.info('Embedded tfx executed successfully');
-    });
-
-    it('should verify built-in tfx is executable', async () => {
-      // Check if tfx is available in PATH
-      let tfxPath: string;
       try {
-        const result = await execFileAsync('which', ['tfx'], { timeout: 5000 });
-        tfxPath = result.stdout.trim();
-      } catch (error) {
-        platform.warning('Skipping executable test: tfx not found in PATH');
-        return;
-      }
+        const tfxPath = await manager.resolve();
+        expect(tfxPath).toBe(tfxEntrypoint);
 
-      // Check if file exists and is executable
-      try {
-        await access(tfxPath, 0o111); // Check execute permission
-        platform.info(`Embedded tfx at ${tfxPath} is executable`);
-        expect(true).toBe(true);
-      } catch (error) {
-        // Try to make it executable
-        platform.warning(`tfx at ${tfxPath} is not executable, attempting chmod`);
-        try {
-          await chmod(tfxPath, 0o755);
-          await access(tfxPath, 0o111);
-          platform.info('Successfully made tfx executable');
-          expect(true).toBe(true);
-        } catch (chmodError) {
-          // If chmod fails, that's also acceptable if we can still execute
-          platform.error(`Could not make tfx executable: ${chmodError}`);
-          // Don't fail the test - tfx might work via a wrapper script
-        }
+        const result = await manager.execute(['--version']);
+        expect(result.exitCode).toBe(0);
+      } finally {
+        process.argv[1] = originalArgv1;
       }
     });
   });

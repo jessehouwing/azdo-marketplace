@@ -4948,12 +4948,11 @@ var TfxManager = class {
     return this.resolvedPath;
   }
   /**
-   * Resolve built-in tfx binary from core package dependencies
-   * Similar to tfxinstaller v5 behavior
+   * Resolve built-in tfx JS entrypoint from core package dependencies.
    *
    * The tfx-cli package is a direct dependency of the core package.
    * When bundled, tfx-cli is marked as external and will be in node_modules.
-   * We use 'which' to locate it, which will find it in node_modules/.bin/ or PATH.
+   * Built-in mode intentionally does not rely on node_modules/.bin shims.
    */
   async resolveBuiltIn() {
     this.platform.info("Using built-in tfx-cli.");
@@ -4962,7 +4961,6 @@ var TfxManager = class {
       throw new Error("Built-in tfx-cli resolution failed: process.argv[1] is not set.");
     }
     const entryDir = path2.dirname(path2.resolve(entrypoint));
-    const tfxExecutable = process.platform === "win32" ? "tfx.cmd" : "tfx";
     const candidateDirs = [entryDir];
     const normalizedEntrypoint = path2.resolve(entrypoint).replace(/\\/g, "/");
     if (normalizedEntrypoint.includes("/node_modules/")) {
@@ -4974,13 +4972,8 @@ var TfxManager = class {
         this.platform.debug(`Resolved built-in tfx-cli JS entrypoint at: ${jsEntrypoint}`);
         return jsEntrypoint;
       }
-      const builtInPath = path2.join(candidateDir, "node_modules", ".bin", tfxExecutable);
-      if (await this.pathExists(builtInPath)) {
-        this.platform.debug(`Resolved built-in tfx at: ${builtInPath}`);
-        return builtInPath;
-      }
     }
-    throw new Error(`Built-in tfx-cli not found at expected path: ${path2.join(entryDir, "node_modules", ".bin", tfxExecutable)}.`);
+    throw new Error(`Built-in tfx-cli JS entrypoint not found at expected path: ${path2.join(entryDir, "node_modules", "tfx-cli", "_build", "tfx-cli.js")}.`);
   }
   async pathExists(filePath) {
     try {
@@ -7616,7 +7609,7 @@ async function runShow(platform, tfxManager, auth) {
   };
   const result = await showExtension(options, auth, tfxManager, platform);
   if (result.metadata) {
-    platform.setOutput("extension-metadata", JSON.stringify(result.metadata));
+    platform.setOutput("metadata", JSON.stringify(result.metadata));
   }
 }
 async function runQueryVersion(platform, tfxManager, auth) {

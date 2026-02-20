@@ -389,7 +389,7 @@ async function runShow(
   const result = await showExtension(options, auth, tfxManager, platform);
 
   if (result.metadata) {
-    platform.setOutput('extension-metadata', JSON.stringify(result.metadata));
+    platform.setOutput('metadata', JSON.stringify(result.metadata));
   }
 }
 

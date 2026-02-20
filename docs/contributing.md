@@ -6,7 +6,7 @@ This repo is an npm workspace monorepo for v6 Azure DevOps extension automation.
 
 - Node.js (see `.node-version`)
 - npm
-- Optional for local end-to-end checks: `tfx-cli` in PATH (unless using built-in mode)
+- Optional for local end-to-end checks: `tfx-cli` in PATH (not required when using built-in mode, which runs the bundled JS entrypoint)
 
 ## Initial setup
 

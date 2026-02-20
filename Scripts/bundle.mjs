@@ -66,6 +66,20 @@ async function readJson(relativePath) {
   return JSON.parse(raw);
 }
 
+let cachedRootLockfile;
+
+async function readRootLockfile() {
+  if (!cachedRootLockfile) {
+    cachedRootLockfile = await readJson('package-lock.json');
+  }
+
+  return cachedRootLockfile;
+}
+
+function resolveLockedVersion(name, lockfile) {
+  return lockfile?.packages?.[`node_modules/${name}`]?.version;
+}
+
 function resolveVersion(name, manifests) {
   for (const manifest of manifests) {
     if (manifest.dependencies?.[name]) {
@@ -84,11 +98,13 @@ function resolveVersion(name, manifests) {
 
 async function writeRuntimeDependencyManifest(target) {
   const manifests = await Promise.all(target.manifestSources.map((source) => readJson(source)));
+  const lockfile = await readRootLockfile();
   const packageManifest = manifests[0];
   const dependencies = {};
 
   for (const dependency of target.external) {
-    const version = resolveVersion(dependency, manifests);
+    const version =
+      resolveLockedVersion(dependency, lockfile) ?? resolveVersion(dependency, manifests);
     if (!version) {
       throw new Error(
         `Unable to resolve version for external dependency '${dependency}' in ${target.name}`
@@ -192,7 +208,9 @@ async function installRuntimeDependencies(target) {
   const installArgs = [
     'install',
     '--omit=dev',
+    '--omit=optional',
     '--no-package-lock',
+    '--no-bin-links',
     '--install-links',
     'false',
     '--ignore-scripts',
@@ -202,6 +220,43 @@ async function installRuntimeDependencies(target) {
 
   console.log(`Installing runtime dependencies for ${target.name}...`);
   await runCommand(npmCommand, installArgs, distDir);
+}
+
+async function normalizeTextLineEndings(directory) {
+  const stack = [directory];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
+    }
+
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      const content = await fs.readFile(fullPath);
+
+      // Skip likely binary files.
+      if (content.includes(0)) {
+        continue;
+      }
+
+      const normalized = content.toString('utf8').replace(/\r\n/g, '\n');
+      if (normalized !== content.toString('utf8')) {
+        await fs.writeFile(fullPath, normalized, 'utf8');
+      }
+    }
+  }
 }
 
 async function ensureExecutableBinScripts(target) {
@@ -307,11 +362,13 @@ async function bundle() {
       format: target.bundleFormat,
       outfile: path.join(rootDir, target.outFile),
       sourcemap: true,
+      sourcesContent: false,
       external: target.external,
     });
 
     await writeRuntimeDependencyManifest(target);
     await installRuntimeDependencies(target);
+    await normalizeTextLineEndings(path.join(rootDir, target.packageDir, 'dist', 'node_modules'));
     await ensureExecutableBinScripts(target);
     console.log(`✓ ${target.name} bundled`);
   }

@@ -50,7 +50,8 @@ None - all inputs are optional with sensible defaults.
 #### TFX Configuration
 
 - `tfx-version`: Version of tfx-cli to use (default: `built-in`)
-  - `built-in`: Use bundled tfx-cli
+  - `built-in`: Use bundled tfx-cli JS entrypoint (no `node_modules/.bin` shim fallback)
+  - `path`: Use `tfx` from system PATH (provided by your environment)
   - `latest`: Download latest version from npm
   - `0.17.x`: Download specific version
 
@@ -129,7 +130,7 @@ jobs:
 
 ## GitHub Marketplace inputs
 
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Overrides publisher identity used in packaging.
 - `extension-id`: Overrides extension identity used in packaging.
 - `manifest-file`: Provides one or more manifest files for package input.

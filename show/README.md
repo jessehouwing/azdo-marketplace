@@ -15,7 +15,7 @@ Display metadata for an Azure DevOps extension from the Visual Studio Marketplac
     extension-id: 'my-extension'
 
 - name: Display metadata
-  run: echo '${{ steps.show.outputs.extension-metadata }}'
+  run: echo '${{ steps.show.outputs.metadata }}'
 ```
 
 ### With OIDC Authentication
@@ -60,7 +60,7 @@ OR
 
 ## Outputs
 
-- `extension-metadata`: Extension metadata as JSON string
+- `metadata`: Extension metadata as JSON string
 
 ## Example: Check Version Before Update
 
@@ -84,7 +84,7 @@ jobs:
       - name: Parse version
         id: version
         run: |
-          VERSION=$(echo '${{ steps.show.outputs.extension-metadata }}' | jq -r '.versions[0].version')
+          VERSION=$(echo '${{ steps.show.outputs.metadata }}' | jq -r '.versions[0].version')
           echo "current-version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Display current version
@@ -101,7 +101,7 @@ jobs:
     publisher-id: my-publisher
     extension-id: my-extension
 
-- run: echo '${{ steps.show.outputs.extension-metadata }}'
+- run: echo '${{ steps.show.outputs.metadata }}'
 ```
 
 ## GitHub Marketplace inputs
@@ -110,13 +110,13 @@ jobs:
 - `token`: Provides PAT/secret token for authenticated show operations.
 - `username`: Provides username when `auth-type` is `basic`.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint.
-- `tfx-version`: Selects which `tfx-cli` version/source is used.
+- `tfx-version`: Selects which `tfx-cli` version/source is used; `built-in` uses the bundled JS entrypoint without `.bin` shim fallback, `path` uses `tfx` from PATH.
 - `publisher-id`: Identifies the publisher that owns the extension to query.
 - `extension-id`: Identifies the extension to query.
 
 ## GitHub Marketplace outputs
 
-- `extension-metadata`: Returns extension metadata JSON from marketplace lookup.
+- `metadata`: Returns extension metadata JSON from marketplace lookup.
 
 ## See Also
 

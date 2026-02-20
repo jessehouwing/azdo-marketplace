@@ -94,8 +94,8 @@ inputs:
       Required for: none.
       Default: built-in
 
-      - `built-in` (default): Use tfx-cli bundled with this action
-      - `path`: Use tfx-cli from system PATH
+      - `built-in` (default): Use bundled tfx-cli JS entrypoint
+      - `path`: Use tfx-cli from system PATH (provided by your environment)
       - Version spec: Download specific version from npm (e.g., `^0.17`, `0.17.0`, `latest`)
 
       **Examples:** `built-in`, `path`, `^0.17`, `latest`
@@ -131,7 +131,7 @@ inputs:
       **Example:** `my-extension` or `azure-devops-tasks`
     required: true
 outputs:
-  extension-metadata:
+  metadata:
     description: |
       **Extension metadata as JSON** (show operation only).
 
@@ -150,9 +150,9 @@ outputs:
           publisher-id: mycompany
           extension-id: my-extension
 
-      - run: echo '$``{{ steps.show.outputs.extension-metadata }}' | jq .
+      - run: echo '$``{{ steps.show.outputs.metadata }}' | jq .
       ```
-    value: ${{ steps.show.outputs.extension-metadata }}
+    value: ${{ steps.show.outputs.metadata }}
 runs:
   using: composite
   steps:

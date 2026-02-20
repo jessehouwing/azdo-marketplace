@@ -39,7 +39,7 @@ class TextCaptureStream extends Writable {
 export interface TfxManagerOptions {
   /**
    * Version of tfx to use:
-   * - "built-in": Use tfx-cli from core package dependencies
+   * - "built-in": Use tfx-cli JS entrypoint from core package dependencies
    * - "path": Use tfx from system PATH
    * - Version spec: Download and cache (e.g., "0.17.0", "^0.17", "latest")
    */
@@ -132,12 +132,11 @@ export class TfxManager {
   }
 
   /**
-   * Resolve built-in tfx binary from core package dependencies
-   * Similar to tfxinstaller v5 behavior
+   * Resolve built-in tfx JS entrypoint from core package dependencies.
    *
    * The tfx-cli package is a direct dependency of the core package.
    * When bundled, tfx-cli is marked as external and will be in node_modules.
-   * We use 'which' to locate it, which will find it in node_modules/.bin/ or PATH.
+   * Built-in mode intentionally does not rely on node_modules/.bin shims.
    */
   private async resolveBuiltIn(): Promise<string> {
     this.platform.info('Using built-in tfx-cli.');
@@ -148,7 +147,6 @@ export class TfxManager {
     }
 
     const entryDir = path.dirname(path.resolve(entrypoint));
-    const tfxExecutable = process.platform === 'win32' ? 'tfx.cmd' : 'tfx';
     const candidateDirs = [entryDir];
     const normalizedEntrypoint = path.resolve(entrypoint).replace(/\\/g, '/');
 
@@ -168,17 +166,10 @@ export class TfxManager {
         this.platform.debug(`Resolved built-in tfx-cli JS entrypoint at: ${jsEntrypoint}`);
         return jsEntrypoint;
       }
-
-      const builtInPath = path.join(candidateDir, 'node_modules', '.bin', tfxExecutable);
-
-      if (await this.pathExists(builtInPath)) {
-        this.platform.debug(`Resolved built-in tfx at: ${builtInPath}`);
-        return builtInPath;
-      }
     }
 
     throw new Error(
-      `Built-in tfx-cli not found at expected path: ${path.join(entryDir, 'node_modules', '.bin', tfxExecutable)}.`
+      `Built-in tfx-cli JS entrypoint not found at expected path: ${path.join(entryDir, 'node_modules', 'tfx-cli', '_build', 'tfx-cli.js')}.`
     );
   }
 
