@@ -137,35 +137,118 @@ function buildCanonicalInputDescription({
 
 async function main() {
   const rootActionPath = path.join(rootDir, 'action.yml');
+  const actionSchemaPath = path.join(rootDir, 'action.schema.yaml');
   const rootActionContent = await fs.readFile(rootActionPath, 'utf8');
+  const actionSchemaContent = await fs.readFile(actionSchemaPath, 'utf8');
   const rootAction = loadYaml(rootActionContent);
+  const actionSchema = loadYaml(actionSchemaContent);
   const rootInputs = rootAction.inputs ?? {};
   const rootOutputs = rootAction.outputs ?? {};
+  const schemaInputs = actionSchema.inputs ?? {};
+  const schemaOutputs = actionSchema.outputs ?? {};
 
   if (!rootInputs || typeof rootInputs !== 'object') {
     throw new Error('Root action.yml does not contain a valid inputs section');
+  }
+
+  if (!rootOutputs || typeof rootOutputs !== 'object') {
+    throw new Error('Root action.yml does not contain a valid outputs section');
+  }
+
+  if (!schemaInputs || typeof schemaInputs !== 'object') {
+    throw new Error('action.schema.yaml does not contain a valid inputs section');
+  }
+
+  if (!schemaOutputs || typeof schemaOutputs !== 'object') {
+    throw new Error('action.schema.yaml does not contain a valid outputs section');
   }
 
   let updatedFiles = 0;
   let checkedFiles = 0;
   let updatedRootAction = false;
   const driftMessages = [];
+  const validationErrors = [];
+
+  for (const inputName of Object.keys(schemaInputs)) {
+    if (!Object.prototype.hasOwnProperty.call(rootInputs, inputName)) {
+      validationErrors.push(
+        `action.schema.yaml: input '${inputName}' is not declared in action.yml`
+      );
+    }
+  }
+
+  for (const outputName of Object.keys(schemaOutputs)) {
+    if (!Object.prototype.hasOwnProperty.call(rootOutputs, outputName)) {
+      validationErrors.push(
+        `action.schema.yaml: output '${outputName}' is not declared in action.yml`
+      );
+    }
+  }
+
+  for (const inputName of Object.keys(rootInputs)) {
+    if (!Object.prototype.hasOwnProperty.call(schemaInputs, inputName)) {
+      validationErrors.push(
+        `action.yml: input '${inputName}' is not declared in action.schema.yaml`
+      );
+    }
+  }
+
+  for (const outputName of Object.keys(rootOutputs)) {
+    if (!Object.prototype.hasOwnProperty.call(schemaOutputs, outputName)) {
+      validationErrors.push(
+        `action.yml: output '${outputName}' is not declared in action.schema.yaml`
+      );
+    }
+  }
 
   const requiredByInput = new Map();
   const availableByInput = new Map();
   for (const relativeActionPath of compositeActions) {
     const absoluteActionPath = path.join(rootDir, relativeActionPath);
+    const relativeSchemaPath = relativeActionPath.replace('/action.yaml', '/action.schema.yaml');
+    const absoluteSchemaPath = path.join(rootDir, relativeSchemaPath);
     const compositeContent = await fs.readFile(absoluteActionPath, 'utf8');
+    const compositeSchemaContent = await fs.readFile(absoluteSchemaPath, 'utf8');
     const compositeAction = loadYaml(compositeContent);
+    const compositeSchema = loadYaml(compositeSchemaContent);
     const compositeInputs = compositeAction.inputs ?? {};
+    const compositeOutputs = compositeAction.outputs ?? {};
+    const compositeSchemaInputs = compositeSchema.inputs ?? {};
+    const compositeSchemaOutputs = compositeSchema.outputs ?? {};
 
     if (!compositeInputs || typeof compositeInputs !== 'object') {
+      continue;
+    }
+
+    if (!compositeOutputs || typeof compositeOutputs !== 'object') {
+      continue;
+    }
+
+    if (!compositeSchemaInputs || typeof compositeSchemaInputs !== 'object') {
+      validationErrors.push(`${relativeSchemaPath}: missing or invalid inputs section`);
+      continue;
+    }
+
+    if (!compositeSchemaOutputs || typeof compositeSchemaOutputs !== 'object') {
+      validationErrors.push(`${relativeSchemaPath}: missing or invalid outputs section`);
       continue;
     }
 
     for (const [inputName, compositeInput] of Object.entries(compositeInputs)) {
       if (!compositeInput || typeof compositeInput !== 'object') {
         continue;
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(rootInputs, inputName)) {
+        validationErrors.push(
+          `${relativeActionPath}: input '${inputName}' is not declared in action.yml`
+        );
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(schemaInputs, inputName)) {
+        validationErrors.push(
+          `${relativeActionPath}: input '${inputName}' is not declared in action.schema.yaml`
+        );
       }
 
       const inputAvailableFor = availableByInput.get(inputName) ?? new Set();
@@ -178,6 +261,73 @@ async function main() {
         requiredByInput.set(inputName, inputRequiredFor);
       }
     }
+
+    for (const [outputName, compositeOutput] of Object.entries(compositeOutputs)) {
+      if (!compositeOutput || typeof compositeOutput !== 'object') {
+        continue;
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(rootOutputs, outputName)) {
+        validationErrors.push(
+          `${relativeActionPath}: output '${outputName}' is not declared in action.yml`
+        );
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(schemaOutputs, outputName)) {
+        validationErrors.push(
+          `${relativeActionPath}: output '${outputName}' is not declared in action.schema.yaml`
+        );
+      }
+    }
+
+    for (const inputName of Object.keys(compositeSchemaInputs)) {
+      if (!Object.prototype.hasOwnProperty.call(compositeInputs, inputName)) {
+        validationErrors.push(
+          `${relativeSchemaPath}: input '${inputName}' is not declared in ${relativeActionPath}`
+        );
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(rootInputs, inputName)) {
+        validationErrors.push(
+          `${relativeSchemaPath}: input '${inputName}' is not declared in action.yml`
+        );
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(schemaInputs, inputName)) {
+        validationErrors.push(
+          `${relativeSchemaPath}: input '${inputName}' is not declared in action.schema.yaml`
+        );
+      }
+    }
+
+    for (const outputName of Object.keys(compositeSchemaOutputs)) {
+      if (!Object.prototype.hasOwnProperty.call(compositeOutputs, outputName)) {
+        validationErrors.push(
+          `${relativeSchemaPath}: output '${outputName}' is not declared in ${relativeActionPath}`
+        );
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(rootOutputs, outputName)) {
+        validationErrors.push(
+          `${relativeSchemaPath}: output '${outputName}' is not declared in action.yml`
+        );
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(schemaOutputs, outputName)) {
+        validationErrors.push(
+          `${relativeSchemaPath}: output '${outputName}' is not declared in action.schema.yaml`
+        );
+      }
+    }
+  }
+
+  if (validationErrors.length > 0) {
+    for (const message of validationErrors) {
+      console.error(message);
+    }
+    throw new Error(
+      `Found ${validationErrors.length} composite action input/output declaration issue(s).`
+    );
   }
 
   for (const [inputName, rootInput] of Object.entries(rootInputs)) {
@@ -249,16 +399,16 @@ async function main() {
       }
     }
 
-    for (const [outputName, compositeOutput] of Object.entries(compositeOutputs)) {
-      if (!Object.prototype.hasOwnProperty.call(rootOutputs, outputName)) {
+    for (const [outputName, rootOutput] of Object.entries(rootOutputs)) {
+      if (!Object.prototype.hasOwnProperty.call(compositeOutputs, outputName)) {
         continue;
       }
 
+      const compositeOutput = compositeOutputs[outputName];
       if (!compositeOutput || typeof compositeOutput !== 'object') {
         continue;
       }
 
-      const rootOutput = rootOutputs[outputName];
       if (!rootOutput || typeof rootOutput !== 'object') {
         continue;
       }

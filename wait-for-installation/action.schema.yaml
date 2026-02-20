@@ -52,13 +52,8 @@ inputs:
     items:
       type: string
 
-  installation-timeout:
+  timeout-minutes:
     type: number
 
-  installation-poll-interval:
+  polling-interval-seconds:
     type: number
-
-# Validate outputs
-outputs:
-  verify-install:
-    type: boolean

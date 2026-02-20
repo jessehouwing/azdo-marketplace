@@ -40,24 +40,21 @@ inputs:
   extension-id:
     type: identifier
 
-  vsix-path:
-    type: string
-
-  increment-version:
+  version-action:
     type: choice
     options:
-      - major
-      - minor
-      - patch
-      - none
+      - None
+      - Major
+      - Minor
+      - Patch
 
-  tag-prefix:
+  extension-version-override:
     type: string
 
 # Validate outputs
 outputs:
-  extension-version:
+  current-version:
     type: semver
 
-  new-version:
+  proposed-version:
     type: semver

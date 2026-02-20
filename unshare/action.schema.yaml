@@ -45,8 +45,3 @@ inputs:
     separators: newline
     items:
       type: string
-
-# Validate outputs
-outputs:
-  unshared:
-    type: boolean

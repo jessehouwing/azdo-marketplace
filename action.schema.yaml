@@ -105,9 +105,6 @@ inputs:
   bypass-validation:
     type: boolean
 
-  extension-tag:
-    type: string
-
   update-tasks-version:
     type: choice
     options:
@@ -128,13 +125,7 @@ inputs:
   vsix-path:
     type: string
 
-  validation-timeout:
-    type: number
-
-  validation-poll-interval:
-    type: number
-
-  skip-validation:
+  no-wait-validation:
     type: boolean
 
   expected-tasks:
@@ -143,22 +134,31 @@ inputs:
     items:
       type: string
 
-  installation-timeout:
-    type: number
-
-  installation-poll-interval:
-    type: number
-
-  increment-version:
+  version-action:
     type: choice
     options:
-      - major
-      - minor
-      - patch
-      - none
+      - None
+      - Major
+      - Minor
+      - Patch
 
-  tag-prefix:
+  extension-version-override:
     type: string
+
+  max-retries:
+    type: number
+
+  min-timeout:
+    type: number
+
+  max-timeout:
+    type: number
+
+  timeout-minutes:
+    type: number
+
+  polling-interval-seconds:
+    type: number
 
 # Validate outputs
 outputs:
