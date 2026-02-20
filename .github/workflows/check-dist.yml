@@ -19,13 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
 
-      - name: Normalize git line endings for deterministic dist check
-        run: |
-          git config --local core.autocrlf false
-          git config --local core.eol lf
-          git reset --hard HEAD
-        shell: bash
-
       - name: Setup Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 #v6.2.0
         with:
@@ -48,10 +41,10 @@ jobs:
 
       - name: Compare the expected and actual dist/ directories
         run: |
-          git add --renormalize -- packages/*/dist/
-          if ! git diff --cached --quiet -- packages/*/dist/; then
+          if ! git diff --quiet -- packages/*/dist/; then
             echo "Detected uncommitted changes after build. See status below:"
-            git diff --cached -- packages/*/dist/
+            git diff --name-status -- packages/*/dist/
+            git diff -- packages/*/dist/
             exit 1
           fi
         id: diff
