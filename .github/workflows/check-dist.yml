@@ -48,9 +48,10 @@ jobs:
 
       - name: Compare the expected and actual dist/ directories
         run: |
-          if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet -- packages/*/dist/; then
+          git add --renormalize -- packages/*/dist/
+          if ! git diff --cached --quiet -- packages/*/dist/; then
             echo "Detected uncommitted changes after build. See status below:"
-            git diff
+            git diff --cached -- packages/*/dist/
             exit 1
           fi
         id: diff
