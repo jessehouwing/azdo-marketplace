@@ -170,7 +170,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
 ## Unified action outputs
 
 - `vsix-path` (package)
-- `extension-metadata` (show)
+- `metadata` (show)
 - `proposed-version` (query-version)
 - `current-version` (query-version)
 

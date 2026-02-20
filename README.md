@@ -110,7 +110,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 ### Main action outputs
 
 - `vsix-path`: Returns the generated VSIX path from package/publish flows.
-- `extension-metadata`: Returns extension metadata JSON from `show`.
+- `metadata`: Returns extension metadata JSON from `show`.
 - `proposed-version`: Returns the computed version from `query-version`.
 - `current-version`: Returns the current marketplace version from `query-version`.
 
@@ -193,7 +193,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     publisher-id: my-publisher
     extension-id: my-extension
 
-- run: echo '${{ steps.show.outputs.extension-metadata }}'
+- run: echo '${{ steps.show.outputs.metadata }}'
 ```
 
 ### query-version

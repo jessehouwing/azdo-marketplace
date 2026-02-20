@@ -538,7 +538,7 @@ outputs:
 
       - run: echo "VSIX at $``{{ steps.package.outputs.vsix-path }}"
       ```
-  extension-metadata:
+  metadata:
     description: |
       **Extension metadata as JSON** (show operation only).
 
@@ -557,7 +557,7 @@ outputs:
           publisher-id: mycompany
           extension-id: my-extension
 
-      - run: echo '$``{{ steps.show.outputs.extension-metadata }}' | jq .
+      - run: echo '$``{{ steps.show.outputs.metadata }}' | jq .
       ```
   proposed-version:
     description: |

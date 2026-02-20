@@ -100,7 +100,7 @@ Use standard step outputs only:
 
 - package: `vsix-path`
 - publish: `vsix-path`
-- show: `extension-metadata`
+- show: `metadata`
 - queryVersion/query-version: `proposed-version`, `current-version`
 
 ## Authentication migration
@@ -159,7 +159,7 @@ GitHub Actions references:
 Typical output mapping:
 
 - Azure Pipelines `vsixPath` → GitHub Actions `vsix-path`
-- Azure Pipelines `extensionMetadata` → GitHub Actions `extension-metadata`
+- Azure Pipelines `extensionMetadata` → GitHub Actions `metadata`
 - Azure Pipelines `proposedVersion` → GitHub Actions `proposed-version`
 - Azure Pipelines `currentVersion` → GitHub Actions `current-version`
 

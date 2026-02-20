@@ -541,7 +541,7 @@ describe('GitHub Action main entrypoint', () => {
     await importMainAndFlush();
 
     expect(showExtensionMock).toHaveBeenCalled();
-    expect(platform.setOutput).toHaveBeenCalledWith('extension-metadata', JSON.stringify(metadata));
+    expect(platform.setOutput).toHaveBeenCalledWith('metadata', JSON.stringify(metadata));
   });
 
   it('fails wait-for-validation when status is not success', async () => {
