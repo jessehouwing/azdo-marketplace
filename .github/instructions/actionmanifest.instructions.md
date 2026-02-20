@@ -8,6 +8,7 @@ description: Guidance for GitHub Actions manifests
 - Do not put deprecation notices in an input `description`.
 - For deprecated inputs, use the dedicated `deprecationMessage:` field.
 - Keep deprecation text synchronized across related manifests (for example root `action.yml` and composite action manifests).
+- When renaming an input, add a new input with the new name and add a `deprecationMessage:` to the old input explaining what new input to use instead.
 
 ## Action wrapper synchronization strategy
 
