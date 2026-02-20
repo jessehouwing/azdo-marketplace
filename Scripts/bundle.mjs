@@ -362,6 +362,7 @@ async function bundle() {
       format: target.bundleFormat,
       outfile: path.join(rootDir, target.outFile),
       sourcemap: true,
+      sourcesContent: false,
       external: target.external,
     });
 
