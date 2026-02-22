@@ -220,6 +220,13 @@ async function ensureStandaloneTfxBundle() {
     await fs.cp(path.join(tfxBuildDir, 'lib'), path.join(standaloneBuildRoot, 'lib'), {
       recursive: true,
     });
+    await fs.cp(
+      path.join(rootDir, 'node_modules', 'tfx-cli', 'node_modules'),
+      path.join(standaloneBuildRoot, 'node_modules'),
+      {
+        recursive: true,
+      }
+    );
     await fs.copyFile(
       path.join(tfxBuildDir, 'package.json'),
       path.join(standaloneBuildRoot, 'package.json')
