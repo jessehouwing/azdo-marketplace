@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
-import * as esbuild from 'esbuild';
+import commonjs from '@rollup/plugin-commonjs';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import typescript from '@rollup/plugin-typescript';
 import { promises as fs } from 'fs';
+import { rollup } from 'rollup';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,11 +19,8 @@ const targets = [
     entryPoint: 'packages/azdo-task/src/main.ts',
     outFile: 'packages/azdo-task/dist/bundle.js',
     external: [
-      'azure-pipelines-task-lib',
-      'azure-pipelines-tool-lib',
       'azure-pipelines-tasks-artifacts-common',
       'azure-pipelines-tasks-azure-arm-rest',
-      'azure-devops-node-api',
       'tfx-cli',
     ],
     manifestSources: [
@@ -35,16 +35,7 @@ const targets = [
     packageDir: 'packages/github-action',
     entryPoint: 'packages/github-action/src/main.ts',
     outFile: 'packages/github-action/dist/bundle.js',
-    external: [
-      '@actions/core',
-      '@actions/exec',
-      '@actions/tool-cache',
-      '@actions/io',
-      'tfx-cli',
-      'yauzl',
-      'yazl',
-      'azure-devops-node-api',
-    ],
+    external: ['tfx-cli'],
     manifestSources: [
       'packages/github-action/package.json',
       'packages/core/package.json',
@@ -59,6 +50,72 @@ const targetSelectors = {
   actions: (target) => target.packageDir === 'packages/github-action',
   all: () => true,
 };
+
+function createExternalMatcher(externals) {
+  return (id) =>
+    externals.some((dependency) => id === dependency || id.startsWith(`${dependency}/`));
+}
+
+function getRollupOutputFormat(bundleFormat) {
+  if (bundleFormat === 'esm') {
+    return 'es';
+  }
+
+  if (bundleFormat === 'cjs') {
+    return 'cjs';
+  }
+
+  throw new Error(`Unsupported bundle format '${bundleFormat}'`);
+}
+
+function getIntro(target) {
+  if (target.bundleFormat !== 'esm') {
+    return undefined;
+  }
+
+  return `
+import { fileURLToPath as __internal_fileURLToPath } from 'node:url';
+import { dirname as __internal_dirname } from 'node:path';
+const __filename = __internal_fileURLToPath(import.meta.url);
+const __dirname = __internal_dirname(__filename);
+`;
+}
+
+async function buildWithRollup(target) {
+  const bundle = await rollup({
+    input: path.join(rootDir, target.entryPoint),
+    external: createExternalMatcher(target.external),
+    plugins: [
+      typescript({
+        tsconfig: path.join(rootDir, target.packageDir, 'tsconfig.json'),
+        module: 'Node16',
+        moduleResolution: 'Node16',
+      }),
+      nodeResolve({
+        preferBuiltins: true,
+      }),
+      commonjs({
+        strictRequires: true,
+        ignoreTryCatch: false,
+      }),
+    ],
+    context: 'this',
+  });
+
+  try {
+    await bundle.write({
+      file: path.join(rootDir, target.outFile),
+      format: getRollupOutputFormat(target.bundleFormat),
+      sourcemap: true,
+      sourcemapExcludeSources: true,
+      exports: 'named',
+      intro: getIntro(target),
+      inlineDynamicImports: true,
+    });
+  } finally {
+    await bundle.close();
+  }
+}
 
 async function readJson(relativePath) {
   const fullPath = path.join(rootDir, relativePath);
@@ -354,17 +411,7 @@ async function bundle() {
 
   for (const target of selectedTargets) {
     console.log(`Bundling ${target.name}...`);
-    await esbuild.build({
-      entryPoints: [path.join(rootDir, target.entryPoint)],
-      bundle: true,
-      platform: 'node',
-      target: 'node20',
-      format: target.bundleFormat,
-      outfile: path.join(rootDir, target.outFile),
-      sourcemap: true,
-      sourcesContent: false,
-      external: target.external,
-    });
+    await buildWithRollup(target);
 
     await writeRuntimeDependencyManifest(target);
     await installRuntimeDependencies(target);
