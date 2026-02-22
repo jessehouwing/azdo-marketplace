@@ -8,6 +8,7 @@ import { cwd } from 'process';
 import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
 import { ManifestEditor } from '../manifest-editor.js';
+import { resolveTaskUpdateOptionPrecedence } from './manifest-option-precedence.js';
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import { VsixReader } from '../vsix-reader.js';
@@ -281,6 +282,22 @@ export async function publishExtension(
           platform,
         });
 
+        const taskVersionUpdateType =
+          options.updateTasksVersion && options.updateTasksVersion !== 'none'
+            ? options.updateTasksVersion
+            : undefined;
+        const shouldUpdateTaskVersion = !!taskVersionUpdateType;
+        const shouldUpdateTaskIds = options.updateTasksId === true;
+
+        const resolvedTaskUpdateOptions = await resolveTaskUpdateOptionPrecedence({
+          reader,
+          platform,
+          overridesFile: options.overridesFile,
+          publisherId: options.publisherId,
+          extensionId: options.extensionId,
+          extensionVersion: options.extensionVersion,
+        });
+
         // Create editor and apply all options at once
         const editor = ManifestEditor.fromReader(reader);
         await editor.applyOptions({
@@ -290,10 +307,38 @@ export async function publishExtension(
           extensionName: options.extensionName,
           extensionVisibility: options.extensionVisibility,
           extensionPricing: options.extensionPricing,
-          updateTasksVersion: options.updateTasksVersion,
-          updateTasksId: options.updateTasksId,
           synchronizeBinaryFileEntries,
         });
+
+        if (shouldUpdateTaskVersion) {
+          if (resolvedTaskUpdateOptions.extensionVersion) {
+            await editor.updateAllTaskVersions(
+              resolvedTaskUpdateOptions.extensionVersion,
+              taskVersionUpdateType
+            );
+          } else {
+            platform.warning(
+              'Skipping task version updates because no extension version is defined'
+            );
+          }
+        }
+
+        if (shouldUpdateTaskIds) {
+          if (resolvedTaskUpdateOptions.publisherId && resolvedTaskUpdateOptions.extensionId) {
+            const tasks = await reader.getTasksInfo();
+            for (const task of tasks) {
+              editor.updateTaskId(
+                task.name,
+                resolvedTaskUpdateOptions.publisherId,
+                resolvedTaskUpdateOptions.extensionId
+              );
+            }
+          } else {
+            platform.warning(
+              'Skipping task ID updates because publisher ID or extension ID is not defined'
+            );
+          }
+        }
 
         // Write modifications to filesystem
         const writer = await editor.toWriter();

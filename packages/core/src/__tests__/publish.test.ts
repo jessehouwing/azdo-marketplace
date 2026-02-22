@@ -9,6 +9,7 @@ import { publishExtension } from '../commands/publish.js';
 import { ManifestEditor } from '../manifest-editor.js';
 import { TfxManager } from '../tfx-manager.js';
 import { VsixReader } from '../vsix-reader.js';
+import { createManifestTaskFixture } from './helpers/create-manifest-task-fixture.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
 describe('publishExtension', () => {
@@ -262,14 +263,11 @@ describe('publishExtension', () => {
     });
 
     it('should merge generated overrides into provided overrides file for manifest publish', async () => {
-      const root = await fs.mkdtemp(join(tmpdir(), 'publish-overrides-file-'));
-      const overridesPath = join(root, 'overrides.json');
-
-      await fs.writeFile(
-        join(root, 'vss-extension.json'),
-        JSON.stringify({ id: 'ext', publisher: 'pub', version: '1.0.0', files: [] }),
-        'utf-8'
-      );
+      const fixture = await createManifestTaskFixture({
+        prefix: 'publish-overrides-merge-',
+        createTask: false,
+      });
+      const overridesPath = join(fixture.root, 'overrides.json');
       await fs.writeFile(
         overridesPath,
         JSON.stringify({ description: 'keep-me' }, null, 2),
@@ -287,7 +285,7 @@ describe('publishExtension', () => {
       try {
         await publishExtension(
           withManifestDefaults({
-            rootFolder: root,
+            rootFolder: fixture.root,
             manifestGlobs: ['vss-extension.json'],
             extensionVersion: '2.0.0',
             overridesFile: overridesPath,
@@ -309,7 +307,7 @@ describe('publishExtension', () => {
         expect(mergedOverrides.description).toBe('keep-me');
         expect(mergedOverrides.version).toBe('2.0.0');
       } finally {
-        await fs.rm(root, { recursive: true, force: true });
+        await fixture.cleanup();
       }
     });
   });
@@ -580,40 +578,7 @@ describe('publishExtension', () => {
   });
 
   it('should update manifest tasks before publishing when requested', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'publish-cmd-'));
-    const taskDir = join(root, 'task1');
-    await fs.mkdir(taskDir, { recursive: true });
-
-    await fs.writeFile(
-      join(root, 'vss-extension.json'),
-      JSON.stringify({
-        id: 'ext',
-        publisher: 'pub',
-        version: '1.0.0',
-        files: [{ path: 'task1' }],
-        contributions: [
-          {
-            id: 'task1',
-            type: 'ms.vss-distributed-task.task',
-            properties: { name: 'task1' },
-          },
-        ],
-      }),
-      'utf-8'
-    );
-
-    await fs.writeFile(
-      join(taskDir, 'task.json'),
-      JSON.stringify({
-        id: '11111111-1111-1111-1111-111111111111',
-        name: 'task1',
-        friendlyName: 'Task 1',
-        description: 'desc',
-        version: { Major: 1, Minor: 0, Patch: 0 },
-        instanceNameFormat: 'Task 1',
-      }),
-      'utf-8'
-    );
+    const fixture = await createManifestTaskFixture({ prefix: 'publish-manifest-update-' });
 
     const mockExecute = jest.spyOn(tfxManager, 'execute');
     mockExecute.mockResolvedValue({
@@ -623,17 +588,21 @@ describe('publishExtension', () => {
       stderr: '',
     });
 
-    await publishExtension(
-      withManifestDefaults({
-        rootFolder: root,
-        manifestGlobs: ['vss-extension.json'],
-        extensionVersion: '2.0.0',
-        updateTasksVersion: 'major',
-      }),
-      auth,
-      tfxManager,
-      platform
-    );
+    try {
+      await publishExtension(
+        withManifestDefaults({
+          rootFolder: fixture.root,
+          manifestGlobs: ['vss-extension.json'],
+          extensionVersion: '2.0.0',
+          updateTasksVersion: 'major',
+        }),
+        auth,
+        tfxManager,
+        platform
+      );
+    } finally {
+      await fixture.cleanup();
+    }
 
     const callArgs = mockExecute.mock.calls[0][0];
     expect(callArgs).toContain('--overrides-file');
