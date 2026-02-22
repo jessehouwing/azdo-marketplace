@@ -3,7 +3,5 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "dependencies": {
-    "tfx-cli": "0.23.1"
-  }
+  "dependencies": {}
 }
