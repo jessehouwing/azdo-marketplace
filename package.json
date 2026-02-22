@@ -41,7 +41,6 @@
   "author": "Jesse Houwing",
   "license": "MIT",
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^10",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-json": "^6.1.0",
