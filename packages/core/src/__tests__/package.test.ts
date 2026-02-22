@@ -5,6 +5,7 @@ import { join } from 'path';
 import type { PackageOptions } from '../commands/package.js';
 import { packageExtension } from '../commands/package.js';
 import { TfxManager } from '../tfx-manager.js';
+import { createManifestTaskFixture } from './helpers/create-manifest-task-fixture.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
 describe('packageExtension', () => {
@@ -66,7 +67,7 @@ describe('packageExtension', () => {
   });
 
   it('should include root folder in arguments', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-root-arg-'));
+    const root = await fs.mkdtemp(join(tmpdir(), 'package-root-arg-'));
     await fs.writeFile(
       join(root, 'vss-extension.json'),
       JSON.stringify({
@@ -185,7 +186,7 @@ describe('packageExtension', () => {
   });
 
   it('should include extension version override', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-version-override-'));
+    const root = await fs.mkdtemp(join(tmpdir(), 'package-version-override-'));
     await fs.writeFile(
       join(root, 'vss-extension.json'),
       JSON.stringify({
@@ -320,40 +321,7 @@ describe('packageExtension', () => {
   });
 
   it('should update task manifests and add generated overrides file', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-cmd-'));
-    const taskDir = join(root, 'task1');
-    await fs.mkdir(taskDir, { recursive: true });
-
-    await fs.writeFile(
-      join(root, 'vss-extension.json'),
-      JSON.stringify({
-        id: 'ext',
-        publisher: 'pub',
-        version: '1.0.0',
-        files: [{ path: 'task1' }],
-        contributions: [
-          {
-            id: 'task1',
-            type: 'ms.vss-distributed-task.task',
-            properties: { name: 'task1' },
-          },
-        ],
-      }),
-      'utf-8'
-    );
-
-    await fs.writeFile(
-      join(taskDir, 'task.json'),
-      JSON.stringify({
-        id: '11111111-1111-1111-1111-111111111111',
-        name: 'task1',
-        friendlyName: 'Task 1',
-        description: 'desc',
-        version: { Major: 1, Minor: 0, Patch: 0 },
-        instanceNameFormat: 'Task 1',
-      }),
-      'utf-8'
-    );
+    const fixture = await createManifestTaskFixture({ prefix: 'package-manifest-update-' });
 
     const mockExecute = jest.spyOn(tfxManager, 'execute');
     mockExecute.mockResolvedValue({
@@ -363,16 +331,20 @@ describe('packageExtension', () => {
       stderr: '',
     });
 
-    await packageExtension(
-      {
-        rootFolder: root,
-        manifestGlobs: ['vss-extension.json'],
-        extensionVersion: '2.0.0',
-        updateTasksVersion: 'major',
-      },
-      tfxManager,
-      platform
-    );
+    try {
+      await packageExtension(
+        {
+          rootFolder: fixture.root,
+          manifestGlobs: ['vss-extension.json'],
+          extensionVersion: '2.0.0',
+          updateTasksVersion: 'major',
+        },
+        tfxManager,
+        platform
+      );
+    } finally {
+      await fixture.cleanup();
+    }
 
     const callArgs = mockExecute.mock.calls[0][0];
     expect(callArgs).toContain('--overrides-file');
@@ -403,14 +375,11 @@ describe('packageExtension', () => {
   });
 
   it('should merge generated overrides into provided overrides file', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-overrides-file-'));
-    const overridesPath = join(root, 'overrides.json');
-
-    await fs.writeFile(
-      join(root, 'vss-extension.json'),
-      JSON.stringify({ id: 'ext', publisher: 'pub', version: '1.0.0', files: [] }),
-      'utf-8'
-    );
+    const fixture = await createManifestTaskFixture({
+      prefix: 'package-overrides-merge-',
+      createTask: false,
+    });
+    const overridesPath = join(fixture.root, 'overrides.json');
     await fs.writeFile(overridesPath, JSON.stringify({ description: 'keep-me' }, null, 2), 'utf-8');
 
     const mockExecute = jest.spyOn(tfxManager, 'execute');
@@ -424,7 +393,7 @@ describe('packageExtension', () => {
     try {
       await packageExtension(
         {
-          rootFolder: root,
+          rootFolder: fixture.root,
           manifestGlobs: ['vss-extension.json'],
           extensionVersion: '2.0.0',
           overridesFile: overridesPath,
@@ -445,7 +414,7 @@ describe('packageExtension', () => {
       expect(mergedOverrides.description).toBe('keep-me');
       expect(mergedOverrides.version).toBe('2.0.0');
     } finally {
-      await fs.rm(root, { recursive: true, force: true });
+      await fixture.cleanup();
     }
   });
 
@@ -477,7 +446,7 @@ describe('packageExtension', () => {
   });
 
   it('should combine files arrays across multiple manifests and process all referenced folders', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-multi-manifest-'));
+    const root = await fs.mkdtemp(join(tmpdir(), 'package-multi-manifest-'));
     try {
       const pingTaskDir = join(root, 'PingTask');
       const multiPingTaskDir = join(root, 'MultiPingTask');
@@ -592,7 +561,7 @@ describe('packageExtension', () => {
   });
 
   it('should add extensionless files to the correct manifest with packagePath mapping across multiple manifests', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'pkg-multi-manifest-packagepath-'));
+    const root = await fs.mkdtemp(join(tmpdir(), 'package-multi-manifest-packagepath-'));
     try {
       const cliTaskDir = join(root, 'compiled', 'cli');
       const toolsTaskDir = join(root, 'compiled', 'tools');
