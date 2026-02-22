@@ -4318,6 +4318,7 @@ var require_minimatch = __commonJS({
               re += c;
               continue;
             }
+            if (c === "*" && stateChar === "*") continue;
             self.debug("call clearStateChar %j", stateChar);
             clearStateChar();
             stateChar = c;
@@ -5362,6 +5363,71 @@ async function validateAzureCliAvailable(platform, logVersion = true) {
 import { cwd } from "process";
 init_filesystem_manifest_reader();
 init_manifest_editor();
+
+// packages/core/dist/commands/manifest-option-precedence.js
+import { readFile as readFile3 } from "fs/promises";
+function getDefinedString(value) {
+  if (typeof value !== "string") {
+    return void 0;
+  }
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : void 0;
+}
+async function readOverrides(overridesFile, platform) {
+  if (!await platform.fileExists(overridesFile)) {
+    return {};
+  }
+  let parsed;
+  try {
+    const content = (await readFile3(overridesFile)).toString("utf8").trim();
+    parsed = content.length > 0 ? JSON.parse(content) : {};
+  } catch (error2) {
+    const message = error2 instanceof Error ? error2.message : String(error2);
+    const wrappedError = new Error(`Failed to read overrides file '${overridesFile}': ${message}`);
+    wrappedError.cause = error2;
+    throw wrappedError;
+  }
+  return {
+    publisherId: getDefinedString(parsed.publisher),
+    extensionId: getDefinedString(parsed.id),
+    extensionVersion: getDefinedString(parsed.version)
+  };
+}
+async function resolveTaskUpdateOptionPrecedence(options) {
+  const manifest = await options.reader.readExtensionManifest();
+  const resolved = {
+    publisherId: getDefinedString(manifest.publisher),
+    extensionId: getDefinedString(manifest.id),
+    extensionVersion: getDefinedString(manifest.version)
+  };
+  if (options.overridesFile) {
+    const overrides = await readOverrides(options.overridesFile, options.platform);
+    if (overrides.publisherId) {
+      resolved.publisherId = overrides.publisherId;
+    }
+    if (overrides.extensionId) {
+      resolved.extensionId = overrides.extensionId;
+    }
+    if (overrides.extensionVersion) {
+      resolved.extensionVersion = overrides.extensionVersion;
+    }
+  }
+  const inputPublisherId = getDefinedString(options.publisherId);
+  const inputExtensionId = getDefinedString(options.extensionId);
+  const inputExtensionVersion = getDefinedString(options.extensionVersion);
+  if (inputPublisherId) {
+    resolved.publisherId = inputPublisherId;
+  }
+  if (inputExtensionId) {
+    resolved.extensionId = inputExtensionId;
+  }
+  if (inputExtensionVersion) {
+    resolved.extensionVersion = inputExtensionVersion;
+  }
+  return resolved;
+}
+
+// packages/core/dist/commands/package.js
 async function packageExtension(options, tfx, platform) {
   platform.info("Packaging extension...");
   const args = new ArgBuilder().arg(["extension", "create"]).flag("--json").flag("--no-color");
@@ -5404,6 +5470,17 @@ async function packageExtension(options, tfx, platform) {
         manifestGlobs,
         platform
       });
+      const taskVersionUpdateType = options.updateTasksVersion && options.updateTasksVersion !== "none" ? options.updateTasksVersion : void 0;
+      const shouldUpdateTaskVersion = !!taskVersionUpdateType;
+      const shouldUpdateTaskIds = options.updateTasksId === true;
+      const resolvedTaskUpdateOptions = await resolveTaskUpdateOptionPrecedence({
+        reader,
+        platform,
+        overridesFile: options.overridesFile,
+        publisherId: options.publisherId,
+        extensionId: options.extensionId,
+        extensionVersion: options.extensionVersion
+      });
       const editor = ManifestEditor.fromReader(reader);
       await editor.applyOptions({
         publisherId: options.publisherId,
@@ -5412,10 +5489,25 @@ async function packageExtension(options, tfx, platform) {
         extensionName: options.extensionName,
         extensionVisibility: options.extensionVisibility,
         extensionPricing: options.extensionPricing,
-        updateTasksVersion: options.updateTasksVersion,
-        updateTasksId: options.updateTasksId,
         synchronizeBinaryFileEntries
       });
+      if (shouldUpdateTaskVersion) {
+        if (resolvedTaskUpdateOptions.extensionVersion) {
+          await editor.updateAllTaskVersions(resolvedTaskUpdateOptions.extensionVersion, taskVersionUpdateType);
+        } else {
+          platform.warning("Skipping task version updates because no extension version is defined");
+        }
+      }
+      if (shouldUpdateTaskIds) {
+        if (resolvedTaskUpdateOptions.publisherId && resolvedTaskUpdateOptions.extensionId) {
+          const tasks = await reader.getTasksInfo();
+          for (const task of tasks) {
+            editor.updateTaskId(task.name, resolvedTaskUpdateOptions.publisherId, resolvedTaskUpdateOptions.extensionId);
+          }
+        } else {
+          platform.warning("Skipping task ID updates because publisher ID or extension ID is not defined");
+        }
+      }
       const writer = await editor.toWriter();
       await writer.writeToFilesystem({ overridesFilePath: options.overridesFile });
       const overridesPath = writer.getOverridesPath();
@@ -5597,6 +5689,17 @@ async function publishExtension(options, auth, tfx, platform) {
           manifestGlobs,
           platform
         });
+        const taskVersionUpdateType = options.updateTasksVersion && options.updateTasksVersion !== "none" ? options.updateTasksVersion : void 0;
+        const shouldUpdateTaskVersion = !!taskVersionUpdateType;
+        const shouldUpdateTaskIds = options.updateTasksId === true;
+        const resolvedTaskUpdateOptions = await resolveTaskUpdateOptionPrecedence({
+          reader,
+          platform,
+          overridesFile: options.overridesFile,
+          publisherId: options.publisherId,
+          extensionId: options.extensionId,
+          extensionVersion: options.extensionVersion
+        });
         const editor = ManifestEditor2.fromReader(reader);
         await editor.applyOptions({
           publisherId: options.publisherId,
@@ -5605,10 +5708,25 @@ async function publishExtension(options, auth, tfx, platform) {
           extensionName: options.extensionName,
           extensionVisibility: options.extensionVisibility,
           extensionPricing: options.extensionPricing,
-          updateTasksVersion: options.updateTasksVersion,
-          updateTasksId: options.updateTasksId,
           synchronizeBinaryFileEntries
         });
+        if (shouldUpdateTaskVersion) {
+          if (resolvedTaskUpdateOptions.extensionVersion) {
+            await editor.updateAllTaskVersions(resolvedTaskUpdateOptions.extensionVersion, taskVersionUpdateType);
+          } else {
+            platform.warning("Skipping task version updates because no extension version is defined");
+          }
+        }
+        if (shouldUpdateTaskIds) {
+          if (resolvedTaskUpdateOptions.publisherId && resolvedTaskUpdateOptions.extensionId) {
+            const tasks = await reader.getTasksInfo();
+            for (const task of tasks) {
+              editor.updateTaskId(task.name, resolvedTaskUpdateOptions.publisherId, resolvedTaskUpdateOptions.extensionId);
+            }
+          } else {
+            platform.warning("Skipping task ID updates because publisher ID or extension ID is not defined");
+          }
+        }
         const writer = await editor.toWriter();
         await writer.writeToFilesystem({ overridesFilePath: options.overridesFile });
         const overridesPath = writer.getOverridesPath();
