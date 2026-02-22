@@ -17,6 +17,36 @@ describe('TfxManager', () => {
   });
 
   describe('resolve', () => {
+    it('should resolve built-in tfx from bundled launcher in dist', async () => {
+      const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-launcher-'));
+      const entryFile = path.join(sandbox, 'dist', 'main.js');
+      const bundledLauncher = path.join(sandbox, 'dist', 'tfx-cli.js');
+      await fs.mkdir(path.dirname(entryFile), { recursive: true });
+      await fs.writeFile(entryFile, '', 'utf-8');
+      await fs.writeFile(
+        bundledLauncher,
+        '#!/usr/bin/env node\nrequire("./tfx/tfx-cli.js");\n',
+        'utf-8'
+      );
+      process.argv[1] = entryFile;
+
+      const manager = new TfxManager({
+        tfxVersion: 'built-in',
+        platform,
+      });
+
+      try {
+        const tfxPath = await manager.resolve();
+
+        expect(tfxPath).toBe(bundledLauncher);
+        expect(platform.infoMessages).toContain('Using built-in tfx-cli.');
+      } finally {
+        process.chdir(originalCwd);
+        process.argv[1] = originalArgv1;
+        await fs.rm(sandbox, { recursive: true, force: true });
+      }
+    });
+
     it('should resolve built-in tfx from nearest node_modules', async () => {
       const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-'));
       const entryFile = path.join(sandbox, 'dist', 'main.js');

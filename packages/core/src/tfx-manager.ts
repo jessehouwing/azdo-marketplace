@@ -155,6 +155,14 @@ export class TfxManager {
     }
 
     for (const candidateDir of candidateDirs) {
+      const bundledLauncher = path.join(candidateDir, 'tfx-cli.js');
+      if (await this.pathExists(bundledLauncher)) {
+        this.platform.debug(
+          `Resolved built-in bundled tfx-cli JS entrypoint at: ${bundledLauncher}`
+        );
+        return bundledLauncher;
+      }
+
       const jsEntrypoint = path.join(
         candidateDir,
         'node_modules',
@@ -169,7 +177,7 @@ export class TfxManager {
     }
 
     throw new Error(
-      `Built-in tfx-cli JS entrypoint not found at expected path: ${path.join(entryDir, 'node_modules', 'tfx-cli', '_build', 'tfx-cli.js')}.`
+      `Built-in tfx-cli JS entrypoint not found. Checked: ${path.join(entryDir, 'tfx-cli.js')} and ${path.join(entryDir, 'node_modules', 'tfx-cli', '_build', 'tfx-cli.js')}.`
     );
   }
 
