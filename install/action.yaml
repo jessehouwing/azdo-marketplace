@@ -150,7 +150,7 @@ runs:
   using: composite
   steps:
     - id: install
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@rollup
       with:
         operation: install
         auth-type: ${{ inputs.auth-type }}
