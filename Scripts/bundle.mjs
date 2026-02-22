@@ -19,8 +19,7 @@ const targets = [
     packageDir: 'packages/azdo-task',
     entryPoint: 'packages/azdo-task/src/main.ts',
     outFile: 'packages/azdo-task/dist/bundle.js',
-    external: [],
-    bundleStandaloneTfxCli: true,
+    external: ['tfx-cli'],
     runtimeAssetCopies: [
       {
         from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/openssl3.4.0',
@@ -51,8 +50,7 @@ const targets = [
     packageDir: 'packages/github-action',
     entryPoint: 'packages/github-action/src/main.ts',
     outFile: 'packages/github-action/dist/bundle.js',
-    external: [],
-    bundleStandaloneTfxCli: true,
+    external: ['tfx-cli'],
     manifestSources: [
       'packages/github-action/package.json',
       'packages/core/package.json',
@@ -107,6 +105,9 @@ async function buildWithRollup(target) {
         tsconfig: path.join(rootDir, target.packageDir, 'tsconfig.json'),
         module: 'Node16',
         moduleResolution: 'Node16',
+        sourceMap: false,
+        inlineSourceMap: false,
+        declarationMap: false,
         outDir: path.join(rootDir, target.packageDir, 'dist'),
         outputToFilesystem: false,
       }),
@@ -137,105 +138,6 @@ async function buildWithRollup(target) {
   } finally {
     await bundle.close();
   }
-}
-
-async function bundleStandaloneTfxCli(target) {
-  if (!target.bundleStandaloneTfxCli) {
-    return;
-  }
-
-  const stagedTfxDir = await ensureStandaloneTfxBundle();
-
-  const distDir = path.join(rootDir, target.packageDir, 'dist');
-  const tfxRuntimeDir = path.join(distDir, 'tfx');
-  const launcherPath = path.join(distDir, 'tfx-cli.cjs');
-  const launcherJsPath = path.join(distDir, 'tfx-cli.js');
-
-  await fs.rm(tfxRuntimeDir, { recursive: true, force: true });
-  await fs.mkdir(distDir, { recursive: true });
-  await fs.cp(stagedTfxDir, tfxRuntimeDir, { recursive: true });
-  await removeMapArtifacts(tfxRuntimeDir);
-
-  await fs.writeFile(
-    launcherPath,
-    'const path = require("node:path");\nconst common = require("./tfx/lib/common");\ncommon.APP_ROOT = path.join(__dirname, "tfx");\ncommon.EXEC_PATH = process.argv.slice(2);\nrequire("./tfx/tfx-cli.js");\n',
-    'utf8'
-  );
-
-  await fs.writeFile(launcherJsPath, 'import "./tfx-cli.cjs";\n', 'utf8');
-}
-
-let standaloneTfxBundleDirPromise;
-
-async function ensureStandaloneTfxBundle() {
-  if (standaloneTfxBundleDirPromise) {
-    return standaloneTfxBundleDirPromise;
-  }
-
-  standaloneTfxBundleDirPromise = (async () => {
-    const tfxBuildDir = path.join(rootDir, 'node_modules', 'tfx-cli', '_build');
-    const tfxEntrypoint = path.join(tfxBuildDir, 'tfx-cli.js');
-    const standaloneBuildRoot = path.join(rootDir, '.tmp', 'standalone-tfx-cli');
-    const standaloneBundlePath = path.join(standaloneBuildRoot, 'tfx-cli.js');
-
-    await fs.access(tfxEntrypoint);
-
-    const bundle = await rollup({
-      input: tfxEntrypoint,
-      plugins: [
-        nodeResolve({
-          preferBuiltins: true,
-        }),
-        json({
-          preferConst: true,
-        }),
-        commonjs({
-          strictRequires: true,
-          ignoreTryCatch: false,
-          ignoreDynamicRequires: true,
-        }),
-      ],
-      external: (id) => id.startsWith('node:'),
-      context: 'this',
-    });
-
-    try {
-      await fs.rm(standaloneBuildRoot, { recursive: true, force: true });
-      await fs.mkdir(standaloneBuildRoot, { recursive: true });
-
-      await bundle.write({
-        file: standaloneBundlePath,
-        format: 'cjs',
-        sourcemap: false,
-        exports: 'auto',
-        inlineDynamicImports: true,
-      });
-    } finally {
-      await bundle.close();
-    }
-
-    await fs.cp(path.join(tfxBuildDir, 'exec'), path.join(standaloneBuildRoot, 'exec'), {
-      recursive: true,
-    });
-    await fs.cp(path.join(tfxBuildDir, 'lib'), path.join(standaloneBuildRoot, 'lib'), {
-      recursive: true,
-    });
-    await fs.cp(
-      path.join(rootDir, 'node_modules', 'tfx-cli', 'node_modules'),
-      path.join(standaloneBuildRoot, 'node_modules'),
-      {
-        recursive: true,
-      }
-    );
-    await fs.copyFile(
-      path.join(tfxBuildDir, 'package.json'),
-      path.join(standaloneBuildRoot, 'package.json')
-    );
-
-    return standaloneBuildRoot;
-  })();
-
-  return standaloneTfxBundleDirPromise;
 }
 
 async function readJson(relativePath) {
@@ -354,43 +256,75 @@ function runCommand(command, args, cwd) {
   });
 }
 
+const runtimeNpmFlags = [
+  '--omit=dev',
+  '--omit=optional',
+  '--no-package-lock',
+  '--no-bin-links',
+  '--install-links',
+  'false',
+  '--ignore-scripts',
+  '--no-audit',
+  '--no-fund',
+];
+
 async function installRuntimeDependencies(target) {
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const nodeModulesDir = path.join(distDir, 'node_modules');
 
-  try {
-    await fs.rm(nodeModulesDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
-  } catch {
-    // Best effort; npm install can still proceed if node_modules was not present.
-  }
+  const resetNodeModules = async () => {
+    try {
+      await fs.rm(nodeModulesDir, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 250,
+      });
+    } catch {
+      // Best effort; npm install can still proceed if node_modules was not present.
+    }
 
-  // On Windows, npm can fail with ENOTEMPTY when prior content still lingers.
-  // Move any residual folder out of the way and delete it separately.
-  try {
-    await fs.access(nodeModulesDir);
-    const staleDir = path.join(distDir, `node_modules.stale.${Date.now()}`);
-    await fs.rename(nodeModulesDir, staleDir);
-    await fs.rm(staleDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
-  } catch {
-    // No residual node_modules directory to handle.
-  }
+    // On Windows, npm can fail with ENOTEMPTY when prior content still lingers.
+    // Move any residual folder out of the way and delete it separately.
+    try {
+      await fs.access(nodeModulesDir);
+      const staleDir = path.join(distDir, `node_modules.stale.${Date.now()}`);
+      await fs.rename(nodeModulesDir, staleDir);
+      await fs.rm(staleDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
+    } catch {
+      // No residual node_modules directory to handle.
+    }
+  };
+
+  await resetNodeModules();
 
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const installArgs = [
-    'install',
-    '--omit=dev',
-    '--omit=optional',
-    '--no-package-lock',
-    '--no-bin-links',
-    '--install-links',
-    'false',
-    '--ignore-scripts',
-    '--no-audit',
-    '--no-fund',
-  ];
+  const installArgs = ['install', ...runtimeNpmFlags];
 
   console.log(`Installing runtime dependencies for ${target.name}...`);
-  await runCommand(npmCommand, installArgs, distDir);
+  try {
+    await runCommand(npmCommand, installArgs, distDir);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/ENOTEMPTY/i.test(message)) {
+      throw error;
+    }
+
+    console.warn(
+      `Detected ENOTEMPTY during npm install for ${target.name}; retrying once after cleanup...`
+    );
+    await resetNodeModules();
+    await runCommand(npmCommand, installArgs, distDir);
+  }
+}
+
+async function dedupeRuntimeDependencies(target) {
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const dedupeArgs = ['dedupe', ...runtimeNpmFlags];
+
+  console.log(`Deduping runtime dependencies for ${target.name}...`);
+  await runCommand(npmCommand, dedupeArgs, distDir);
 }
 
 async function normalizeTextLineEndings(directory) {
@@ -530,11 +464,11 @@ async function bundle() {
     console.log(`Bundling ${target.name}...`);
     await buildWithRollup(target);
     await removeDeclarationArtifacts(distDir);
-    await bundleStandaloneTfxCli(target);
     await removeMapArtifacts(distDir);
 
     await writeRuntimeDependencyManifest(target);
     await installRuntimeDependencies(target);
+    await dedupeRuntimeDependencies(target);
     await normalizeTextLineEndings(path.join(rootDir, target.packageDir, 'dist', 'node_modules'));
     await copyRuntimeAssets(target);
     console.log(`✓ ${target.name} bundled`);
