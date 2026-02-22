@@ -148,7 +148,7 @@ async function bundleStandaloneTfxCli(target) {
 
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const tfxRuntimeDir = path.join(distDir, 'tfx');
-  const launcherPath = path.join(distDir, 'tfx-cli.js');
+  const launcherPath = path.join(distDir, 'tfx-cli.cjs');
 
   await fs.rm(tfxRuntimeDir, { recursive: true, force: true });
   await fs.mkdir(distDir, { recursive: true });
