@@ -359,7 +359,7 @@ runs:
   using: composite
   steps:
     - id: publish
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@rollup
       with:
         operation: publish
         auth-type: ${{ inputs.auth-type }}
