@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
 import { promises as fs } from 'fs';
@@ -18,10 +19,25 @@ const targets = [
     packageDir: 'packages/azdo-task',
     entryPoint: 'packages/azdo-task/src/main.ts',
     outFile: 'packages/azdo-task/dist/bundle.js',
-    external: [
-      'azure-pipelines-tasks-artifacts-common',
-      'azure-pipelines-tasks-azure-arm-rest',
-      'tfx-cli',
+    external: [],
+    bundleStandaloneTfxCli: true,
+    runtimeAssetCopies: [
+      {
+        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/openssl3.4.0',
+        to: 'openssl3.4.0',
+      },
+      {
+        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/openssl3.4.2',
+        to: 'openssl3.4.2',
+      },
+      {
+        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/module.json',
+        to: 'module.json',
+      },
+      {
+        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/Strings',
+        to: 'Strings',
+      },
     ],
     manifestSources: [
       'packages/azdo-task/package.json',
@@ -35,7 +51,8 @@ const targets = [
     packageDir: 'packages/github-action',
     entryPoint: 'packages/github-action/src/main.ts',
     outFile: 'packages/github-action/dist/bundle.js',
-    external: ['tfx-cli'],
+    external: [],
+    bundleStandaloneTfxCli: true,
     manifestSources: [
       'packages/github-action/package.json',
       'packages/core/package.json',
@@ -90,13 +107,19 @@ async function buildWithRollup(target) {
         tsconfig: path.join(rootDir, target.packageDir, 'tsconfig.json'),
         module: 'Node16',
         moduleResolution: 'Node16',
+        outDir: path.join(rootDir, target.packageDir, 'dist'),
+        outputToFilesystem: false,
       }),
       nodeResolve({
         preferBuiltins: true,
       }),
+      json({
+        preferConst: true,
+      }),
       commonjs({
         strictRequires: true,
         ignoreTryCatch: false,
+        ignoreDynamicRequires: true,
       }),
     ],
     context: 'this',
@@ -106,8 +129,7 @@ async function buildWithRollup(target) {
     await bundle.write({
       file: path.join(rootDir, target.outFile),
       format: getRollupOutputFormat(target.bundleFormat),
-      sourcemap: true,
-      sourcemapExcludeSources: true,
+      sourcemap: false,
       exports: 'named',
       intro: getIntro(target),
       inlineDynamicImports: true,
@@ -115,6 +137,95 @@ async function buildWithRollup(target) {
   } finally {
     await bundle.close();
   }
+}
+
+async function bundleStandaloneTfxCli(target) {
+  if (!target.bundleStandaloneTfxCli) {
+    return;
+  }
+
+  const stagedTfxDir = await ensureStandaloneTfxBundle();
+
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+  const tfxRuntimeDir = path.join(distDir, 'tfx');
+  const launcherPath = path.join(distDir, 'tfx-cli.js');
+
+  await fs.rm(tfxRuntimeDir, { recursive: true, force: true });
+  await fs.mkdir(distDir, { recursive: true });
+  await fs.cp(stagedTfxDir, tfxRuntimeDir, { recursive: true });
+  await removeMapArtifacts(tfxRuntimeDir);
+
+  await fs.writeFile(
+    launcherPath,
+    'const path = require("node:path");\nconst common = require("./tfx/lib/common");\ncommon.APP_ROOT = path.join(__dirname, "tfx");\ncommon.EXEC_PATH = process.argv.slice(2);\nrequire("./tfx/tfx-cli.js");\n',
+    'utf8'
+  );
+}
+
+let standaloneTfxBundleDirPromise;
+
+async function ensureStandaloneTfxBundle() {
+  if (standaloneTfxBundleDirPromise) {
+    return standaloneTfxBundleDirPromise;
+  }
+
+  standaloneTfxBundleDirPromise = (async () => {
+    const tfxBuildDir = path.join(rootDir, 'node_modules', 'tfx-cli', '_build');
+    const tfxEntrypoint = path.join(tfxBuildDir, 'tfx-cli.js');
+    const standaloneBuildRoot = path.join(rootDir, '.tmp', 'standalone-tfx-cli');
+    const standaloneBundlePath = path.join(standaloneBuildRoot, 'tfx-cli.js');
+
+    await fs.access(tfxEntrypoint);
+
+    const bundle = await rollup({
+      input: tfxEntrypoint,
+      plugins: [
+        nodeResolve({
+          preferBuiltins: true,
+        }),
+        json({
+          preferConst: true,
+        }),
+        commonjs({
+          strictRequires: true,
+          ignoreTryCatch: false,
+          ignoreDynamicRequires: true,
+        }),
+      ],
+      external: (id) => id.startsWith('node:'),
+      context: 'this',
+    });
+
+    try {
+      await fs.rm(standaloneBuildRoot, { recursive: true, force: true });
+      await fs.mkdir(standaloneBuildRoot, { recursive: true });
+
+      await bundle.write({
+        file: standaloneBundlePath,
+        format: 'cjs',
+        sourcemap: false,
+        exports: 'auto',
+        inlineDynamicImports: true,
+      });
+    } finally {
+      await bundle.close();
+    }
+
+    await fs.cp(path.join(tfxBuildDir, 'exec'), path.join(standaloneBuildRoot, 'exec'), {
+      recursive: true,
+    });
+    await fs.cp(path.join(tfxBuildDir, 'lib'), path.join(standaloneBuildRoot, 'lib'), {
+      recursive: true,
+    });
+    await fs.copyFile(
+      path.join(tfxBuildDir, 'package.json'),
+      path.join(standaloneBuildRoot, 'package.json')
+    );
+
+    return standaloneBuildRoot;
+  })();
+
+  return standaloneTfxBundleDirPromise;
 }
 
 async function readJson(relativePath) {
@@ -189,6 +300,30 @@ async function writeRuntimeDependencyManifest(target) {
   );
 }
 
+async function copyRuntimeAssets(target) {
+  const copies = target.runtimeAssetCopies || [];
+  if (copies.length === 0) {
+    return;
+  }
+
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+
+  for (const copy of copies) {
+    const sourcePath = path.join(rootDir, copy.from);
+    const targetPath = path.join(distDir, copy.to);
+    const sourceStat = await fs.lstat(sourcePath);
+
+    await fs.rm(targetPath, { recursive: true, force: true });
+
+    if (sourceStat.isDirectory()) {
+      await fs.cp(sourcePath, targetPath, { recursive: true });
+    } else {
+      await fs.mkdir(path.dirname(targetPath), { recursive: true });
+      await fs.copyFile(sourcePath, targetPath);
+    }
+  }
+}
+
 function runCommand(command, args, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(`${command} ${args.join(' ')}`, {
@@ -205,37 +340,6 @@ function runCommand(command, args, cwd) {
       }
 
       reject(new Error(`Command failed (${code}): ${command} ${args.join(' ')}`));
-    });
-  });
-}
-
-function runCommandCapture(command, args, cwd) {
-  return new Promise((resolve, reject) => {
-    let stdout = '';
-    let stderr = '';
-
-    const child = spawn(`${command} ${args.join(' ')}`, {
-      cwd,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
-    });
-
-    child.stdout?.on('data', (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr?.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-
-      reject(new Error(`Command failed (${code}): ${command} ${args.join(' ')}\n${stderr}`));
     });
   });
 }
@@ -280,6 +384,12 @@ async function installRuntimeDependencies(target) {
 }
 
 async function normalizeTextLineEndings(directory) {
+  try {
+    await fs.access(directory);
+  } catch {
+    return;
+  }
+
   const stack = [directory];
 
   while (stack.length > 0) {
@@ -316,77 +426,73 @@ async function normalizeTextLineEndings(directory) {
   }
 }
 
-async function ensureExecutableBinScripts(target) {
-  const binDir = path.join(rootDir, target.packageDir, 'dist', 'node_modules', '.bin');
-
+async function removeDeclarationArtifacts(directory) {
   try {
-    await fs.access(binDir);
+    await fs.access(directory);
   } catch {
     return;
   }
 
-  const entries = await fs.readdir(binDir, { withFileTypes: true });
-  const extensionlessScripts = entries
-    .filter(
-      (entry) => (entry.isFile() || entry.isSymbolicLink()) && path.extname(entry.name) === ''
-    )
-    .map((entry) => entry.name);
+  const stack = [directory];
 
-  if (extensionlessScripts.length === 0) {
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
+    }
+
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      if (/\.d\.ts(\.map)?$/i.test(entry.name)) {
+        await fs.rm(fullPath, { force: true });
+      }
+    }
+  }
+}
+
+async function removeMapArtifacts(directory) {
+  try {
+    await fs.access(directory);
+  } catch {
     return;
   }
 
-  for (const scriptName of extensionlessScripts) {
-    const scriptPath = path.join(binDir, scriptName);
+  const stack = [directory];
 
-    try {
-      await fs.chmod(scriptPath, 0o755);
-    } catch {
-      // Best effort; Windows may not apply POSIX execute bits on disk.
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
     }
-  }
 
-  const relativePaths = extensionlessScripts.map((scriptName) =>
-    path.posix.join(target.packageDir, 'dist', 'node_modules', '.bin', scriptName)
-  );
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
 
-  try {
-    const trackedOutput = await runCommandCapture(
-      'git',
-      ['ls-files', '--stage', '--', ...relativePaths],
-      rootDir
-    );
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
 
-    const trackedExtensionlessScripts = trackedOutput
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const parts = line.split(/\s+/);
-        const mode = parts[0];
-        const filePath = parts.slice(3).join(' ');
-        return { mode, filePath };
-      })
-      .filter(
-        ({ mode, filePath }) =>
-          mode !== '120000' && filePath.startsWith(`${target.packageDir}/dist/node_modules/.bin/`)
-      )
-      .map(({ filePath }) => filePath)
-      .filter((filePath) => {
-        const ext = path.posix.extname(filePath);
-        return ext === '';
-      });
+      if (!entry.isFile()) {
+        continue;
+      }
 
-    if (trackedExtensionlessScripts.length > 0) {
-      await runCommand(
-        'git',
-        ['update-index', '--chmod=+x', '--', ...trackedExtensionlessScripts],
-        rootDir
-      );
-      console.log(`Set executable bit on tracked .bin scripts for ${target.name}`);
+      if (/\.map$/i.test(entry.name)) {
+        await fs.rm(fullPath, { force: true });
+      }
     }
-  } catch (error) {
-    console.warn(`Unable to update git executable bits for ${target.name}: ${error.message}`);
   }
 }
 
@@ -410,13 +516,17 @@ async function bundle() {
   const selectedTargets = resolveTargetsFromArgs();
 
   for (const target of selectedTargets) {
+    const distDir = path.join(rootDir, target.packageDir, 'dist');
     console.log(`Bundling ${target.name}...`);
     await buildWithRollup(target);
+    await removeDeclarationArtifacts(distDir);
+    await bundleStandaloneTfxCli(target);
+    await removeMapArtifacts(distDir);
 
     await writeRuntimeDependencyManifest(target);
     await installRuntimeDependencies(target);
     await normalizeTextLineEndings(path.join(rootDir, target.packageDir, 'dist', 'node_modules'));
-    await ensureExecutableBinScripts(target);
+    await copyRuntimeAssets(target);
     console.log(`✓ ${target.name} bundled`);
   }
 }

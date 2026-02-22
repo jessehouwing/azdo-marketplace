@@ -1,8 +1,4 @@
 {
-  "external": [
-    "tfx-cli"
-  ],
-  "dependencies": {
-    "tfx-cli": "0.23.1"
-  }
+  "external": [],
+  "dependencies": {}
 }
