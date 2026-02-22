@@ -19,24 +19,11 @@ const targets = [
     packageDir: 'packages/azdo-task',
     entryPoint: 'packages/azdo-task/src/main.ts',
     outFile: 'packages/azdo-task/dist/bundle.js',
-    external: ['tfx-cli'],
-    runtimeAssetCopies: [
-      {
-        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/openssl3.4.0',
-        to: 'openssl3.4.0',
-      },
-      {
-        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/openssl3.4.2',
-        to: 'openssl3.4.2',
-      },
-      {
-        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/module.json',
-        to: 'module.json',
-      },
-      {
-        from: 'node_modules/azure-pipelines-tasks-azure-arm-rest/Strings',
-        to: 'Strings',
-      },
+    external: [
+      'tfx-cli',
+      'azure-pipelines-tasks-azure-arm-rest',
+      'azure-pipelines-task-lib',
+      'azure-pipelines-tool-lib',
     ],
     manifestSources: [
       'packages/azdo-task/package.json',
@@ -157,7 +144,16 @@ async function readRootLockfile() {
 }
 
 function resolveLockedVersion(name, lockfile) {
-  return lockfile?.packages?.[`node_modules/${name}`]?.version;
+  const lockfilePackage = lockfile?.packages?.[`node_modules/${name}`];
+  if (!lockfilePackage?.version) {
+    return undefined;
+  }
+
+  if (lockfilePackage.name && lockfilePackage.name !== name) {
+    return `npm:${lockfilePackage.name}@${lockfilePackage.version}`;
+  }
+
+  return lockfilePackage.version;
 }
 
 function resolveVersion(name, manifests) {
