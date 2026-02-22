@@ -162,7 +162,9 @@ export class TfxManager {
         );
         return bundledLauncherCjs;
       }
+    }
 
+    for (const candidateDir of candidateDirs) {
       const bundledLauncher = path.join(candidateDir, 'tfx-cli.js');
       if (await this.pathExists(bundledLauncher)) {
         this.platform.debug(
@@ -170,7 +172,9 @@ export class TfxManager {
         );
         return bundledLauncher;
       }
+    }
 
+    for (const candidateDir of candidateDirs) {
       const jsEntrypoint = path.join(
         candidateDir,
         'node_modules',
