@@ -6,7 +6,7 @@ on:
       - main
   pull_request:
   schedule:
-    - cron: '33 4 * * *'
+    - cron: '38 4 * * *'
 
 permissions: {}
 
@@ -17,7 +17,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - uses: jessehouwing/actions-dependency-submission@4dc7b7fe66b1f347c027dc0e07587bac5a43bd07 # 1.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
