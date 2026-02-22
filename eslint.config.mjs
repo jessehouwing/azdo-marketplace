@@ -1,6 +1,5 @@
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
+import tseslint from 'typescript-eslint';
 import globals from 'globals';
-import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
@@ -25,10 +24,10 @@ export default [
       'Scripts/**/*.mjs',
     ],
   },
-  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/recommended'),
+  ...compat.extends('eslint:recommended'),
   {
     plugins: {
-      '@typescript-eslint': typescriptEslint,
+      '@typescript-eslint': tseslint.plugin,
     },
     files: ['packages/*/src/**/*.ts', 'packages/*/src/**/*.tsx'],
 
@@ -38,7 +37,7 @@ export default [
         ...globals.commonjs,
       },
 
-      parser: tsParser,
+      parser: tseslint.parser,
       parserOptions: {
         tsconfigRootDir: __dirname,
         projectService: true,
@@ -48,8 +47,9 @@ export default [
     },
 
     rules: {
-      ...typescriptEslint.configs.recommended.rules,
-      ...typescriptEslint.configs['recommended-requiring-type-checking'].rules,
+      ...tseslint.configs.eslintRecommended.rules,
+      ...tseslint.plugin.configs.recommended.rules,
+      ...tseslint.plugin.configs['recommended-requiring-type-checking'].rules,
       '@typescript-eslint/await-thenable': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/explicit-module-boundary-types': 'warn',
