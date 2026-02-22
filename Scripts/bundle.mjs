@@ -149,6 +149,7 @@ async function bundleStandaloneTfxCli(target) {
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const tfxRuntimeDir = path.join(distDir, 'tfx');
   const launcherPath = path.join(distDir, 'tfx-cli.cjs');
+  const launcherJsPath = path.join(distDir, 'tfx-cli.js');
 
   await fs.rm(tfxRuntimeDir, { recursive: true, force: true });
   await fs.mkdir(distDir, { recursive: true });
@@ -160,6 +161,8 @@ async function bundleStandaloneTfxCli(target) {
     'const path = require("node:path");\nconst common = require("./tfx/lib/common");\ncommon.APP_ROOT = path.join(__dirname, "tfx");\ncommon.EXEC_PATH = process.argv.slice(2);\nrequire("./tfx/tfx-cli.js");\n',
     'utf8'
   );
+
+  await fs.writeFile(launcherJsPath, 'import "./tfx-cli.cjs";\n', 'utf8');
 }
 
 let standaloneTfxBundleDirPromise;
