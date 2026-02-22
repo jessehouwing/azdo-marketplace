@@ -20,7 +20,7 @@ describe('TfxManager', () => {
     it('should resolve built-in tfx from bundled launcher in dist', async () => {
       const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-launcher-'));
       const entryFile = path.join(sandbox, 'dist', 'main.js');
-      const bundledLauncher = path.join(sandbox, 'dist', 'tfx-cli.js');
+      const bundledLauncher = path.join(sandbox, 'dist', 'tfx-cli.cjs');
       await fs.mkdir(path.dirname(entryFile), { recursive: true });
       await fs.writeFile(entryFile, '', 'utf-8');
       await fs.writeFile(

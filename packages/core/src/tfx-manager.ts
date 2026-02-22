@@ -155,6 +155,14 @@ export class TfxManager {
     }
 
     for (const candidateDir of candidateDirs) {
+      const bundledLauncherCjs = path.join(candidateDir, 'tfx-cli.cjs');
+      if (await this.pathExists(bundledLauncherCjs)) {
+        this.platform.debug(
+          `Resolved built-in bundled tfx-cli CJS entrypoint at: ${bundledLauncherCjs}`
+        );
+        return bundledLauncherCjs;
+      }
+
       const bundledLauncher = path.join(candidateDir, 'tfx-cli.js');
       if (await this.pathExists(bundledLauncher)) {
         this.platform.debug(
@@ -177,7 +185,7 @@ export class TfxManager {
     }
 
     throw new Error(
-      `Built-in tfx-cli JS entrypoint not found. Checked: ${path.join(entryDir, 'tfx-cli.js')} and ${path.join(entryDir, 'node_modules', 'tfx-cli', '_build', 'tfx-cli.js')}.`
+      `Built-in tfx-cli JS entrypoint not found. Checked: ${path.join(entryDir, 'tfx-cli.cjs')}, ${path.join(entryDir, 'tfx-cli.js')} and ${path.join(entryDir, 'node_modules', 'tfx-cli', '_build', 'tfx-cli.js')}.`
     );
   }
 
@@ -463,7 +471,7 @@ export class TfxManager {
     // Execute tfx
     let executable = tfxPath;
     let executableArgs = [...finalArgs];
-    if (tfxPath.endsWith('.js')) {
+    if (tfxPath.endsWith('.js') || tfxPath.endsWith('.cjs')) {
       const discoveredNodePath = await this.platform.which('node', false);
       const nodePath = discoveredNodePath || process.execPath;
       if (!nodePath) {
