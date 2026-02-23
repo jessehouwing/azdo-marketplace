@@ -1,6 +1,6 @@
 ---
 applyTo: '**/bundle.mjs'
-description: Guidance for bundlign and minifying the javascript code for GitHub Actions and Azure Pipelines
+description: Guidance for bundling and minifying the javascript code for GitHub Actions and Azure Pipelines
 ---
 
 # Bundling guidance
