@@ -93,7 +93,6 @@ OR
 #### Source Selection
 
 - `use`: Source type (`manifest` or `vsix`, default: `manifest`)
-- `publish-source`: Deprecated alias for `use`
 
 #### Manifest Source (when use is manifest)
 
@@ -170,7 +169,6 @@ jobs:
 - `publisher-id`: Overrides publisher identity used for publish.
 - `extension-id`: Overrides extension identity used for publish.
 - `use`: Chooses publish source (`manifest` or `vsix`).
-- `publish-source`: Deprecated alias for `use`.
 - `manifest-file`: Provides one or more manifest files for manifest publishing.
 - `manifest-file-js`: Provides a JS manifest module for `tfx --manifest-js`.
 - `overrides-file`: Provides an overrides JSON file merged into manifest publishing.

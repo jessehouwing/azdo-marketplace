@@ -37,7 +37,7 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 - `extensionId` → `extension-id`
 - `extensionTag` → `extension-id`
 - `manifestFile` → `manifest-file`
-- `use` → `use` (publish flows; `publish-source` is a deprecated alias)
+- `use` → `use` (publish flows)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 

@@ -48,7 +48,6 @@ This repository ships a **unified JavaScript action** and **composite command wr
 - `manifest-file-js`
 - `overrides-file`
 - `use` (`manifest` or `vsix`)
-- `publish-source` (deprecated alias for `use`)
 - `vsix-file`
 - `extension-version`, `extension-name`, `extension-visibility`
 - `output-path`

@@ -219,15 +219,6 @@ inputs:
 
       **Use VSIX when:** You've already packaged the extension separately
     required: false
-  publish-source:
-    description: |-
-      - Supported values: `manifest`, `vsix`
-
-      Available for: publish.
-      Required for: none.
-      Default: none
-    required: false
-    deprecationMessage: Use `use` instead.
   extension-version:
     description: |-
       **Override extension version** specified in manifest.
