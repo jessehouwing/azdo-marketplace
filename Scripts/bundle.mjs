@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-import * as esbuild from 'esbuild';
+import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import typescript from '@rollup/plugin-typescript';
 import { promises as fs } from 'fs';
+import { rollup } from 'rollup';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,13 +19,14 @@ const targets = [
     packageDir: 'packages/azdo-task',
     entryPoint: 'packages/azdo-task/src/main.ts',
     outFile: 'packages/azdo-task/dist/bundle.js',
-    external: [
-      'azure-pipelines-task-lib',
-      'azure-pipelines-tool-lib',
+    external: ['tfx-cli', 'msalv1', 'msalv2', 'msalv3', 'shelljs'],
+    runtimeAliasDependencySourcePackage: 'azure-pipelines-tasks-azure-arm-rest',
+    runtimeAliasDependencies: ['msalv1', 'msalv2', 'msalv3'],
+    bundledModuleResourcePackages: [
       'azure-pipelines-tasks-artifacts-common',
       'azure-pipelines-tasks-azure-arm-rest',
-      'azure-devops-node-api',
-      'tfx-cli',
+      'azure-pipelines-task-lib',
+      'azure-pipelines-tool-lib',
     ],
     manifestSources: [
       'packages/azdo-task/package.json',
@@ -35,16 +40,7 @@ const targets = [
     packageDir: 'packages/github-action',
     entryPoint: 'packages/github-action/src/main.ts',
     outFile: 'packages/github-action/dist/bundle.js',
-    external: [
-      '@actions/core',
-      '@actions/exec',
-      '@actions/tool-cache',
-      '@actions/io',
-      'tfx-cli',
-      'yauzl',
-      'yazl',
-      'azure-devops-node-api',
-    ],
+    external: ['tfx-cli'],
     manifestSources: [
       'packages/github-action/package.json',
       'packages/core/package.json',
@@ -60,10 +56,182 @@ const targetSelectors = {
   all: () => true,
 };
 
+function createExternalMatcher(externals) {
+  return (id) =>
+    externals.some((dependency) => id === dependency || id.startsWith(`${dependency}/`));
+}
+
+function getRollupOutputFormat(bundleFormat) {
+  if (bundleFormat === 'esm') {
+    return 'es';
+  }
+
+  if (bundleFormat === 'cjs') {
+    return 'cjs';
+  }
+
+  throw new Error(`Unsupported bundle format '${bundleFormat}'`);
+}
+
+function getIntro(target) {
+  if (target.bundleFormat !== 'esm') {
+    return undefined;
+  }
+
+  return `
+import { fileURLToPath as __internal_fileURLToPath } from 'node:url';
+import { dirname as __internal_dirname } from 'node:path';
+const __filename = __internal_fileURLToPath(import.meta.url);
+const __dirname = __internal_dirname(__filename);
+`;
+}
+
+function pathExists(fullPath) {
+  return fs.access(fullPath).then(
+    () => true,
+    () => false
+  );
+}
+
+function getResourcePackageForModuleId(moduleId, target) {
+  const configuredPackages = target.bundledModuleResourcePackages || [];
+  for (const packageName of configuredPackages) {
+    const packageSegment = `${path.sep}node_modules${path.sep}${packageName}${path.sep}`;
+    if (moduleId.includes(packageSegment)) {
+      return packageName;
+    }
+  }
+
+  return undefined;
+}
+
+function createModuleResourcePathRewritePlugin(target) {
+  const configuredPackages = target.bundledModuleResourcePackages || [];
+
+  return {
+    name: 'rewrite-module-json-resource-paths',
+    transform(code, id) {
+      if (configuredPackages.length === 0) {
+        return null;
+      }
+
+      const packageName = getResourcePackageForModuleId(id, target);
+      if (!packageName) {
+        return null;
+      }
+
+      const moduleJsonLookupPattern = /path\.join\(__dirname,\s*['\"]module\.json['\"]\)/g;
+      const libJsonLookupPattern = /path\.join\(__dirname,\s*['\"]lib\.json['\"]\)/g;
+      const packageJsonLookupPattern = /path\.join\(__dirname,\s*['\"]package\.json['\"]\)/g;
+      if (
+        !moduleJsonLookupPattern.test(code) &&
+        !libJsonLookupPattern.test(code) &&
+        !packageJsonLookupPattern.test(code)
+      ) {
+        return null;
+      }
+
+      const rewrittenCode = code
+        .replace(
+          moduleJsonLookupPattern,
+          `path.join(__dirname, '__bundle_resources', '${packageName}', 'module.json')`
+        )
+        .replace(
+          libJsonLookupPattern,
+          `path.join(__dirname, '__bundle_resources', '${packageName}', 'lib.json')`
+        )
+        .replace(
+          packageJsonLookupPattern,
+          `path.join(__dirname, '__bundle_resources', '${packageName}', 'package.json')`
+        );
+
+      if (packageName === 'azure-pipelines-tasks-azure-arm-rest') {
+        return {
+          code: rewrittenCode
+            .replace(
+              /path\.join\(__dirname,\s*['\"]openssl3\.4\.2['\"],\s*['\"]openssl['\"]\)/g,
+              "path.join(__dirname, '__bundle_resources', 'azure-pipelines-tasks-azure-arm-rest', 'openssl3.4.2', 'openssl')"
+            )
+            .replace(
+              /path\.join\(__dirname,\s*['\"]openssl3\.4\.0['\"],\s*['\"]openssl['\"]\)/g,
+              "path.join(__dirname, '__bundle_resources', 'azure-pipelines-tasks-azure-arm-rest', 'openssl3.4.0', 'openssl')"
+            ),
+          map: null,
+        };
+      }
+
+      return {
+        code: rewrittenCode,
+        map: null,
+      };
+    },
+  };
+}
+
+async function buildWithRollup(target) {
+  const bundle = await rollup({
+    input: path.join(rootDir, target.entryPoint),
+    external: createExternalMatcher(target.external),
+    plugins: [
+      typescript({
+        tsconfig: path.join(rootDir, target.packageDir, 'tsconfig.json'),
+        module: 'Node16',
+        moduleResolution: 'Node16',
+        sourceMap: false,
+        inlineSourceMap: false,
+        declarationMap: false,
+        outDir: path.join(rootDir, target.packageDir, 'dist'),
+        outputToFilesystem: false,
+      }),
+      createModuleResourcePathRewritePlugin(target),
+      nodeResolve({
+        preferBuiltins: true,
+      }),
+      json({
+        preferConst: true,
+      }),
+      commonjs({
+        strictRequires: true,
+        ignoreTryCatch: false,
+        ignoreDynamicRequires: true,
+      }),
+    ],
+    context: 'this',
+  });
+
+  try {
+    await bundle.write({
+      file: path.join(rootDir, target.outFile),
+      format: getRollupOutputFormat(target.bundleFormat),
+      sourcemap: false,
+      exports: 'named',
+      intro: getIntro(target),
+      inlineDynamicImports: true,
+    });
+  } finally {
+    await bundle.close();
+  }
+}
+
 async function readJson(relativePath) {
   const fullPath = path.join(rootDir, relativePath);
   const raw = await fs.readFile(fullPath, 'utf-8');
   return JSON.parse(raw);
+}
+
+const cachedPackageManifests = new Map();
+
+async function readPackageManifest(packageName) {
+  const cached = cachedPackageManifests.get(packageName);
+  if (cached) {
+    return cached;
+  }
+
+  const manifestPath = path.join(rootDir, 'node_modules', packageName, 'package.json');
+  const raw = await fs.readFile(manifestPath, 'utf-8');
+  const manifest = JSON.parse(raw);
+  cachedPackageManifests.set(packageName, manifest);
+  return manifest;
 }
 
 let cachedRootLockfile;
@@ -77,7 +245,16 @@ async function readRootLockfile() {
 }
 
 function resolveLockedVersion(name, lockfile) {
-  return lockfile?.packages?.[`node_modules/${name}`]?.version;
+  const lockfilePackage = lockfile?.packages?.[`node_modules/${name}`];
+  if (!lockfilePackage?.version) {
+    return undefined;
+  }
+
+  if (lockfilePackage.name && lockfilePackage.name !== name) {
+    return `npm:${lockfilePackage.name}@${lockfilePackage.version}`;
+  }
+
+  return lockfilePackage.version;
 }
 
 function resolveVersion(name, manifests) {
@@ -101,10 +278,27 @@ async function writeRuntimeDependencyManifest(target) {
   const lockfile = await readRootLockfile();
   const packageManifest = manifests[0];
   const dependencies = {};
+  const aliasSourcePackage = target.runtimeAliasDependencySourcePackage;
+  const aliasDependencies = new Set(target.runtimeAliasDependencies || []);
+  const aliasSourceManifest = aliasSourcePackage
+    ? await readPackageManifest(aliasSourcePackage)
+    : undefined;
 
   for (const dependency of target.external) {
+    let overrideVersion;
+    if (aliasSourceManifest && aliasDependencies.has(dependency)) {
+      overrideVersion = aliasSourceManifest.dependencies?.[dependency];
+      if (!overrideVersion) {
+        throw new Error(
+          `Unable to resolve alias dependency '${dependency}' from '${aliasSourcePackage}' package.json`
+        );
+      }
+    }
+
     const version =
-      resolveLockedVersion(dependency, lockfile) ?? resolveVersion(dependency, manifests);
+      overrideVersion ??
+      resolveLockedVersion(dependency, lockfile) ??
+      resolveVersion(dependency, manifests);
     if (!version) {
       throw new Error(
         `Unable to resolve version for external dependency '${dependency}' in ${target.name}`
@@ -132,6 +326,94 @@ async function writeRuntimeDependencyManifest(target) {
   );
 }
 
+async function copyRuntimeAssets(target) {
+  const copies = target.runtimeAssetCopies || [];
+  if (copies.length === 0) {
+    return;
+  }
+
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+
+  for (const copy of copies) {
+    const sourcePath = path.join(rootDir, copy.from);
+    const targetPath = path.join(distDir, copy.to);
+    const sourceStat = await fs.lstat(sourcePath);
+
+    await fs.rm(targetPath, { recursive: true, force: true });
+
+    if (sourceStat.isDirectory()) {
+      await fs.cp(sourcePath, targetPath, { recursive: true });
+    } else {
+      await fs.mkdir(path.dirname(targetPath), { recursive: true });
+      await fs.copyFile(sourcePath, targetPath);
+    }
+  }
+}
+
+async function copyBundledModuleResources(target) {
+  const packageNames = target.bundledModuleResourcePackages || [];
+  if (packageNames.length === 0) {
+    return;
+  }
+
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+  const resourceRoot = path.join(distDir, '__bundle_resources');
+
+  await fs.mkdir(resourceRoot, { recursive: true });
+
+  for (const packageName of packageNames) {
+    const sourcePackageDir = path.join(rootDir, 'node_modules', packageName);
+    const targetPackageDir = path.join(resourceRoot, packageName);
+
+    await fs.mkdir(targetPackageDir, { recursive: true });
+
+    const sourceModuleJson = path.join(sourcePackageDir, 'module.json');
+    const targetModuleJson = path.join(targetPackageDir, 'module.json');
+    const sourceLibJson = path.join(sourcePackageDir, 'lib.json');
+    const targetLibJson = path.join(targetPackageDir, 'lib.json');
+    const sourcePackageJson = path.join(sourcePackageDir, 'package.json');
+    const targetPackageJson = path.join(targetPackageDir, 'package.json');
+
+    if (await pathExists(sourceModuleJson)) {
+      await fs.copyFile(sourceModuleJson, targetModuleJson);
+    }
+
+    if (await pathExists(sourceLibJson)) {
+      await fs.copyFile(sourceLibJson, targetLibJson);
+    }
+
+    if (!(await pathExists(sourcePackageJson))) {
+      throw new Error(
+        `Missing required package.json for bundled package '${packageName}' at '${sourcePackageJson}'`
+      );
+    }
+
+    await fs.copyFile(sourcePackageJson, targetPackageJson);
+
+    const sourceStringsDir = path.join(sourcePackageDir, 'Strings');
+    const targetStringsDir = path.join(targetPackageDir, 'Strings');
+
+    if (await pathExists(sourceStringsDir)) {
+      await fs.rm(targetStringsDir, { recursive: true, force: true });
+      await fs.cp(sourceStringsDir, targetStringsDir, { recursive: true });
+    }
+
+    if (packageName === 'azure-pipelines-tasks-azure-arm-rest') {
+      const openSslFolders = ['openssl3.4.0', 'openssl3.4.2'];
+
+      for (const folderName of openSslFolders) {
+        const sourceOpenSslDir = path.join(sourcePackageDir, folderName);
+        const targetOpenSslDir = path.join(targetPackageDir, folderName);
+
+        if (await pathExists(sourceOpenSslDir)) {
+          await fs.rm(targetOpenSslDir, { recursive: true, force: true });
+          await fs.cp(sourceOpenSslDir, targetOpenSslDir, { recursive: true });
+        }
+      }
+    }
+  }
+}
+
 function runCommand(command, args, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(`${command} ${args.join(' ')}`, {
@@ -152,77 +434,95 @@ function runCommand(command, args, cwd) {
   });
 }
 
-function runCommandCapture(command, args, cwd) {
-  return new Promise((resolve, reject) => {
-    let stdout = '';
-    let stderr = '';
-
-    const child = spawn(`${command} ${args.join(' ')}`, {
-      cwd,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
-    });
-
-    child.stdout?.on('data', (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr?.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-
-      reject(new Error(`Command failed (${code}): ${command} ${args.join(' ')}\n${stderr}`));
-    });
-  });
-}
+const runtimeNpmFlags = [
+  '--omit=dev',
+  '--omit=optional',
+  '--no-bin-links',
+  '--install-links=false',
+  '--ignore-scripts',
+  '--no-audit',
+  '--no-fund',
+];
 
 async function installRuntimeDependencies(target) {
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const nodeModulesDir = path.join(distDir, 'node_modules');
 
-  try {
-    await fs.rm(nodeModulesDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
-  } catch {
-    // Best effort; npm install can still proceed if node_modules was not present.
-  }
+  const resetNodeModules = async () => {
+    try {
+      await fs.rm(nodeModulesDir, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 250,
+      });
+    } catch {
+      // Best effort; npm install can still proceed if node_modules was not present.
+    }
 
-  // On Windows, npm can fail with ENOTEMPTY when prior content still lingers.
-  // Move any residual folder out of the way and delete it separately.
-  try {
-    await fs.access(nodeModulesDir);
-    const staleDir = path.join(distDir, `node_modules.stale.${Date.now()}`);
-    await fs.rename(nodeModulesDir, staleDir);
-    await fs.rm(staleDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
-  } catch {
-    // No residual node_modules directory to handle.
-  }
+    // On Windows, npm can fail with ENOTEMPTY when prior content still lingers.
+    // Move any residual folder out of the way and delete it separately.
+    try {
+      await fs.access(nodeModulesDir);
+      const staleDir = path.join(distDir, `node_modules.stale.${Date.now()}`);
+      await fs.rename(nodeModulesDir, staleDir);
+      await fs.rm(staleDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
+    } catch {
+      // No residual node_modules directory to handle.
+    }
+  };
+
+  await resetNodeModules();
 
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const installArgs = [
-    'install',
-    '--omit=dev',
-    '--omit=optional',
-    '--no-package-lock',
-    '--no-bin-links',
-    '--install-links',
-    'false',
-    '--ignore-scripts',
-    '--no-audit',
-    '--no-fund',
-  ];
+  const installArgs = ['install', ...runtimeNpmFlags];
 
   console.log(`Installing runtime dependencies for ${target.name}...`);
-  await runCommand(npmCommand, installArgs, distDir);
+  try {
+    await runCommand(npmCommand, installArgs, distDir);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/ENOTEMPTY/i.test(message)) {
+      throw error;
+    }
+
+    console.warn(
+      `Detected ENOTEMPTY during npm install for ${target.name}; retrying once after cleanup...`
+    );
+    await resetNodeModules();
+    await runCommand(npmCommand, installArgs, distDir);
+  }
+}
+
+async function dedupeRuntimeDependencies(target) {
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const dedupeArgs = ['dedupe', ...runtimeNpmFlags];
+
+  // Run npm audit fix after install, do not fail if audit fix fails
+  console.log(`Running 'npm audit fix' for ${target.name}...`);
+  const auditFixCmd = [
+    'audit',
+    'fix',
+    ...runtimeNpmFlags.filter((f) => !['--no-audit', '--no-fund'].includes(f)),
+  ];
+  if (process.platform === 'win32') {
+    await runCommand('cmd.exe', ['/c', 'npm', ...auditFixCmd, '||', 'exit', '0'], distDir);
+  } else {
+    await runCommand('sh', ['-c', `npm ${auditFixCmd.join(' ')} || exit 0`], distDir);
+  }
+
+  console.log(`Deduping runtime dependencies for ${target.name}...`);
+  await runCommand(npmCommand, dedupeArgs, distDir);
 }
 
 async function normalizeTextLineEndings(directory) {
+  try {
+    await fs.access(directory);
+  } catch {
+    return;
+  }
+
   const stack = [directory];
 
   while (stack.length > 0) {
@@ -259,77 +559,73 @@ async function normalizeTextLineEndings(directory) {
   }
 }
 
-async function ensureExecutableBinScripts(target) {
-  const binDir = path.join(rootDir, target.packageDir, 'dist', 'node_modules', '.bin');
-
+async function removeDeclarationArtifacts(directory) {
   try {
-    await fs.access(binDir);
+    await fs.access(directory);
   } catch {
     return;
   }
 
-  const entries = await fs.readdir(binDir, { withFileTypes: true });
-  const extensionlessScripts = entries
-    .filter(
-      (entry) => (entry.isFile() || entry.isSymbolicLink()) && path.extname(entry.name) === ''
-    )
-    .map((entry) => entry.name);
+  const stack = [directory];
 
-  if (extensionlessScripts.length === 0) {
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
+    }
+
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      if (/\.d\.ts(\.map)?$/i.test(entry.name)) {
+        await fs.rm(fullPath, { force: true });
+      }
+    }
+  }
+}
+
+async function removeMapArtifacts(directory) {
+  try {
+    await fs.access(directory);
+  } catch {
     return;
   }
 
-  for (const scriptName of extensionlessScripts) {
-    const scriptPath = path.join(binDir, scriptName);
+  const stack = [directory];
 
-    try {
-      await fs.chmod(scriptPath, 0o755);
-    } catch {
-      // Best effort; Windows may not apply POSIX execute bits on disk.
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
     }
-  }
 
-  const relativePaths = extensionlessScripts.map((scriptName) =>
-    path.posix.join(target.packageDir, 'dist', 'node_modules', '.bin', scriptName)
-  );
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
 
-  try {
-    const trackedOutput = await runCommandCapture(
-      'git',
-      ['ls-files', '--stage', '--', ...relativePaths],
-      rootDir
-    );
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
 
-    const trackedExtensionlessScripts = trackedOutput
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const parts = line.split(/\s+/);
-        const mode = parts[0];
-        const filePath = parts.slice(3).join(' ');
-        return { mode, filePath };
-      })
-      .filter(
-        ({ mode, filePath }) =>
-          mode !== '120000' && filePath.startsWith(`${target.packageDir}/dist/node_modules/.bin/`)
-      )
-      .map(({ filePath }) => filePath)
-      .filter((filePath) => {
-        const ext = path.posix.extname(filePath);
-        return ext === '';
-      });
+      if (!entry.isFile()) {
+        continue;
+      }
 
-    if (trackedExtensionlessScripts.length > 0) {
-      await runCommand(
-        'git',
-        ['update-index', '--chmod=+x', '--', ...trackedExtensionlessScripts],
-        rootDir
-      );
-      console.log(`Set executable bit on tracked .bin scripts for ${target.name}`);
+      if (/\.map$/i.test(entry.name)) {
+        await fs.rm(fullPath, { force: true });
+      }
     }
-  } catch (error) {
-    console.warn(`Unable to update git executable bits for ${target.name}: ${error.message}`);
   }
 }
 
@@ -353,23 +649,18 @@ async function bundle() {
   const selectedTargets = resolveTargetsFromArgs();
 
   for (const target of selectedTargets) {
+    const distDir = path.join(rootDir, target.packageDir, 'dist');
     console.log(`Bundling ${target.name}...`);
-    await esbuild.build({
-      entryPoints: [path.join(rootDir, target.entryPoint)],
-      bundle: true,
-      platform: 'node',
-      target: 'node20',
-      format: target.bundleFormat,
-      outfile: path.join(rootDir, target.outFile),
-      sourcemap: true,
-      sourcesContent: false,
-      external: target.external,
-    });
+    await buildWithRollup(target);
+    await removeDeclarationArtifacts(distDir);
+    await removeMapArtifacts(distDir);
 
     await writeRuntimeDependencyManifest(target);
     await installRuntimeDependencies(target);
+    await dedupeRuntimeDependencies(target);
     await normalizeTextLineEndings(path.join(rootDir, target.packageDir, 'dist', 'node_modules'));
-    await ensureExecutableBinScripts(target);
+    await copyBundledModuleResources(target);
+    await copyRuntimeAssets(target);
     console.log(`✓ ${target.name} bundled`);
   }
 }

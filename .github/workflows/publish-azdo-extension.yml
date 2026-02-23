@@ -44,6 +44,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Lint
+        run: npm run lint
+
       - name: Test
         shell: pwsh
         run: |
@@ -51,9 +54,6 @@ jobs:
           Write-Output "::stop-commands::$stopMarker"
           npm run test
           Write-Output "::$stopMarker::"
-
-      - name: Lint
-        run: npm run lint
 
       - name: Bundle
         run: npm run bundle

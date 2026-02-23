@@ -3,21 +3,23 @@
   "version": "6.0.0-alpha.1",
   "description": "GitHub Actions adapter for extension tasks",
   "type": "module",
-  "main": "./dist/main.js",
+  "main": "./build/main.js",
   "scripts": {
     "build": "tsc -b",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf build dist",
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
-    "@actions/glob": "^0.6.1",
-    "@extension-tasks/core": "*",
     "@actions/core": "^3.0.0",
     "@actions/exec": "^3.0.0",
+    "@actions/glob": "^0.6.1",
+    "@actions/io": "^3.0.2",
     "@actions/tool-cache": "^4.0.0",
-    "@actions/io": "^3.0.2"
+    "@extension-tasks/core": "*"
   },
   "devDependencies": {
-    "@types/node": "^24"
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.10.13",
+    "js-yaml": "^4.1.1"
   }
 }

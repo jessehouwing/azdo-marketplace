@@ -455,7 +455,7 @@ export class TfxManager {
     // Execute tfx
     let executable = tfxPath;
     let executableArgs = [...finalArgs];
-    if (tfxPath.endsWith('.js')) {
+    if (tfxPath.endsWith('.js') || tfxPath.endsWith('.cjs')) {
       const discoveredNodePath = await this.platform.which('node', false);
       const nodePath = discoveredNodePath || process.execPath;
       if (!nodePath) {

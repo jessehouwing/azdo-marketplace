@@ -3,20 +3,20 @@
   "version": "6.0.0-alpha.1",
   "description": "Azure Pipelines task adapter for extension tasks",
   "type": "module",
-  "main": "./dist/main.js",
+  "main": "./build/main.js",
   "scripts": {
     "build": "tsc -b",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf build dist",
     "test": "jest"
   },
   "dependencies": {
     "@extension-tasks/core": "*",
     "azure-pipelines-task-lib": "^5.2.6",
     "azure-pipelines-tasks-artifacts-common": "^2.270.0",
-    "azure-pipelines-tool-lib": "^2.0.10",
-    "azure-pipelines-tasks-azure-arm-rest": "^3.267.0"
+    "azure-pipelines-tasks-azure-arm-rest": "^3.267.0",
+    "azure-pipelines-tool-lib": "^2.0.10"
   },
   "devDependencies": {
-    "@types/node": "^24"
+    "@types/node": "^24.10.13"
   }
 }

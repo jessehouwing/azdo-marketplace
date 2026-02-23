@@ -33,6 +33,6 @@ coverage/
 packages/*/build/
 
 !packages/github-action/dist/
-!packages/github-action/dist/node_modules/
-!packages/github-action/dist/node_modules/**
+!packages/github-action/dist/**/dist/
+!packages/github-action/dist/**/node_modules/
 .rollup.cache/

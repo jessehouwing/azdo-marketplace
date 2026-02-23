@@ -9,6 +9,18 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+  - package-ecosystem: 'github-actions'
+    directory: '/packages/azdo-task'
+    schedule:
+      interval: 'weekly'
+  - package-ecosystem: 'github-actions'
+    directory: '/packages/core'
+    schedule:
+      interval: 'weekly'
+  - package-ecosystem: 'github-actions'
+    directory: '/packages/github-action'
+    schedule:
+      interval: 'weekly'
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:

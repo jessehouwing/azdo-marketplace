@@ -8,10 +8,10 @@ import { cwd } from 'process';
 import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
 import { ManifestEditor } from '../manifest-editor.js';
-import { resolveTaskUpdateOptionPrecedence } from './manifest-option-precedence.js';
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import { VsixReader } from '../vsix-reader.js';
+import { resolveTaskUpdateOptionPrecedence } from './manifest-option-precedence.js';
 
 /**
  * Source for publishing
@@ -444,7 +444,4 @@ export async function publishExtension(
 
     return executeTfxPublish(tfx, args, platform, options, vsixPathToPublish);
   }
-
-  // Execute tfx using the helper function
-  return executeTfxPublish(tfx, args, platform, options);
 }

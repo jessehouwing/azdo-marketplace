@@ -27,7 +27,6 @@
         "esbenp.prettier-vscode",
         "orta.vscode-jest",
         "ms-azuretools.vscode-docker",
-        "github.copilot",
         "github.copilot-chat",
         "github.vscode-pull-request-github",
         "eamodio.gitlens",

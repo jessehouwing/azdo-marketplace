@@ -147,7 +147,7 @@ runs:
   using: composite
   steps:
     - id: unpublish
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@rollup
       with:
         operation: unpublish
         auth-type: ${{ inputs.auth-type }}
