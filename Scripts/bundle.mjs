@@ -19,19 +19,14 @@ const targets = [
     packageDir: 'packages/azdo-task',
     entryPoint: 'packages/azdo-task/src/main.ts',
     outFile: 'packages/azdo-task/dist/bundle.js',
-    external: [
-      'tfx-cli',
-      'msalv1',
-      'msalv2',
-      'msalv3',
-      'azure-pipelines-task-lib',
-      'azure-pipelines-tool-lib',
-    ],
+    external: ['tfx-cli', 'msalv1', 'msalv2', 'msalv3', 'shelljs'],
     runtimeAliasDependencySourcePackage: 'azure-pipelines-tasks-azure-arm-rest',
     runtimeAliasDependencies: ['msalv1', 'msalv2', 'msalv3'],
     bundledModuleResourcePackages: [
       'azure-pipelines-tasks-artifacts-common',
       'azure-pipelines-tasks-azure-arm-rest',
+      'azure-pipelines-task-lib',
+      'azure-pipelines-tool-lib',
     ],
     manifestSources: [
       'packages/azdo-task/package.json',
@@ -126,8 +121,13 @@ function createModuleResourcePathRewritePlugin(target) {
       }
 
       const moduleJsonLookupPattern = /path\.join\(__dirname,\s*['\"]module\.json['\"]\)/g;
+      const libJsonLookupPattern = /path\.join\(__dirname,\s*['\"]lib\.json['\"]\)/g;
       const packageJsonLookupPattern = /path\.join\(__dirname,\s*['\"]package\.json['\"]\)/g;
-      if (!moduleJsonLookupPattern.test(code) && !packageJsonLookupPattern.test(code)) {
+      if (
+        !moduleJsonLookupPattern.test(code) &&
+        !libJsonLookupPattern.test(code) &&
+        !packageJsonLookupPattern.test(code)
+      ) {
         return null;
       }
 
@@ -135,6 +135,10 @@ function createModuleResourcePathRewritePlugin(target) {
         .replace(
           moduleJsonLookupPattern,
           `path.join(__dirname, '__bundle_resources', '${packageName}', 'module.json')`
+        )
+        .replace(
+          libJsonLookupPattern,
+          `path.join(__dirname, '__bundle_resources', '${packageName}', 'lib.json')`
         )
         .replace(
           packageJsonLookupPattern,
@@ -365,16 +369,18 @@ async function copyBundledModuleResources(target) {
 
     const sourceModuleJson = path.join(sourcePackageDir, 'module.json');
     const targetModuleJson = path.join(targetPackageDir, 'module.json');
+    const sourceLibJson = path.join(sourcePackageDir, 'lib.json');
+    const targetLibJson = path.join(targetPackageDir, 'lib.json');
     const sourcePackageJson = path.join(sourcePackageDir, 'package.json');
     const targetPackageJson = path.join(targetPackageDir, 'package.json');
 
-    if (!(await pathExists(sourceModuleJson))) {
-      throw new Error(
-        `Missing required module.json for bundled package '${packageName}' at '${sourceModuleJson}'`
-      );
+    if (await pathExists(sourceModuleJson)) {
+      await fs.copyFile(sourceModuleJson, targetModuleJson);
     }
 
-    await fs.copyFile(sourceModuleJson, targetModuleJson);
+    if (await pathExists(sourceLibJson)) {
+      await fs.copyFile(sourceLibJson, targetLibJson);
+    }
 
     if (!(await pathExists(sourcePackageJson))) {
       throw new Error(
