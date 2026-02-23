@@ -43,6 +43,12 @@ jobs:
 
       - name: Build
         run: npm run build
+      
+      - name: Bundle
+        run: npm run bundle
+
+      - name: Lint
+        run: npm run lint
 
       - name: Test
         shell: pwsh
@@ -51,12 +57,6 @@ jobs:
           Write-Output "::stop-commands::$stopMarker"
           npm run test
           Write-Output "::$stopMarker::"
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Bundle
-        run: npm run bundle
 
       - name: Azure login for OIDC
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 #v2.3.0
