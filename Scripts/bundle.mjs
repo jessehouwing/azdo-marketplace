@@ -437,7 +437,6 @@ function runCommand(command, args, cwd) {
 const runtimeNpmFlags = [
   '--omit=dev',
   '--omit=optional',
-  '--no-package-lock',
   '--no-bin-links',
   '--install-links',
   'false',
@@ -500,6 +499,19 @@ async function dedupeRuntimeDependencies(target) {
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const dedupeArgs = ['dedupe', ...runtimeNpmFlags];
+
+  // Run npm audit fix after install, do not fail if audit fix fails
+  console.log(`Running 'npm audit fix' for ${target.name}...`);
+  const auditFixCmd = [
+    'audit',
+    'fix',
+    ...runtimeNpmFlags.filter((f) => !['--no-audit', '--no-fund'].includes(f)),
+  ];
+  if (process.platform === 'win32') {
+    await runCommand('cmd.exe', ['/c', 'npm', ...auditFixCmd, '||', 'exit', '0'], distDir);
+  } else {
+    await runCommand('sh', ['-c', `npm ${auditFixCmd.join(' ')} || exit 0`], distDir);
+  }
 
   console.log(`Deduping runtime dependencies for ${target.name}...`);
   await runCommand(npmCommand, dedupeArgs, distDir);
