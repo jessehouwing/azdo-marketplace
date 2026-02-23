@@ -21,9 +21,17 @@ const targets = [
     outFile: 'packages/azdo-task/dist/bundle.js',
     external: [
       'tfx-cli',
-      'azure-pipelines-tasks-azure-arm-rest',
+      'msalv1',
+      'msalv2',
+      'msalv3',
       'azure-pipelines-task-lib',
       'azure-pipelines-tool-lib',
+    ],
+    runtimeAliasDependencySourcePackage: 'azure-pipelines-tasks-azure-arm-rest',
+    runtimeAliasDependencies: ['msalv1', 'msalv2', 'msalv3'],
+    bundledModuleResourcePackages: [
+      'azure-pipelines-tasks-artifacts-common',
+      'azure-pipelines-tasks-azure-arm-rest',
     ],
     manifestSources: [
       'packages/azdo-task/package.json',
@@ -83,6 +91,79 @@ const __dirname = __internal_dirname(__filename);
 `;
 }
 
+function pathExists(fullPath) {
+  return fs.access(fullPath).then(
+    () => true,
+    () => false
+  );
+}
+
+function getResourcePackageForModuleId(moduleId, target) {
+  const configuredPackages = target.bundledModuleResourcePackages || [];
+  for (const packageName of configuredPackages) {
+    const packageSegment = `${path.sep}node_modules${path.sep}${packageName}${path.sep}`;
+    if (moduleId.includes(packageSegment)) {
+      return packageName;
+    }
+  }
+
+  return undefined;
+}
+
+function createModuleResourcePathRewritePlugin(target) {
+  const configuredPackages = target.bundledModuleResourcePackages || [];
+
+  return {
+    name: 'rewrite-module-json-resource-paths',
+    transform(code, id) {
+      if (configuredPackages.length === 0) {
+        return null;
+      }
+
+      const packageName = getResourcePackageForModuleId(id, target);
+      if (!packageName) {
+        return null;
+      }
+
+      const moduleJsonLookupPattern = /path\.join\(__dirname,\s*['\"]module\.json['\"]\)/g;
+      const packageJsonLookupPattern = /path\.join\(__dirname,\s*['\"]package\.json['\"]\)/g;
+      if (!moduleJsonLookupPattern.test(code) && !packageJsonLookupPattern.test(code)) {
+        return null;
+      }
+
+      const rewrittenCode = code
+        .replace(
+          moduleJsonLookupPattern,
+          `path.join(__dirname, '__bundle_resources', '${packageName}', 'module.json')`
+        )
+        .replace(
+          packageJsonLookupPattern,
+          `path.join(__dirname, '__bundle_resources', '${packageName}', 'package.json')`
+        );
+
+      if (packageName === 'azure-pipelines-tasks-azure-arm-rest') {
+        return {
+          code: rewrittenCode
+            .replace(
+              /path\.join\(__dirname,\s*['\"]openssl3\.4\.2['\"],\s*['\"]openssl['\"]\)/g,
+              "path.join(__dirname, '__bundle_resources', 'azure-pipelines-tasks-azure-arm-rest', 'openssl3.4.2', 'openssl')"
+            )
+            .replace(
+              /path\.join\(__dirname,\s*['\"]openssl3\.4\.0['\"],\s*['\"]openssl['\"]\)/g,
+              "path.join(__dirname, '__bundle_resources', 'azure-pipelines-tasks-azure-arm-rest', 'openssl3.4.0', 'openssl')"
+            ),
+          map: null,
+        };
+      }
+
+      return {
+        code: rewrittenCode,
+        map: null,
+      };
+    },
+  };
+}
+
 async function buildWithRollup(target) {
   const bundle = await rollup({
     input: path.join(rootDir, target.entryPoint),
@@ -98,6 +179,7 @@ async function buildWithRollup(target) {
         outDir: path.join(rootDir, target.packageDir, 'dist'),
         outputToFilesystem: false,
       }),
+      createModuleResourcePathRewritePlugin(target),
       nodeResolve({
         preferBuiltins: true,
       }),
@@ -131,6 +213,21 @@ async function readJson(relativePath) {
   const fullPath = path.join(rootDir, relativePath);
   const raw = await fs.readFile(fullPath, 'utf-8');
   return JSON.parse(raw);
+}
+
+const cachedPackageManifests = new Map();
+
+async function readPackageManifest(packageName) {
+  const cached = cachedPackageManifests.get(packageName);
+  if (cached) {
+    return cached;
+  }
+
+  const manifestPath = path.join(rootDir, 'node_modules', packageName, 'package.json');
+  const raw = await fs.readFile(manifestPath, 'utf-8');
+  const manifest = JSON.parse(raw);
+  cachedPackageManifests.set(packageName, manifest);
+  return manifest;
 }
 
 let cachedRootLockfile;
@@ -177,10 +274,27 @@ async function writeRuntimeDependencyManifest(target) {
   const lockfile = await readRootLockfile();
   const packageManifest = manifests[0];
   const dependencies = {};
+  const aliasSourcePackage = target.runtimeAliasDependencySourcePackage;
+  const aliasDependencies = new Set(target.runtimeAliasDependencies || []);
+  const aliasSourceManifest = aliasSourcePackage
+    ? await readPackageManifest(aliasSourcePackage)
+    : undefined;
 
   for (const dependency of target.external) {
+    let overrideVersion;
+    if (aliasSourceManifest && aliasDependencies.has(dependency)) {
+      overrideVersion = aliasSourceManifest.dependencies?.[dependency];
+      if (!overrideVersion) {
+        throw new Error(
+          `Unable to resolve alias dependency '${dependency}' from '${aliasSourcePackage}' package.json`
+        );
+      }
+    }
+
     const version =
-      resolveLockedVersion(dependency, lockfile) ?? resolveVersion(dependency, manifests);
+      overrideVersion ??
+      resolveLockedVersion(dependency, lockfile) ??
+      resolveVersion(dependency, manifests);
     if (!version) {
       throw new Error(
         `Unable to resolve version for external dependency '${dependency}' in ${target.name}`
@@ -228,6 +342,68 @@ async function copyRuntimeAssets(target) {
     } else {
       await fs.mkdir(path.dirname(targetPath), { recursive: true });
       await fs.copyFile(sourcePath, targetPath);
+    }
+  }
+}
+
+async function copyBundledModuleResources(target) {
+  const packageNames = target.bundledModuleResourcePackages || [];
+  if (packageNames.length === 0) {
+    return;
+  }
+
+  const distDir = path.join(rootDir, target.packageDir, 'dist');
+  const resourceRoot = path.join(distDir, '__bundle_resources');
+
+  await fs.mkdir(resourceRoot, { recursive: true });
+
+  for (const packageName of packageNames) {
+    const sourcePackageDir = path.join(rootDir, 'node_modules', packageName);
+    const targetPackageDir = path.join(resourceRoot, packageName);
+
+    await fs.mkdir(targetPackageDir, { recursive: true });
+
+    const sourceModuleJson = path.join(sourcePackageDir, 'module.json');
+    const targetModuleJson = path.join(targetPackageDir, 'module.json');
+    const sourcePackageJson = path.join(sourcePackageDir, 'package.json');
+    const targetPackageJson = path.join(targetPackageDir, 'package.json');
+
+    if (!(await pathExists(sourceModuleJson))) {
+      throw new Error(
+        `Missing required module.json for bundled package '${packageName}' at '${sourceModuleJson}'`
+      );
+    }
+
+    await fs.copyFile(sourceModuleJson, targetModuleJson);
+
+    if (!(await pathExists(sourcePackageJson))) {
+      throw new Error(
+        `Missing required package.json for bundled package '${packageName}' at '${sourcePackageJson}'`
+      );
+    }
+
+    await fs.copyFile(sourcePackageJson, targetPackageJson);
+
+    const sourceStringsDir = path.join(sourcePackageDir, 'Strings');
+    const targetStringsDir = path.join(targetPackageDir, 'Strings');
+
+    if (await pathExists(sourceStringsDir)) {
+      await fs.rm(targetStringsDir, { recursive: true, force: true });
+      await fs.cp(sourceStringsDir, targetStringsDir, { recursive: true });
+    }
+
+    if (packageName === 'azure-pipelines-tasks-azure-arm-rest') {
+      const openSslFolders = ['openssl3.4.0', 'openssl3.4.2'];
+
+      for (const folderName of openSslFolders) {
+        const sourceOpenSslDir = path.join(sourcePackageDir, folderName);
+        const targetOpenSslDir = path.join(targetPackageDir, folderName);
+
+        if (await pathExists(sourceOpenSslDir)) {
+          await fs.rm(targetOpenSslDir, { recursive: true, force: true });
+          await fs.cp(sourceOpenSslDir, targetOpenSslDir, { recursive: true });
+        }
+      }
     }
   }
 }
@@ -466,6 +642,7 @@ async function bundle() {
     await installRuntimeDependencies(target);
     await dedupeRuntimeDependencies(target);
     await normalizeTextLineEndings(path.join(rootDir, target.packageDir, 'dist', 'node_modules'));
+    await copyBundledModuleResources(target);
     await copyRuntimeAssets(target);
     console.log(`✓ ${target.name} bundled`);
   }
