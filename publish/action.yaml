@@ -143,15 +143,6 @@ inputs:
 
       **Use VSIX when:** You've already packaged the extension separately
     required: false
-  publish-source:
-    description: |-
-      - Supported values: `manifest`, `vsix`
-
-      Available for: publish.
-      Required for: none.
-      Default: none
-    required: false
-    deprecationMessage: Use `use` instead.
   manifest-file:
     description: |-
       **Manifest file path(s)** (newline-separated).
@@ -370,7 +361,6 @@ runs:
         publisher-id: ${{ inputs.publisher-id }}
         extension-id: ${{ inputs.extension-id }}
         use: ${{ inputs.use }}
-        publish-source: ${{ inputs.publish-source }}
         manifest-file: ${{ inputs.manifest-file }}
         manifest-file-js: ${{ inputs.manifest-file-js }}
         overrides-file: ${{ inputs.overrides-file }}

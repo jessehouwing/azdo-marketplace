@@ -47,7 +47,7 @@ Common input mappings:
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
 - `manifestFile` → `manifest-file`
-- `use` → `use` (publish flows; `publish-source` is a deprecated alias)
+- `use` → `use` (publish flows)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
 - `localizationRoot` → `localization-root`

@@ -86,7 +86,6 @@ When creating a PAT for pipeline automation, include at least the following scop
 - `overrides-file`: Points to an overrides JSON file merged into manifest packaging/publishing.
 - `vsix-file`: Points to a pre-built VSIX file when publishing from VSIX source.
 - `use`: Chooses publish input source (`manifest` or `vsix`).
-- `publish-source`: Deprecated alias for `use`.
 - `extension-version`: Overrides extension version during package/publish/validation flows.
 - `extension-name`: Overrides extension display name during package/publish.
 - `extension-visibility`: Overrides marketplace visibility (`private`, `public`, preview variants).

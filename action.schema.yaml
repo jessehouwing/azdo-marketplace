@@ -12,7 +12,7 @@ types:
   identifier:
     type: string
     match: '^[a-zA-Z0-9._-]+$'
-  publish-source:
+  publish-mode:
     type: choice
     options:
       - manifest
@@ -75,10 +75,7 @@ inputs:
     type: string
 
   use:
-    type: publish-source
-
-  publish-source:
-    type: publish-source
+    type: publish-mode
 
   extension-version:
     type: semver
