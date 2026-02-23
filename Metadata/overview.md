@@ -6,8 +6,6 @@ After installing this extension in your Azure DevOps organization, add one or mo
 
 You can find an end-to-end example in this repository’s [azure-pipelines.yml](https://github.com/jessehouwing/azdo-marketplace/blob/main/azure-pipelines.yml).
 
-![add-task](./Images/add-task.png)
-
 For authenticated operations, you can use either a Personal Access Token (PAT) or Microsoft Entra ID Workload Identity Federation (OIDC).
 
 - PAT setup: [Use personal access tokens](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
@@ -52,8 +50,6 @@ When creating a PAT for pipeline automation, include at least the following scop
 - **Query version**: `Marketplace (read)`
 - **Wait for validation**: `Marketplace (read)`
 - **Wait for installation**: `Extensions (read and manage)`, `Agent Pools (read)`
-
-![Permissions](./Images/permissions.png)
 
 ## GitHub Actions equivalent
 

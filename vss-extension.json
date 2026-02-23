@@ -64,14 +64,16 @@
   ],
   "files": [
     {
-      "path": "packages/azdo-task"
+      "path": "packages/azdo-task/task.json"
+    },
+    {
+      "path": "packages/azdo-task/dist"
+    },
+    {
+      "path": "packages/azdo-task/icon.png"
     },
     {
       "path": "packages/azdo-server-task"
-    },
-    {
-      "path": "Metadata/Images/permissions.png",
-      "addressable": true
     }
   ],
   "contributions": [
