@@ -6,7 +6,7 @@
       "script": "build",
       "problemMatcher": ["$tsc"],
       "label": "npm: build",
-      "detail": "Build all v6 packages"
+      "detail": "Build all packages"
     },
     {
       "type": "npm",
@@ -20,7 +20,7 @@
       "script": "bundle",
       "problemMatcher": [],
       "label": "npm: bundle",
-      "detail": "Bundle adapters with esbuild"
+      "detail": "Bundle adapters with rollup"
     }
   ]
 }
