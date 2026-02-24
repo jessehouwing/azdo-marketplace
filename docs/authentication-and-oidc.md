@@ -123,7 +123,7 @@ steps:
       tenant-id: ${{ secrets.AZURE_TENANT_ID }}
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-  - uses: jessehouwing/azdo-marketplace@v6
+  - uses: jessehouwing/azdo-marketplace@v6.0.0
     with:
       operation: publish
       auth-type: oidc

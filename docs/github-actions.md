@@ -2,14 +2,14 @@
 
 This repository ships a **unified JavaScript action** and **composite command wrappers**.
 
-- Unified action: `jessehouwing/azdo-marketplace@v6`
+- Unified action: `jessehouwing/azdo-marketplace@v6.0.0`
 - Main definition: `action.yml`
 - Entry point: `packages/github-action/src/main.ts`
 
 ## Minimal usage
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.0.0
   with:
     operation: package
 ```
@@ -227,11 +227,11 @@ steps:
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
   - id: package
-    uses: jessehouwing/azdo-marketplace@v6
+    uses: jessehouwing/azdo-marketplace@v6.0.0
     with:
       operation: package
 
-  - uses: jessehouwing/azdo-marketplace@v6
+  - uses: jessehouwing/azdo-marketplace@v6.0.0
     with:
       operation: publish
       auth-type: oidc

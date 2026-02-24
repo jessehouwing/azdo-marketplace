@@ -171,7 +171,7 @@ runs:
   using: composite
   steps:
     - id: query-version
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@v6.0.0
       with:
         operation: query-version
         auth-type: ${{ inputs.auth-type }}

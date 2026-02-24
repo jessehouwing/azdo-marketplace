@@ -58,7 +58,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 ## GitHub Marketplace sample (main action)
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.0.0
   id: publish
   with:
     operation: publish

@@ -79,7 +79,7 @@ env:
   EXTENSION_ID_SUFFIX: -dev
 
 steps:
-  - uses: jessehouwing/azdo-marketplace@v6
+  - uses: jessehouwing/azdo-marketplace@v6.0.0
     with:
       operation: publish
       extension-id: ${{ format('{0}{1}', env.EXTENSION_ID_BASE, env.EXTENSION_ID_SUFFIX) }}
@@ -126,7 +126,7 @@ If you are not ready for OIDC yet:
 - pass token from a repository/environment secret
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.0.0
   with:
     operation: publish
     auth-type: pat
@@ -168,12 +168,12 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - id: package
-        uses: jessehouwing/azdo-marketplace@v6
+        uses: jessehouwing/azdo-marketplace@v6.0.0
         with:
           operation: package
 
       - id: publish
-        uses: jessehouwing/azdo-marketplace@v6
+        uses: jessehouwing/azdo-marketplace@v6.0.0
         with:
           operation: publish
           auth-type: oidc
