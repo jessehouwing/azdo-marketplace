@@ -1,10 +1,6 @@
-# Azure DevOps Extension Tasks
+# Azdo Marketplace Action & Tasks
 
 This extension provides Azure Pipelines tasks to package, publish, and manage Azure DevOps extensions in the [Visual Studio Marketplace](https://marketplace.visualstudio.com).
-
-## To use
-
-[Learn more](https://marketplace.visualstudio.com/items?itemName=ms-devlabs.vsts-developer-tools-build-tasks) about this extension and install the extension into your Azure DevOps Organization via the Visual Studio Marketplace.
 
 ## Available commands
 
@@ -19,13 +15,17 @@ This extension provides Azure Pipelines tasks to package, publish, and manage Az
 - **Wait for validation**: Wait for Marketplace validation to finish.
 - **Wait for installation**: Wait until extension tasks are available in target organizations.
 
-### Install and wait-for-installation account formats
+## Documentation
 
-For `install` and `wait-for-installation`, the `accounts` input supports:
-
-- Azure DevOps Services org name: `ORG` (automatically expanded to `https://dev.azure.com/ORG`)
-- Azure DevOps Services URL: `https://dev.azure.com/ORG`
-- Azure DevOps Server/TFS: full collection URL (for example `https://myserver/tfs/DefaultCollection`)
+- [v6 docs index](./docs/README.md)
+- [Using v6 in Azure Pipelines](./docs/azure-pipelines.md)
+- [Using v6 in GitHub Actions](./docs/github-actions.md)
+- [Authentication and OIDC](./docs/authentication-and-oidc.md)
+- [Design and architecture](./docs/design-and-architecture.md)
+- [Contributing guide](./docs/contributing.md)
+- [Migrate Azure Pipelines from v5 to v6](./docs/migrate-azure-pipelines-v5-to-v6.md)
+- [Migrate Azure Pipelines to GitHub Actions](./docs/migrate-azure-pipelines-v6-to-github-actions.md)
+- [Migrate Azure Pipelines v5 to GitHub Actions](./docs/migrate-azure-pipelines-v5-to-github-actions.md)
 
 ### Required scopes
 
@@ -42,18 +42,6 @@ When creating a PAT for pipeline automation, include at least the following scop
 - **Wait for installation**: `Extensions (read and manage)`, `Agent Pools (read)`
 
 ![Permissions](./Metadata/Images/permissions.png)
-
-## Documentation
-
-- [v6 docs index](./docs/README.md)
-- [Using v6 in Azure Pipelines](./docs/azure-pipelines.md)
-- [Using v6 in GitHub Actions](./docs/github-actions.md)
-- [Authentication and OIDC](./docs/authentication-and-oidc.md)
-- [Design and architecture](./docs/design-and-architecture.md)
-- [Contributing guide](./docs/contributing.md)
-- [Migrate Azure Pipelines from v5 to v6](./docs/migrate-azure-pipelines-v5-to-v6.md)
-- [Migrate Azure Pipelines to GitHub Actions](./docs/migrate-azure-pipelines-v6-to-github-actions.md)
-- [Migrate Azure Pipelines v5 to GitHub Actions](./docs/migrate-azure-pipelines-v5-to-github-actions.md)
 
 ## GitHub Marketplace sample (main action)
 
