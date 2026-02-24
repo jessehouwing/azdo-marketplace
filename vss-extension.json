@@ -1,7 +1,7 @@
 {
   "$schema": "http://json.schemastore.org/vss-extension",
   "manifestVersion": 1,
-  "id": "azure-pipelines-demo-ping-task",
+  "id": "azdo-marketplace",
   "publisher": "jessehouwing",
   "name": "Azdo Marketplace Extension",
   "version": "6.0.0",
@@ -48,7 +48,7 @@
       "uri": "https://github.com/jessehouwing/azdo-marketplace/issues"
     },
     "support": {
-      "uri": "mailto:azdevopsintegrations@microsoft.com"
+      "uri": "mailto:jesse.houwing@gmail.com"
     }
   },
   "repository": {
