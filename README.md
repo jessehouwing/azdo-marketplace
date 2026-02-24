@@ -1,6 +1,6 @@
 # Azdo Marketplace Action & Tasks
 
-This extension provides Azure Pipelines tasks to package, publish, and manage Azure DevOps extensions in the [Visual Studio Marketplace](https://marketplace.visualstudio.com).
+This repository hosts GitHub Actions and Azure Pipelines tasks to package, publish, and manage Azure DevOps extensions in the [Visual Studio Marketplace](https://marketplace.visualstudio.com).
 
 ## Available commands
 
