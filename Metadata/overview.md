@@ -4,12 +4,27 @@ This extension provides Azure Pipelines tasks to package, publish, and manage Az
 
 After installing this extension in your Azure DevOps organization, add one or more tasks to your [Azure Pipelines YAML pipeline](https://learn.microsoft.com/azure/devops/pipelines/?view=azure-devops).
 
-You can find an end-to-end example in this repository’s [azure-pipelines.yml](https://github.com/jessehouwing/azdo-marketplace/blob/main/azure-pipelines.yml).
+You can find an end-to-end example in this repository’s [azure-pipelines.yml](https://github.com/jessehouwing/azdo-marketplace/blob/main/.github/pipelines/azure-pipelines.yml).
 
 For authenticated operations, you can use either a Personal Access Token (PAT) or Microsoft Entra ID Workload Identity Federation (OIDC).
 
-- PAT setup: [Use personal access tokens](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
-- OIDC setup guide: [Authentication and OIDC](https://github.com/jessehouwing/azdo-marketplace/blob/main/docs/authentication-and-oidc.md)
+## Required PAT scopes
+
+When creating a PAT for pipeline automation, include at least the following scopes:
+
+- **Publish**: `Marketplace (publish)`
+- **Unpublish**: `Marketplace (manage)`
+- **Share**: `Marketplace (publish)`
+- **Unshare**: `Marketplace (publish)`
+- **Install**: `Extensions (read and manage)`, `Marketplace (acquire)`
+- **Show**: `Marketplace (read)`
+- **Query version**: `Marketplace (read)`
+- **Wait for validation**: `Marketplace (read)`
+- **Wait for installation**: `Extensions (read and manage)`, `Agent Pools (read)`
+
+For setup details and troubleshooting, see:
+
+- PAT setup: [Use personal access tokens](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-
 
 ## Microsoft Entra ID Workload Federation (OIDC)
 
@@ -37,23 +52,9 @@ For setup details, required marketplace resource scope, and troubleshooting, see
 - **Wait for validation**: Wait for Marketplace validation to finish.
 - **Wait for installation**: Wait until extension tasks are available in target organizations.
 
-### Required PAT scopes
-
-When creating a PAT for pipeline automation, include at least the following scopes:
-
-- **Publish**: `Marketplace (publish)`
-- **Unpublish**: `Marketplace (manage)`
-- **Share**: `Marketplace (publish)`
-- **Unshare**: `Marketplace (publish)`
-- **Install**: `Extensions (read and manage)`, `Marketplace (acquire)`
-- **Show**: `Marketplace (read)`
-- **Query version**: `Marketplace (read)`
-- **Wait for validation**: `Marketplace (read)`
-- **Wait for installation**: `Extensions (read and manage)`, `Agent Pools (read)`
-
 ## GitHub Actions equivalent
 
-This project also provides GitHub Actions equivalents for the same marketplace operations.
+This project also provides [GitHub Actions equivalents for the same marketplace operations](https://github.com/jessehouwing/azdo-marketplace).
 
 ## Source, feedback, and issues
 
