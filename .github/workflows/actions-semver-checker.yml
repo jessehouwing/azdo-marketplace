@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: jessehouwing/actions-semver-checker@main  # @61389c4ad2dc839619704980a06ed5768850e5be # v2.0.5
         with:
-          floating-versions-use: branches
+          floating-versions-use: tags
           check-minor-version: error
           check-release-immutability: none
           ignore-preview-releases: true
