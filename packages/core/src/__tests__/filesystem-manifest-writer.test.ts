@@ -720,10 +720,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
 
       // Update both tasks
-      const task1 = await reader.readTaskManifest('Task1/v2');
       await editor.updateTaskVersion('Task1/v2', '3.0.0', 'major');
-
-      const task2 = await reader.readTaskManifest('Task2/v3');
       await editor.updateTaskVersion('Task2/v3', '4.0.0', 'major');
 
       const writer = await editor.toWriter();
@@ -750,10 +747,7 @@ describe('FilesystemManifestWriter', () => {
         id: 'test-ext',
         publisher: 'test-pub',
         version: '1.0.0',
-        files: [
-          { path: 'compiled/task', packagePath: 'Task' },
-          { path: 'TaskOther' },
-        ],
+        files: [{ path: 'compiled/task', packagePath: 'Task' }, { path: 'TaskOther' }],
         contributions: [
           {
             id: 'task1',
@@ -872,10 +866,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
 
       // Update both tasks
-      const taskCLI = await reader.readTaskManifest('CLI/v2');
       await editor.updateTaskVersion('CLI/v2', '3.0.0', 'major');
-
-      const taskCLIUtils = await reader.readTaskManifest('CLIUtils/v2');
       await editor.updateTaskVersion('CLIUtils/v2', '4.0.0', 'major');
 
       const writer = await editor.toWriter();
@@ -946,17 +937,13 @@ describe('FilesystemManifestWriter', () => {
       const writer = await editor.toWriter();
       await writer.writeToFilesystem();
 
-      const v1Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8')
-      );
+      const v1Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8'));
       expect(v1Json.version.Major).toBe(5);
       expect(v1Json.version.Minor).toBe(0);
       expect(v1Json.version.Patch).toBe(0);
       expect(v1Json.name).toBe('MyTask');
 
-      const v2Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8')
-      );
+      const v2Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8'));
       expect(v2Json.version.Major).toBe(5);
       expect(v2Json.version.Minor).toBe(0);
       expect(v2Json.version.Patch).toBe(0);
@@ -1082,18 +1069,14 @@ describe('FilesystemManifestWriter', () => {
       const writer = await editor.toWriter();
       await writer.writeToFilesystem();
 
-      const v1Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8')
-      );
+      const v1Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8'));
       expect(v1Json.version.Major).toBe(4);
       expect(v1Json.version.Minor).toBe(1);
       expect(v1Json.version.Patch).toBe(2);
       // ID should be updated (deterministic UUID)
       expect(v1Json.id).not.toBe('id-v1');
 
-      const v2Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8')
-      );
+      const v2Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8'));
       expect(v2Json.version.Major).toBe(4);
       expect(v2Json.version.Minor).toBe(1);
       expect(v2Json.version.Patch).toBe(2);
@@ -1151,12 +1134,8 @@ describe('FilesystemManifestWriter', () => {
       const writer = await editor.toWriter();
       await writer.writeToFilesystem();
 
-      const v1Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8')
-      );
-      const v2Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8')
-      );
+      const v1Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8'));
+      const v2Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8'));
 
       // Different task names should produce different UUIDs
       expect(v1Json.id).not.toBe(v2Json.id);
@@ -1216,12 +1195,8 @@ describe('FilesystemManifestWriter', () => {
       const writer = await editor.toWriter();
       await writer.writeToFilesystem();
 
-      const v1Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8')
-      );
-      const v2Json = JSON.parse(
-        readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8')
-      );
+      const v1Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v1', 'task.json'), 'utf-8'));
+      const v2Json = JSON.parse(readFileSync(join(testDir, 'MyTask', 'v2', 'task.json'), 'utf-8'));
 
       // Same task name should produce the same UUID
       expect(v1Json.id).toBe(v2Json.id);
