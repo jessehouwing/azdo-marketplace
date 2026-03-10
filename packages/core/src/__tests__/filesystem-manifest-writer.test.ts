@@ -720,10 +720,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
 
       // Update both tasks
-      const task1 = await reader.readTaskManifest('Task1/v2');
       await editor.updateTaskVersion('Task1/v2', '3.0.0', 'major');
-
-      const task2 = await reader.readTaskManifest('Task2/v3');
       await editor.updateTaskVersion('Task2/v3', '4.0.0', 'major');
 
       const writer = await editor.toWriter();
@@ -869,10 +866,7 @@ describe('FilesystemManifestWriter', () => {
       const editor = ManifestEditor.fromReader(reader);
 
       // Update both tasks
-      const taskCLI = await reader.readTaskManifest('CLI/v2');
       await editor.updateTaskVersion('CLI/v2', '3.0.0', 'major');
-
-      const taskCLIUtils = await reader.readTaskManifest('CLIUtils/v2');
       await editor.updateTaskVersion('CLIUtils/v2', '4.0.0', 'major');
 
       const writer = await editor.toWriter();
