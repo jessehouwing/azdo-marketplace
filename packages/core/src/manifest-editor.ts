@@ -342,12 +342,7 @@ export class ManifestEditor {
    * @param extensionId Extension ID (for UUID generation)
    * @returns This editor for chaining
    */
-  updateTaskId(
-    taskPath: string,
-    taskName: string,
-    publisherId: string,
-    extensionId: string
-  ): this {
+  updateTaskId(taskPath: string, taskName: string, publisherId: string, extensionId: string): this {
     // Generate deterministic UUID v5 based on publisher, extension, and task name
     // This matches v5 implementation exactly
     const marketplaceNamespace = uuidv5('https://marketplace.visualstudio.com/vsts', uuidv5.URL);

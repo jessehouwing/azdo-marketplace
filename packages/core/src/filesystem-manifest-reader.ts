@@ -181,10 +181,7 @@ export class FilesystemManifestReader extends ManifestReader {
               } else {
                 // Multi-version via per-version packagePath mappings
                 // (e.g., MyTask/v1 → build/legacy, MyTask/v2 → dist/current)
-                const prefixMatches = await this.findPackagePathPrefixMatches(
-                  name,
-                  packagePathMap
-                );
+                const prefixMatches = await this.findPackagePathPrefixMatches(name, packagePathMap);
                 taskPaths.push(...prefixMatches);
               }
             }

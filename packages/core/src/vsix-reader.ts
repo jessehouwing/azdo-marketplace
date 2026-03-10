@@ -358,10 +358,7 @@ export class VsixReader extends ManifestReader {
               // Multi-version: find subdirectories with task.json
               const prefix = `${name}/`.replace(/\\/g, '/');
               for (const entry of entries) {
-                if (
-                  entry.fileName.startsWith(prefix) &&
-                  entry.fileName.endsWith('/task.json')
-                ) {
+                if (entry.fileName.startsWith(prefix) && entry.fileName.endsWith('/task.json')) {
                   // Extract the subdirectory path (e.g., "MyTask/v1" from "MyTask/v1/task.json")
                   const taskDir = entry.fileName.slice(0, -'/task.json'.length);
                   // Only include direct subdirectories (one level deep under the contribution)
