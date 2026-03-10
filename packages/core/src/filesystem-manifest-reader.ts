@@ -182,7 +182,14 @@ export class FilesystemManifestReader extends ManifestReader {
                 // Multi-version via per-version packagePath mappings
                 // (e.g., MyTask/v1 → build/legacy, MyTask/v2 → dist/current)
                 const prefixMatches = await this.findPackagePathPrefixMatches(name, packagePathMap);
-                taskPaths.push(...prefixMatches);
+                if (prefixMatches.length > 0) {
+                  taskPaths.push(...prefixMatches);
+                } else {
+                  this.platform.warning(
+                    `No task.json found for contribution '${name}'. ` +
+                      `Searched '${actualPath}' and its immediate subdirectories.`
+                  );
+                }
               }
             }
           }
