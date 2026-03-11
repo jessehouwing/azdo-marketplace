@@ -87,14 +87,6 @@ export class FilesystemManifestReader extends ManifestReader {
   }
 
   /**
-   * Find and resolve the extension manifest file path
-   */
-  private async resolveManifestPath(): Promise<string> {
-    const paths = await this.resolveManifestPaths();
-    return paths[0];
-  }
-
-  /**
    * Read the extension manifest from filesystem.
    * When multiple manifest files match the globs, they are deep-merged in order:
    * - Scalar values: later files override earlier ones
