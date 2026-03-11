@@ -108,7 +108,7 @@
       "required": true,
       "defaultValue": "manifest",
       "helpMarkDown": "**Input source mode** for operations that support manifest or VSIX input.\n\n- **Manifest files**: Use `manifestFile` (and optional `localizationRoot`) from the current working directory\n- **VSIX file**: Use `vsixFile`",
-      "visibleRule": "operation = package || operation = publish || operation = waitForInstallation",
+      "visibleRule": "operation = package || operation = publish || operation = waitForInstallation || operation = queryVersion",
       "options": {
         "manifest": "Manifest files",
         "vsix": "VSIX file"
@@ -128,7 +128,7 @@
       "label": "Manifest File(s)",
       "required": false,
       "helpMarkDown": "**Manifest file path(s)** (one per line).\n\n- Defaults to `vss-extension.json` if not specified\n- Supports multiple manifest files\n- Paths are relative to the current working directory\n- For `queryVersion`: used as fallback source for Publisher ID and Extension ID when not specified\n\n**Examples**:\n- `vss-extension.json`\n- `manifests/dev/vss-extension.json`\n- `manifests/prod/vss-extension.json`",
-      "visibleRule": "use = manifest || operation = queryVersion"
+      "visibleRule": "use = manifest"
     },
     {
       "name": "manifestFileJs",
@@ -151,8 +151,8 @@
       "type": "filePath",
       "label": "VSIX File",
       "required": false,
-      "helpMarkDown": "**Path to .vsix file** used for VSIX mode and VSIX identity fallback.\n\n- For publish: required when `use = vsix`\n- For install/share/unshare/unpublish/waitForValidation: reads publisher/extension identity from VSIX when IDs are omitted\n- For waitForInstallation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For waitForInstallation, use this OR expectedTasks/manifestFile, not multiple options",
-      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation || operation = waitForInstallation"
+      "helpMarkDown": "**Path to .vsix file** used for VSIX mode and VSIX identity fallback.\n\n- For publish: required when `use = vsix`\n- For queryVersion: reads publisher/extension identity from VSIX when IDs are omitted\n- For install/share/unshare/unpublish/waitForValidation: reads publisher/extension identity from VSIX when IDs are omitted\n- For waitForInstallation: extracts task.json files from VSIX package\n\n**Example**: `$(Build.ArtifactStagingDirectory)/my-extension.vsix`\n\n**Note**: For waitForInstallation, use this OR expectedTasks/manifestFile, not multiple options",
+      "visibleRule": "use = vsix || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation || operation = waitForInstallation || operation = queryVersion"
     },
     {
       "name": "extensionVersion",

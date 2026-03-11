@@ -180,6 +180,34 @@ inputs:
       manifests/prod/vss-extension.json
       ```
     required: false
+  use:
+    description: |-
+      **Input source for publish and query-version operations:**
+
+      Available for: publish, query-version.
+      Required for: none.
+      Default: none
+
+      - `manifest` (default): Use manifest files as the input source
+      - `vsix`: Use a pre-built .vsix package as the input source
+
+      **Use VSIX when:** You've already packaged the extension separately
+    required: false
+  vsix-file:
+    description: |-
+      **Path to pre-built .vsix file** (for publish and query-version operations).
+
+      Available for: publish, query-version.
+      Required for: none.
+      Default: none
+
+      - Use when `use` is 'vsix'
+      - File must be a valid extension package
+      - Supports GitHub Actions expressions
+      - For query-version: reads publisher-id and extension-id from the VSIX when not specified
+
+      **Example:** `$``{{ github.workspace }}/dist/my-extension.vsix`
+    required: false
 outputs:
   proposed-version:
     description: |
@@ -206,3 +234,5 @@ runs:
         version-action: ${{ inputs.version-action }}
         extension-version-override: ${{ inputs.extension-version-override }}
         manifest-file: ${{ inputs.manifest-file }}
+        use: ${{ inputs.use }}
+        vsix-file: ${{ inputs.vsix-file }}

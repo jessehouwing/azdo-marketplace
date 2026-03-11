@@ -430,6 +430,8 @@ async function runQueryVersion(
       extensionId: platform.getInput('extensionId') || undefined,
       versionAction: normalizedVersionAction,
       extensionVersionOverrideVariable: platform.getInput('extensionVersionOverride'),
+      use: (platform.getInput('use') || 'manifest') as 'manifest' | 'vsix',
+      vsixFile: platform.getPathInput('vsixFile') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     },
     auth,
