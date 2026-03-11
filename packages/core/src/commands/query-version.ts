@@ -1,4 +1,6 @@
+import { cwd } from 'process';
 import type { AuthCredentials } from '../auth.js';
+import { FilesystemManifestReader } from '../filesystem-manifest-reader.js';
 import type { IPlatformAdapter } from '../platform.js';
 import type { TfxManager } from '../tfx-manager.js';
 import { showExtension } from './show.js';
@@ -6,10 +8,12 @@ import { showExtension } from './show.js';
 export type VersionAction = 'None' | 'Major' | 'Minor' | 'Patch';
 
 export interface QueryVersionOptions {
-  publisherId: string;
-  extensionId: string;
+  publisherId?: string;
+  extensionId?: string;
   versionAction?: VersionAction;
   extensionVersionOverrideVariable?: string;
+  manifestGlobs?: string[];
+  rootFolder?: string;
 }
 
 export interface QueryVersionResult {
@@ -74,10 +78,47 @@ export async function queryVersion(
     }
   }
 
+  let publisherId = options.publisherId;
+  let extensionId = options.extensionId;
+
+  if (!publisherId || !extensionId) {
+    const manifestGlobs =
+      options.manifestGlobs && options.manifestGlobs.length > 0
+        ? options.manifestGlobs
+        : ['vss-extension.json'];
+    const rootFolder = options.rootFolder || cwd();
+
+    platform.debug(
+      `Publisher ID or Extension ID not specified, reading from manifest (rootFolder: ${rootFolder}, globs: ${manifestGlobs.join(', ')}).`
+    );
+
+    const reader = new FilesystemManifestReader({ rootFolder, manifestGlobs, platform });
+    try {
+      const metadata = await reader.getMetadata();
+      if (!publisherId) {
+        publisherId = metadata.publisher;
+        platform.debug(`Using publisher ID from manifest: ${publisherId}`);
+      }
+      if (!extensionId) {
+        extensionId = metadata.extensionId;
+        platform.debug(`Using extension ID from manifest: ${extensionId}`);
+      }
+    } finally {
+      await reader.close();
+    }
+  }
+
+  if (!publisherId) {
+    throw new Error('Publisher ID is required. Provide it explicitly or via manifest-file.');
+  }
+  if (!extensionId) {
+    throw new Error('Extension ID is required. Provide it explicitly or via manifest-file.');
+  }
+
   const showResult = await showExtension(
     {
-      publisherId: options.publisherId,
-      extensionId: options.extensionId,
+      publisherId,
+      extensionId,
     },
     auth,
     tfx,

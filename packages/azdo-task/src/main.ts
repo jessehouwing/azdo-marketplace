@@ -426,10 +426,11 @@ async function runQueryVersion(
 
   const result = await queryVersion(
     {
-      publisherId: platform.getInput('publisherId', true),
-      extensionId: platform.getInput('extensionId', true),
+      publisherId: platform.getInput('publisherId') || undefined,
+      extensionId: platform.getInput('extensionId') || undefined,
       versionAction: normalizedVersionAction,
       extensionVersionOverrideVariable: platform.getInput('extensionVersionOverride'),
+      manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     },
     auth,
     tfxManager,

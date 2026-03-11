@@ -51,6 +51,9 @@ inputs:
   extension-version-override:
     type: string
 
+  manifest-file:
+    type: string
+
 # Validate outputs
 outputs:
   current-version:
