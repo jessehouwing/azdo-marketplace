@@ -117,7 +117,7 @@ jobs:
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
-          manifest-file: vss-extension.json
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
 
       - name: Share extension
         if: ${{ inputs.organization_urls != '' }}
@@ -125,7 +125,7 @@ jobs:
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
-          manifest-file: vss-extension.json
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
           accounts: ${{ inputs.organization_urls }}
 
       - name: Install extension
@@ -134,7 +134,7 @@ jobs:
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
-          manifest-file: vss-extension.json
+          vsix-path: ${{ steps.package.outputs.vsix-path }}
           accounts: ${{ inputs.organization_urls }}
 
       - name: Wait for installation
