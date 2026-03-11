@@ -1481,7 +1481,10 @@ describe('FilesystemManifestReader', () => {
           id: 'my-ext',
           publisher: 'my-pub',
           version: '1.0.0',
-          content: { details: { path: 'overview.md' } },
+          content: {
+            details: { path: 'overview.md' },
+            license: { path: 'license.md' },
+          },
         })
       );
 
@@ -1489,6 +1492,10 @@ describe('FilesystemManifestReader', () => {
         join(testDir, 'icons.json'),
         JSON.stringify({
           icons: { default: 'icon.png' },
+          content: {
+            details: { path: 'OVERRIDE.md' },
+            changelog: { path: 'changelog.md' },
+          },
         })
       );
 
@@ -1500,10 +1507,24 @@ describe('FilesystemManifestReader', () => {
 
       const result = await reader.readExtensionManifest();
 
-      // Objects from both manifests are present
-      expect(result.content).toBeDefined();
+      // Icons from second manifest are present
       expect(result.icons).toBeDefined();
       expect(result.icons!['default']).toBe('icon.png');
+
+      // content is recursively merged: later file wins on conflicts, earlier file kept otherwise
+      expect(result.content).toBeDefined();
+      // details.path overridden by icons.json (later file wins)
+      expect((result.content as Record<string, unknown>)['details']).toEqual({
+        path: 'OVERRIDE.md',
+      });
+      // license.path from vss-extension.json is preserved (not overridden)
+      expect((result.content as Record<string, unknown>)['license']).toEqual({
+        path: 'license.md',
+      });
+      // changelog.path from icons.json is added
+      expect((result.content as Record<string, unknown>)['changelog']).toEqual({
+        path: 'changelog.md',
+      });
 
       await reader.close();
     });
