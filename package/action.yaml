@@ -242,7 +242,7 @@ runs:
   using: composite
   steps:
     - id: package
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@v6.0.1
       with:
         operation: package
         tfx-version: ${{ inputs.tfx-version }}
