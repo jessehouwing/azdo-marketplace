@@ -340,7 +340,7 @@ jobs:
               --branch "$BRANCH" \
               --limit 1 \
               --json databaseId \
-              --jq '.[0].databaseId')
+              --jq '.[0].databaseId // empty')
 
             if [ -z "$RUN_ID" ]; then
               echo "No run found yet, waiting... (${ELAPSED}s elapsed)"
@@ -355,7 +355,7 @@ jobs:
               --branch "$BRANCH" \
               --limit 1 \
               --json status,conclusion \
-              --jq '.[0] | "\(.status) \(.conclusion)"')
+              --jq '.[0] | "\(.status) \(.conclusion // "pending")"')
 
             echo "Run $RUN_ID: $STATUS (${ELAPSED}s elapsed)"
 
