@@ -35,8 +35,6 @@ inputs:
       Then use auth-type: oidc (no token needed)
 
       See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
-
-      Only required when `marketplace` is in `version-source`.
     required: false
     default: pat
   token:
@@ -52,8 +50,6 @@ inputs:
 
       Required scopes: Marketplace (Publish)
       Create a PAT at: https://dev.azure.com/_usersSettings/tokens
-
-      Only required when `marketplace` is in `version-source`.
     required: false
   username:
     description: |-
