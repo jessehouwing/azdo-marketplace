@@ -16,6 +16,9 @@ name: Release
 #   publisher-jessehouwing      - For production releases (job 4, requires approval)
 
 on:
+  push:
+    branches:
+      - 'release/v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
     inputs:
       version:
@@ -41,16 +44,27 @@ jobs:
     permissions:
       contents: write
     outputs:
-      version: ${{ inputs.version }}
-      branch: release/v${{ inputs.version }}
+      version: ${{ steps.resolve.outputs.version }}
+      branch: release/v${{ steps.resolve.outputs.version }}
       major: ${{ steps.parse.outputs.major }}
       minor: ${{ steps.parse.outputs.minor }}
       patch: ${{ steps.parse.outputs.patch }}
 
     steps:
+      - name: Resolve version
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # Extract version from branch name: release/vX.Y.Z → X.Y.Z
+            VERSION="${GITHUB_REF_NAME#release/v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Validate version format
         run: |
-          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! "${{ steps.resolve.outputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Version must be in format x.y.z (e.g., 6.1.0)"
             exit 1
           fi
@@ -58,7 +72,7 @@ jobs:
       - name: Parse version components
         id: parse
         run: |
-          IFS='.' read -r major minor patch <<< "${{ inputs.version }}"
+          IFS='.' read -r major minor patch <<< "${{ steps.resolve.outputs.version }}"
           {
             echo "major=$major"
             echo "minor=$minor"
@@ -72,7 +86,7 @@ jobs:
 
       - name: Create or checkout release branch
         run: |
-          BRANCH="release/v${{ inputs.version }}"
+          BRANCH="release/v${{ steps.resolve.outputs.version }}"
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
             echo "Branch $BRANCH already exists, checking it out"
             git fetch origin "$BRANCH"
@@ -109,7 +123,7 @@ jobs:
         run: npm ci
 
       - name: Update version references
-        run: node Scripts/update-version.mjs ${{ inputs.version }}
+        run: node Scripts/update-version.mjs ${{ steps.resolve.outputs.version }}
 
       - name: Format
         run: npm run format
@@ -149,26 +163,26 @@ jobs:
           operation: package
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
-          extension-version: ${{ inputs.version }}
+          extension-version: ${{ steps.resolve.outputs.version }}
           output-path: ${{ runner.temp }}
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         with:
-          name: vsix-${{ env.EXTENSION_ID }}-${{ inputs.version }}
+          name: vsix-${{ env.EXTENSION_ID }}-${{ steps.resolve.outputs.version }}
           path: ${{ runner.temp }}/*.vsix
           if-no-files-found: error
 
       - name: Commit and push changes
         run: |
-          BRANCH="release/v${{ inputs.version }}"
+          BRANCH="release/v${{ steps.resolve.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: prepare release v${{ inputs.version }}"
+            git commit -m "chore: prepare release v${{ steps.resolve.outputs.version }}"
           fi
           git push origin "HEAD:$BRANCH"
 
