@@ -186,7 +186,7 @@ Resolves the proposed extension version from one or more sources. The highest va
 - `vsix-path` (package)
 - `metadata` (show)
 - `proposed-version` (query-version) — highest version from all sources
-- `current-version` (query-version) — marketplace version before increment (only set when marketplace is queried)
+- `current-version` (query-version) — resolved version before increment (from the winning `version-source`)
 - `version-source` (query-version) — which source won: `marketplace`, `manifest`, `vsix`, or `literal`
 
 ## Status and control flow

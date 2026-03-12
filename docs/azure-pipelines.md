@@ -219,7 +219,7 @@ Declared task output variables (from `task.json`):
 - `vsixPath`
 - `extensionMetadata`
 - `proposedVersion` — highest version from all sources
-- `currentVersion` — marketplace version before increment (only set when marketplace is queried)
+- `currentVersion` — resolved version before increment; when marketplace is queried this is the marketplace version, otherwise it falls back to the selected source version
 - `versionSource` — which source won: `marketplace`, `manifest`, `vsix`, or `literal`
 
 These are referenced as step outputs, for example `$(packageExt.vsixPath)`.

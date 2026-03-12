@@ -194,7 +194,7 @@ inputs:
     default: None
   version-action:
     description: |-
-      **Deprecated.** Use `marketplace-version-action` instead.
+      Auto-increment action applied to the current marketplace version (query-version operation only).
 
       Available for: query-version.
       Required for: none.
@@ -204,7 +204,7 @@ inputs:
     deprecationMessage: Use 'marketplace-version-action' instead.
   extension-version-override:
     description: |-
-      **Deprecated.** Use `version-source` with a version value instead.
+      Override version to use instead of querying the marketplace (query-version operation only).
 
       Available for: query-version.
       Required for: none.
@@ -267,8 +267,11 @@ outputs:
     value: ${{ steps.query-version.outputs.proposed-version }}
   current-version:
     description: |
-      **Current marketplace version** before applying version action (query-version operation only).
-      Only set when `marketplace` is in `version-source`.
+      **Current winning version** before applying version action (query-version operation only).
+
+      This value reflects the same version chosen for `proposed-version` before any increment is applied:
+      - When `version-source` includes `marketplace`, this is the current marketplace version
+      - Otherwise, it is the current version from the winning source (manifest, vsix, or literal)
     value: ${{ steps.query-version.outputs.current-version }}
   version-source:
     description: |

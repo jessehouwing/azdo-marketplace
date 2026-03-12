@@ -382,7 +382,7 @@
     },
     {
       "name": "currentVersion",
-      "description": "Current marketplace version before applying version action (queryVersion operation only). Only set when marketplace is in versionSource."
+      "description": "Current extension version before applying version action (queryVersion operation only)."
     },
     {
       "name": "versionSource",
