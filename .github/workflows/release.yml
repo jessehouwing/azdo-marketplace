@@ -262,6 +262,7 @@ jobs:
       - name: Trigger Azure DevOps test pipeline
         env:
           AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+        shell: pwsh
         run: |
           az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
           $runId = az pipelines run `
