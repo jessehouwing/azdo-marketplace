@@ -26,7 +26,7 @@ const validateNodeAvailableMock = jest.fn();
 const validateNpmAvailableMock = jest.fn();
 const validateTfxAvailableMock = jest.fn();
 const validateAzureCliAvailableMock = jest.fn();
-const versionSourceNeedsMarketplaceMock = jest.fn(() => true);
+const versionSourceNeedsMarketplaceMock = jest.fn((_s?: string[]) => true);
 
 jest.unstable_mockModule('@actions/core', () => ({
   setFailed: setFailedMock,
@@ -575,6 +575,42 @@ describe('GitHub Action main entrypoint', () => {
     );
     expect(platform.setOutput).toHaveBeenCalledWith('proposed-version', '2.0.0');
     expect(platform.setOutput).toHaveBeenCalledWith('current-version', '1.0.0');
+  });
+
+  it('skips auth when query-version version-source excludes marketplace', async () => {
+    versionSourceNeedsMarketplaceMock.mockReturnValue(false);
+    queryVersionMock.mockImplementation(async () => ({
+      proposedVersion: '3.0.0',
+      currentVersion: '3.0.0',
+    }));
+
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'query-version',
+        'publisher-id': 'publisher',
+        'extension-id': 'extension',
+      },
+      delimitedInputs: {
+        'version-source|\n': ['manifest'],
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(versionSourceNeedsMarketplaceMock).toHaveBeenCalledWith(['manifest']);
+    expect(getAuthMock).not.toHaveBeenCalled();
+    expect(queryVersionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      expect.anything(),
+      platform
+    );
+    expect(platform.setOutput).toHaveBeenCalledWith('proposed-version', '3.0.0');
+    expect(platform.setResult).toHaveBeenCalledWith(
+      'Succeeded',
+      'query-version completed successfully'
+    );
   });
 
   it('executes show and sets extension metadata output', async () => {
