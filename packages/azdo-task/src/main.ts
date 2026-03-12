@@ -428,10 +428,8 @@ async function runQueryVersion(
   tfxManager: TfxManager,
   auth: AuthCredentials | undefined
 ): Promise<void> {
-  // Support both new marketplaceVersionAction and legacy versionAction
-  const newActionInput = platform.getInput('marketplaceVersionAction');
-  const legacyActionInput = platform.getInput('versionAction');
-  const versionActionRaw = newActionInput || legacyActionInput;
+  // Read marketplace version action
+  const versionActionRaw = platform.getInput('marketplaceVersionAction');
 
   const normalizedVersionAction = (() => {
     const input = (versionActionRaw ?? 'none').trim().toLowerCase();

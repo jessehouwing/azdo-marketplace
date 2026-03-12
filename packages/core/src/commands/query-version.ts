@@ -29,10 +29,6 @@ export interface QueryVersionOptions {
    */
   versionSource?: string[];
 
-  // --- Legacy fields (deprecated, use versionSource instead) ---
-  /** @deprecated Use marketplaceVersionAction instead */
-  versionAction?: VersionAction;
-
   /** 'vsix' to read identity from a VSIX file; 'manifest' (default) to read from manifest files. */
   use?: 'manifest' | 'vsix';
   vsixFile?: string;
@@ -193,9 +189,8 @@ export async function queryVersion(
   tfx: TfxManager,
   platform: IPlatformAdapter
 ): Promise<QueryVersionResult> {
-  // Resolve effective marketplaceVersionAction (new field takes precedence over legacy)
-  const marketplaceVersionAction =
-    options.marketplaceVersionAction ?? options.versionAction ?? 'None';
+  // Resolve effective marketplaceVersionAction
+  const marketplaceVersionAction = options.marketplaceVersionAction ?? 'None';
 
   // Determine effective version sources
   const rawSources =

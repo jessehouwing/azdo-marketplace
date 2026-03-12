@@ -417,23 +417,8 @@ async function runQueryVersion(
   tfxManager: TfxManager,
   auth: AuthCredentials | undefined
 ): Promise<void> {
-  // Handle deprecated version-action → marketplace-version-action rename
-  const newInput = platform.getInput('marketplace-version-action');
-  const legacyInput = platform.getInput('version-action');
-
-  if (legacyInput && newInput && legacyInput !== newInput) {
-    throw new Error(
-      "Both 'version-action' and 'marketplace-version-action' are set with different values. " +
-        "Use only 'marketplace-version-action'."
-    );
-  }
-  if (legacyInput && !newInput) {
-    platform.warning(
-      "Input 'version-action' is deprecated. Use 'marketplace-version-action' instead."
-    );
-  }
-
-  const versionActionRaw = newInput || legacyInput;
+  // Handle marketplace-version-action
+  const versionActionRaw = platform.getInput('marketplace-version-action');
 
   const normalizedVersionAction = (() => {
     const input = (versionActionRaw ?? 'none').trim().toLowerCase();

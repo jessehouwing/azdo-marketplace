@@ -163,31 +163,6 @@ describe('queryVersion', () => {
     });
   });
 
-  describe('legacy support', () => {
-    it('supports legacy versionAction field', async () => {
-      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
-        exitCode: 0,
-        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3' },
-        stdout: '',
-        stderr: '',
-      });
-
-      const result = await queryVersion(
-        {
-          publisherId: 'pub',
-          extensionId: 'ext',
-          versionAction: 'Patch',
-        },
-        auth,
-        tfxManager,
-        platform
-      );
-
-      expect(result.version).toBe('1.2.4');
-      expect(result.source).toBe('marketplace');
-    });
-  });
-
   describe('defaults to marketplace when no versionSource specified', () => {
     it('queries marketplace by default', async () => {
       jest.spyOn(tfxManager, 'execute').mockResolvedValue({
