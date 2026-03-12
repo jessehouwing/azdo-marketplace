@@ -29,7 +29,8 @@ if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
 }
 
 const [major, minor, patch] = version.split('.').map(Number);
-let updatedFiles = 0;
+let updatedCount = 0;
+let skippedCount = 0;
 
 // 1. Update package.json files
 const packageJsonPaths = [
@@ -46,7 +47,7 @@ for (const p of packageJsonPaths) {
   content.version = version;
   await fs.writeFile(filePath, JSON.stringify(content, null, 2) + '\n');
   console.log(`✓ ${p} → version ${version}`);
-  updatedFiles++;
+  updatedCount++;
 }
 
 // 2. Update vss-extension.json
@@ -56,7 +57,7 @@ const vssContent = JSON.parse(vssRaw);
 vssContent.version = version;
 await fs.writeFile(vssPath, JSON.stringify(vssContent, null, 2) + '\n');
 console.log(`✓ vss-extension.json → version ${version}`);
-updatedFiles++;
+updatedCount++;
 
 // 3. Update task.json
 const taskPath = path.join(rootDir, 'packages/azdo-task/task.json');
@@ -67,7 +68,7 @@ taskContent.version.Minor = minor;
 taskContent.version.Patch = patch;
 await fs.writeFile(taskPath, JSON.stringify(taskContent, null, 2) + '\n');
 console.log(`✓ packages/azdo-task/task.json → version ${major}.${minor}.${patch}`);
-updatedFiles++;
+updatedCount++;
 
 // 4. Update composite action.yaml files
 // These reference jessehouwing/azdo-marketplace@main (or any ref) in both:
@@ -95,7 +96,7 @@ for (const dir of actionDirs) {
   );
   await fs.writeFile(actionPath, content);
   console.log(`✓ ${dir}/action.yaml → @v${version}`);
-  updatedFiles++;
+  updatedCount++;
 }
 
 // 5. Update root action.yml (output description examples use @v6)
@@ -107,7 +108,7 @@ rootActionContent = rootActionContent.replace(
 );
 await fs.writeFile(rootActionPath, rootActionContent);
 console.log(`✓ action.yml → @v${version}`);
-updatedFiles++;
+updatedCount++;
 
 // 6. Update documentation files (GitHub Actions references)
 // Pattern: jessehouwing/azdo-marketplace@vX or jessehouwing/azdo-marketplace/subaction@vX
@@ -135,10 +136,11 @@ for (const f of docFiles) {
     content = content.replace(/azdo-marketplace@\d+/g, `azdo-marketplace@${major}`);
     await fs.writeFile(filePath, content);
     console.log(`✓ ${f} → @v${version} (actions), @${major} (pipelines)`);
-    updatedFiles++;
+    updatedCount++;
   } catch (e) {
     if (e.code === 'ENOENT') {
       console.log(`⊘ ${f} (not found, skipped)`);
+      skippedCount++;
     } else {
       throw e;
     }
@@ -156,10 +158,11 @@ for (const dir of actionDirs) {
     );
     await fs.writeFile(readmePath, content);
     console.log(`✓ ${dir}/README.md → @v${version}`);
-    updatedFiles++;
+    updatedCount++;
   } catch (e) {
     if (e.code === 'ENOENT') {
       console.log(`⊘ ${dir}/README.md (not found, skipped)`);
+      skippedCount++;
     } else {
       throw e;
     }
@@ -183,11 +186,12 @@ try {
     content = content.replace(/azdo-marketplace@\d+/g, `azdo-marketplace@${major}`);
     await fs.writeFile(filePath, content);
     console.log(`✓ docs/examples/${file} → @v${version} (actions), @${major} (pipelines)`);
-    updatedFiles++;
+    updatedCount++;
   }
 } catch (e) {
   if (e.code === 'ENOENT') {
     console.log('⊘ docs/examples/ (not found, skipped)');
+    skippedCount++;
   } else {
     throw e;
   }
@@ -204,14 +208,17 @@ try {
     content = content.replace(/azdo-marketplace@\d+/g, `azdo-marketplace@${major}`);
     await fs.writeFile(filePath, content);
     console.log(`✓ .github/pipelines/${file} → @${major}`);
-    updatedFiles++;
+    updatedCount++;
   }
 } catch (e) {
   if (e.code === 'ENOENT') {
     console.log('⊘ .github/pipelines/ (not found, skipped)');
+    skippedCount++;
   } else {
     throw e;
   }
 }
 
-console.log(`\n✅ Version update complete: ${version} (${updatedFiles} files updated)`);
+console.log(
+  `\n✅ Version update complete: ${version} (${updatedCount} files updated${skippedCount > 0 ? `, ${skippedCount} skipped` : ''})`
+);

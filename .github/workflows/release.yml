@@ -1,5 +1,20 @@
 name: Release
 
+# Multi-job release workflow for Azure DevOps extension and GitHub Actions.
+#
+# Required secrets:
+#   AZURE_CLIENT_ID       - Azure AD app client ID for OIDC authentication
+#   AZURE_TENANT_ID       - Azure AD tenant ID for OIDC authentication
+#   AZURE_DEVOPS_PAT      - Azure DevOps PAT for triggering test pipelines
+#
+# Required repository variables:
+#   AZDO_TEST_PIPELINE_NAME  - Name of the Azure DevOps test pipeline to trigger
+#   ACTIONS_TEST_WORKFLOW    - Name/file of the GitHub Actions test workflow to trigger
+#
+# Required environments (with protection rules):
+#   publisher-jessehouwing-dev  - For preview releases (job 2)
+#   publisher-jessehouwing      - For production releases (job 4, requires approval)
+
 on:
   workflow_dispatch:
     inputs:
@@ -93,6 +108,9 @@ jobs:
         run: npm run build
 
       - name: Test
+        # Disable workflow commands during test execution to prevent test
+        # output (e.g. ##vso or ::set-output) from being interpreted as
+        # actual workflow commands.
         shell: bash
         run: |
           stop_marker="$(uuidgen)"
@@ -285,22 +303,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Waiting for workflow to start..."
-          sleep 15
-
           BRANCH="release/v${{ needs.prepare-release.outputs.version }}"
           TIMEOUT=1800  # 30 minutes
           ELAPSED=0
-          INTERVAL=30
+          INTERVAL=15
 
-          # Find the most recent run on the release branch
+          # Poll until the workflow run appears and completes. The run may
+          # take a few seconds to show up in the API after triggering.
           while [ $ELAPSED -lt $TIMEOUT ]; do
             RUN_ID=$(gh run list \
               --repo "${{ github.repository }}" \
               --workflow "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
               --branch "$BRANCH" \
               --limit 1 \
-              --json databaseId,status \
+              --json databaseId \
               --jq '.[0].databaseId')
 
             if [ -z "$RUN_ID" ]; then
@@ -330,6 +346,8 @@ jobs:
               fi
             fi
 
+            # Increase interval after the run is found
+            INTERVAL=30
             sleep $INTERVAL
             ELAPSED=$((ELAPSED + INTERVAL))
           done
@@ -403,6 +421,8 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 5: Create GitHub release and tags
+  # Runs in parallel with publish-production (both gate on jobs 2 + 3).
+  # The cleanup job waits for both to finish before deleting the branch.
   # ---------------------------------------------------------------------------
   create-release:
     name: Create GitHub release
