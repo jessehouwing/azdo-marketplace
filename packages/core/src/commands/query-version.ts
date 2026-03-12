@@ -32,8 +32,6 @@ export interface QueryVersionOptions {
   // --- Legacy fields (deprecated, use versionSource instead) ---
   /** @deprecated Use marketplaceVersionAction instead */
   versionAction?: VersionAction;
-  /** @deprecated Use versionSource with a literal version instead */
-  extensionVersionOverrideVariable?: string;
 
   /** 'vsix' to read identity from a VSIX file; 'manifest' (default) to read from manifest files. */
   use?: 'manifest' | 'vsix';
@@ -198,27 +196,6 @@ export async function queryVersion(
   // Resolve effective marketplaceVersionAction (new field takes precedence over legacy)
   const marketplaceVersionAction =
     options.marketplaceVersionAction ?? options.versionAction ?? 'None';
-
-  // --- Legacy: extensionVersionOverrideVariable support ---
-  if (options.extensionVersionOverrideVariable) {
-    platform.debug(
-      `Override variable '${options.extensionVersionOverrideVariable}' specified, checking for value.`
-    );
-    const overrideVersion = platform.getVariable(options.extensionVersionOverrideVariable);
-    if (overrideVersion) {
-      platform.info(
-        `Ignoring marketplace version and using supplied override: ${overrideVersion}.`
-      );
-      platform.setVariable('currentVersion', overrideVersion, false, true);
-      platform.setVariable('proposedVersion', overrideVersion, false, true);
-      return {
-        currentVersion: overrideVersion,
-        proposedVersion: overrideVersion,
-        version: overrideVersion,
-        source: 'literal',
-      };
-    }
-  }
 
   // Determine effective version sources
   const rawSources =

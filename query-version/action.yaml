@@ -198,19 +198,9 @@ inputs:
 
       Available for: query-version.
       Required for: none.
-      Default: None
-    required: false
-    default: None
-    deprecationMessage: Use 'marketplace-version-action' instead.
-  extension-version-override:
-    description: |-
-      Override version to use instead of querying the marketplace (query-version operation only).
-
-      Available for: query-version.
-      Required for: none.
       Default: none
     required: false
-    deprecationMessage: Use 'version-source' with a version value instead of a variable name.
+    deprecationMessage: Use 'marketplace-version-action' instead.
   manifest-file:
     description: |-
       **Manifest file path(s)** (newline-separated).
@@ -295,7 +285,6 @@ runs:
         version-source: ${{ inputs.version-source }}
         marketplace-version-action: ${{ inputs.marketplace-version-action }}
         version-action: ${{ inputs.version-action }}
-        extension-version-override: ${{ inputs.extension-version-override }}
         manifest-file: ${{ inputs.manifest-file }}
         use: ${{ inputs.use }}
         vsix-file: ${{ inputs.vsix-file }}

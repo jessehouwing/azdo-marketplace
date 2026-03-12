@@ -161,9 +161,6 @@ inputs:
       - Minor
       - Patch
 
-  extension-version-override:
-    type: string
-
   max-retries:
     type: number
 

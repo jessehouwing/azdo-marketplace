@@ -503,19 +503,9 @@ inputs:
 
       Available for: query-version.
       Required for: none.
-      Default: None
-    required: false
-    default: None
-    deprecationMessage: Use 'marketplace-version-action' instead.
-  extension-version-override:
-    description: |-
-      Override version to use instead of querying the marketplace (query-version operation only).
-
-      Available for: query-version.
-      Required for: none.
       Default: none
     required: false
-    deprecationMessage: Use 'version-source' with a version value instead of a variable name.
+    deprecationMessage: Use 'marketplace-version-action' instead.
   expected-tasks:
     description: |-
       **Expected tasks as JSON** - manually specify tasks to verify.

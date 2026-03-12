@@ -89,7 +89,6 @@ When creating a PAT for pipeline automation, include at least the following scop
 - `min-timeout`: Sets minimum retry delay (minutes) for `wait-for-validation`.
 - `max-timeout`: Sets maximum retry delay (minutes) for `wait-for-validation`.
 - `version-action`: Controls how queried marketplace version is transformed (`None`, `Major`, `Minor`, `Patch`).
-- `extension-version-override`: Names an environment variable containing an explicit version override.
 - `expected-tasks`: Provides JSON task/version expectations for `wait-for-installation`.
 - `vsix-path`: Provides a VSIX path for identity/task discovery in install/share/unshare/validation flows.
 - `timeout-minutes`: Sets total wait time for `wait-for-installation`.

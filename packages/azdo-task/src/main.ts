@@ -457,7 +457,6 @@ async function runQueryVersion(
       extensionId: platform.getInput('extensionId') || undefined,
       marketplaceVersionAction: normalizedVersionAction,
       versionSource,
-      extensionVersionOverrideVariable: platform.getInput('extensionVersionOverride') || undefined,
       use: (platform.getInput('use') || 'manifest') as 'manifest' | 'vsix',
       vsixFile: platform.getPathInput('vsixFile') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),

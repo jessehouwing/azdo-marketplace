@@ -85,7 +85,7 @@ Use this mapping carefully when updating YAML:
 | `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                        |
 | `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                            |
 | `versionAction`                                              | `marketplaceVersionAction`                               | Renamed. Old name supported as alias.                                                                  |
-| `extensionVersionOverride`                                   | `versionSource`                                          | Use `versionSource` with semver literals instead of a variable name.                                   |
+| `extensionVersionOverride`                                   | `versionSource`                                          | **Removed**. Use `versionSource` with semver literals instead of a variable name.                      |
 
 Additional source selection behavior in v6:
 
@@ -176,7 +176,7 @@ In v6, `queryVersion` introduces multi-source version resolution:
 
 - **New input `versionSource`** (default: `marketplace`) — a newline-separated list of sources to consider. The highest valid semver wins.
 - **Renamed `versionAction` → `marketplaceVersionAction`** — applies only to the marketplace source (alias `versionAction` still works).
-- **Deprecated `extensionVersionOverride`** — use `versionSource` with a semver literal instead of a pipeline variable name.
+- **Removed `extensionVersionOverride`** — use `versionSource` with a semver literal instead of a pipeline variable name.
 - **Auth is optional** — when `marketplace` is not in `versionSource`, no service connection is required.
 - **New output `versionSource`** — indicates which source provided the winning version.
 

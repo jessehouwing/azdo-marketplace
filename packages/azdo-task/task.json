@@ -232,14 +232,6 @@
       }
     },
     {
-      "name": "extensionVersionOverride",
-      "type": "string",
-      "label": "Version Override Variable (deprecated)",
-      "required": false,
-      "helpMarkDown": "**Deprecated**: Use Version Source with a literal version value instead.\n\nVariable name containing a version override. If set and the variable exists, that value is used instead of querying marketplace.",
-      "visibleRule": "operation = queryVersion"
-    },
-    {
       "name": "setBuildNumber",
       "type": "boolean",
       "label": "Set Build Number",
