@@ -12,6 +12,9 @@ types:
   identifier:
     type: string
     match: '^[a-zA-Z0-9._-]+$'
+  version-source-entry:
+    type: string
+    match: '^(marketplace|manifest|vsix|\d+\.\d+\.\d+|\$\{\{.*\}\})$'
 
 # Validate inputs
 inputs:
@@ -44,7 +47,7 @@ inputs:
     type: string
     separators: newline
     items:
-      type: string
+      type: version-source-entry
 
   marketplace-version-action:
     type: choice
