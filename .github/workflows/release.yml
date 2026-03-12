@@ -1,0 +1,487 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semantic version to release (e.g., 6.1.0)'
+        required: true
+        type: string
+
+permissions: {}
+
+env:
+  PUBLISHER_ID: jessehouwing
+  PUBLISHER_ID_DEV: jessehouwing-dev
+  EXTENSION_ID: azdo-marketplace-extension
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Prepare release branch
+  # Idempotent — safe to re-run after pushing fixes to the release branch.
+  # ---------------------------------------------------------------------------
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ inputs.version }}
+      branch: release/v${{ inputs.version }}
+      major: ${{ steps.parse.outputs.major }}
+      minor: ${{ steps.parse.outputs.minor }}
+      patch: ${{ steps.parse.outputs.patch }}
+
+    steps:
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be in format x.y.z (e.g., 6.1.0)"
+            exit 1
+          fi
+
+      - name: Parse version components
+        id: parse
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ inputs.version }}"
+          {
+            echo "major=$major"
+            echo "minor=$minor"
+            echo "patch=$patch"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create or checkout release branch
+        run: |
+          BRANCH="release/v${{ inputs.version }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "Branch $BRANCH already exists, checking it out"
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+          else
+            echo "Creating branch $BRANCH from main"
+            git checkout -b "$BRANCH"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update version references
+        run: node Scripts/update-version.mjs ${{ inputs.version }}
+
+      - name: Format
+        run: npm run format
+
+      - name: Lint fix
+        run: npm run lint:fix
+
+      - name: Sync action inputs
+        run: npm run sync:action-inputs
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        shell: bash
+        run: |
+          stop_marker="$(uuidgen)"
+          echo "::stop-commands::$stop_marker"
+          npm run test
+          echo "::$stop_marker::"
+
+      - name: Bundle
+        run: npm run bundle
+
+      - name: Package Azure DevOps extension
+        uses: ./
+        with:
+          operation: package
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          extension-version: ${{ inputs.version }}
+          output-path: ${{ runner.temp }}
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        with:
+          name: vsix-${{ env.EXTENSION_ID }}-${{ inputs.version }}
+          path: ${{ runner.temp }}/*.vsix
+          if-no-files-found: error
+
+      - name: Commit and push changes
+        run: |
+          BRANCH="release/v${{ inputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: prepare release v${{ inputs.version }}"
+          fi
+          git push origin "HEAD:$BRANCH"
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Preview release to Azure DevOps
+  # Publishes a private preview extension with unique task IDs to the dev org,
+  # then triggers a test pipeline covering PAT, WIF, and Azure RM auth types.
+  # ---------------------------------------------------------------------------
+  preview-release:
+    name: Preview release (Azure DevOps)
+    needs: prepare-release
+    runs-on: windows-latest
+    environment:
+      name: publisher-jessehouwing-dev
+      url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+        with:
+          ref: release/v${{ needs.prepare-release.outputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and bundle
+        run: |
+          npm run build
+          npm run bundle
+
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
+        with:
+          name: vsix-${{ env.EXTENSION_ID }}-${{ needs.prepare-release.outputs.version }}
+          path: ${{ runner.temp }}/vsix
+
+      - name: Azure login (OIDC)
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 #v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Publish preview extension
+        uses: ./publish
+        with:
+          auth-type: oidc
+          use: vsix
+          vsix-file: ${{ runner.temp }}/vsix/*.vsix
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          extension-visibility: private_preview
+          update-tasks-id: true
+          no-wait-validation: true
+
+      - name: Wait for validation
+        uses: ./wait-for-validation
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          extension-version: ${{ needs.prepare-release.outputs.version }}
+
+      - name: Install extension
+        uses: ./install
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          accounts: |
+            https://dev.azure.com/jessehouwing-dev
+
+      - name: Wait for installation
+        uses: ./wait-for-installation
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          accounts: |
+            https://dev.azure.com/jessehouwing-dev
+
+      - name: Trigger Azure DevOps test pipeline
+        env:
+          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+        run: |
+          az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
+          $runId = az pipelines run `
+            --name "${{ vars.AZDO_TEST_PIPELINE_NAME }}" `
+            --branch "release/v${{ needs.prepare-release.outputs.version }}" `
+            --query id --output tsv
+          Write-Host "Triggered pipeline run: $runId"
+          echo "RUN_ID=$runId" >> $env:GITHUB_ENV
+
+      - name: Wait for Azure DevOps test pipeline
+        env:
+          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+        shell: pwsh
+        run: |
+          az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
+          $timeout = 1800  # 30 minutes
+          $elapsed = 0
+          $interval = 30
+          while ($elapsed -lt $timeout) {
+            $status = az pipelines runs show --id $env:RUN_ID --query status --output tsv
+            $result = az pipelines runs show --id $env:RUN_ID --query result --output tsv
+            Write-Host "Pipeline status: $status, result: $result (${elapsed}s elapsed)"
+            if ($status -eq "completed") {
+              if ($result -eq "succeeded") {
+                Write-Host "✅ Pipeline succeeded"
+                exit 0
+              } else {
+                Write-Host "❌ Pipeline failed with result: $result"
+                exit 1
+              }
+            }
+            Start-Sleep -Seconds $interval
+            $elapsed += $interval
+          }
+          Write-Host "❌ Pipeline timed out after ${timeout}s"
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Test GitHub Actions
+  # Triggers a test workflow from the release branch and waits for completion.
+  # ---------------------------------------------------------------------------
+  test-github-actions:
+    name: Test GitHub Actions
+    needs: prepare-release
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Trigger test workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
+            --repo "${{ github.repository }}" \
+            --ref "release/v${{ needs.prepare-release.outputs.version }}"
+
+      - name: Wait for test workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Waiting for workflow to start..."
+          sleep 15
+
+          BRANCH="release/v${{ needs.prepare-release.outputs.version }}"
+          TIMEOUT=1800  # 30 minutes
+          ELAPSED=0
+          INTERVAL=30
+
+          # Find the most recent run on the release branch
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            RUN_ID=$(gh run list \
+              --repo "${{ github.repository }}" \
+              --workflow "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
+              --branch "$BRANCH" \
+              --limit 1 \
+              --json databaseId,status \
+              --jq '.[0].databaseId')
+
+            if [ -z "$RUN_ID" ]; then
+              echo "No run found yet, waiting... (${ELAPSED}s elapsed)"
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+              continue
+            fi
+
+            STATUS=$(gh run list \
+              --repo "${{ github.repository }}" \
+              --workflow "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
+              --branch "$BRANCH" \
+              --limit 1 \
+              --json status,conclusion \
+              --jq '.[0] | "\(.status) \(.conclusion)"')
+
+            echo "Run $RUN_ID: $STATUS (${ELAPSED}s elapsed)"
+
+            if echo "$STATUS" | grep -q "completed"; then
+              if echo "$STATUS" | grep -q "success"; then
+                echo "✅ Test workflow succeeded"
+                exit 0
+              else
+                echo "❌ Test workflow failed: $STATUS"
+                exit 1
+              fi
+            fi
+
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "❌ Test workflow timed out after ${TIMEOUT}s"
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Production release to marketplace
+  # Requires environment approval before running.
+  # ---------------------------------------------------------------------------
+  publish-production:
+    name: Publish to marketplace
+    needs: [prepare-release, preview-release, test-github-actions]
+    runs-on: windows-latest
+    environment:
+      name: publisher-jessehouwing
+      url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID }}.${{ env.EXTENSION_ID }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+        with:
+          ref: release/v${{ needs.prepare-release.outputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and bundle
+        run: |
+          npm run build
+          npm run bundle
+
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
+        with:
+          name: vsix-${{ env.EXTENSION_ID }}-${{ needs.prepare-release.outputs.version }}
+          path: ${{ runner.temp }}/vsix
+
+      - name: Azure login (OIDC)
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 #v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Publish production extension
+        uses: ./publish
+        with:
+          auth-type: oidc
+          use: vsix
+          vsix-file: ${{ runner.temp }}/vsix/*.vsix
+          no-wait-validation: true
+
+      - name: Wait for validation
+        uses: ./wait-for-validation
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          extension-version: ${{ needs.prepare-release.outputs.version }}
+
+  # ---------------------------------------------------------------------------
+  # Job 5: Create GitHub release and tags
+  # ---------------------------------------------------------------------------
+  create-release:
+    name: Create GitHub release
+    needs: [prepare-release, preview-release, test-github-actions]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+        with:
+          ref: release/v${{ needs.prepare-release.outputs.version }}
+          fetch-depth: 0
+
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
+        with:
+          name: vsix-${{ env.EXTENSION_ID }}-${{ needs.prepare-release.outputs.version }}
+          path: ${{ runner.temp }}/vsix
+
+      - name: Create version tag
+        run: |
+          VERSION="v${{ needs.prepare-release.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Create or update the exact version tag
+          git tag -fa "$VERSION" -m "Release $VERSION" HEAD
+          git push origin "$VERSION" --force
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v${{ needs.prepare-release.outputs.version }}"
+          VSIX_FILE=$(find "${{ runner.temp }}/vsix" -name '*.vsix' -type f | head -1)
+
+          # Delete existing release if present (idempotent)
+          gh release delete "$VERSION" --repo "${{ github.repository }}" --yes 2>/dev/null || true
+
+          # Create release with VSIX attachment
+          gh release create "$VERSION" \
+            --repo "${{ github.repository }}" \
+            --title "Release $VERSION" \
+            --generate-notes \
+            --target "release/$VERSION" \
+            "$VSIX_FILE"
+
+      - name: Update floating tags
+        run: |
+          MAJOR="v${{ needs.prepare-release.outputs.major }}"
+          MAJOR_MINOR="v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
+
+          # Force-push floating major and major.minor tags
+          git tag -fa "$MAJOR" -m "Floating tag $MAJOR" HEAD
+          git push origin "$MAJOR" --force
+
+          git tag -fa "$MAJOR_MINOR" -m "Floating tag $MAJOR_MINOR" HEAD
+          git push origin "$MAJOR_MINOR" --force
+
+  # ---------------------------------------------------------------------------
+  # Job 6: Cleanup release branch
+  # ---------------------------------------------------------------------------
+  cleanup:
+    name: Cleanup release branch
+    needs: [prepare-release, publish-production, create-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Delete release branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="release/v${{ needs.prepare-release.outputs.version }}"
+          echo "Deleting branch $BRANCH"
+          gh api \
+            --method DELETE \
+            "/repos/${{ github.repository }}/git/refs/heads/$BRANCH" \
+            2>/dev/null || echo "Branch already deleted or not found"
+          echo "✅ Branch $BRANCH deleted"
