@@ -1,9 +1,0 @@
-{
-  "name": "@extension-tasks/github-action-runtime",
-  "private": true,
-  "license": "MIT",
-  "type": "module",
-  "dependencies": {
-    "tfx-cli": "0.23.1"
-  }
-}

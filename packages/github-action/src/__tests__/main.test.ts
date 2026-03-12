@@ -26,6 +26,7 @@ const validateNodeAvailableMock = jest.fn();
 const validateNpmAvailableMock = jest.fn();
 const validateTfxAvailableMock = jest.fn();
 const validateAzureCliAvailableMock = jest.fn();
+const versionSourceNeedsMarketplaceMock = jest.fn(() => true);
 
 jest.unstable_mockModule('@actions/core', () => ({
   setFailed: setFailedMock,
@@ -65,6 +66,7 @@ jest.unstable_mockModule('@extension-tasks/core', () => ({
   validateNpmAvailable: validateNpmAvailableMock,
   validateTfxAvailable: validateTfxAvailableMock,
   validateAzureCliAvailable: validateAzureCliAvailableMock,
+  versionSourceNeedsMarketplace: versionSourceNeedsMarketplaceMock,
 }));
 
 type PlatformConfig = {
@@ -565,7 +567,7 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(queryVersionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        versionAction: 'Major',
+        marketplaceVersionAction: 'Major',
       }),
       expect.anything(),
       expect.anything(),

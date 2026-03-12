@@ -35,6 +35,8 @@ inputs:
       Then use auth-type: oidc (no token needed)
 
       See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
+
+      Only required when `marketplace` is in `version-source`.
     required: false
     default: pat
   token:
@@ -50,6 +52,8 @@ inputs:
 
       Required scopes: Marketplace (Publish)
       Create a PAT at: https://dev.azure.com/_usersSettings/tokens
+
+      Only required when `marketplace` is in `version-source`.
     required: false
   username:
     description: |-
@@ -134,7 +138,47 @@ inputs:
 
       **Example:** `my-extension` or `azure-devops-tasks`
     required: false
-  version-action:
+  version-source:
+    description: |-
+      **Version sources** to consider (newline-separated). Highest valid semver wins.
+
+      Available for: query-version.
+      Required for: none.
+      Default: marketplace
+
+      Each line is one of:
+      - `marketplace`: Query marketplace version (applies marketplace-version-action)
+      - `manifest`: Read version from vss-extension.json
+      - `vsix`: Read version from VSIX file
+      - A semver literal (e.g. `1.0.0`)
+      - Anything else is skipped (handles empty expressions, unresolved variables)
+
+      The highest valid version across all sources wins.
+      When `marketplace` is not listed, authentication is not required.
+
+      **Examples:**
+      ```yaml
+      # Auto-increment marketplace (default behavior)
+      version-source: marketplace
+
+      # First publish with fallback
+      version-source: |
+        marketplace
+        1.0.0
+
+      # GitVersion integration
+      version-source: |
+        $``{{ steps.gitversion.outputs.semVer }}
+        marketplace
+
+      # Manual dispatch override
+      version-source: |
+        $``{{ inputs.version }}
+        marketplace
+      ```
+    required: false
+    default: marketplace
+  marketplace-version-action:
     description: |-
       **Action to apply to the marketplace version**.
 
@@ -142,7 +186,9 @@ inputs:
       Required for: none.
       Default: None
 
-      - `None`: Use the current latest marketplace version
+      Only applies when `marketplace` is listed in `version-source`.
+
+      - `None`: Use the current latest marketplace version as-is
       - `Major`: Increment major and reset minor/patch
       - `Minor`: Increment minor and reset patch
       - `Patch`: Increment patch
@@ -150,18 +196,25 @@ inputs:
       **Example:** If latest is `1.2.3` and action is `Minor`, result is `1.3.0`
     required: false
     default: None
+  version-action:
+    description: |-
+      **Deprecated.** Use `marketplace-version-action` instead.
+
+      Available for: query-version.
+      Required for: none.
+      Default: None
+    required: false
+    default: None
+    deprecationMessage: Use 'marketplace-version-action' instead.
   extension-version-override:
     description: |-
-      **Variable name containing a version override**.
+      **Deprecated.** Use `version-source` with a version value instead.
 
       Available for: query-version.
       Required for: none.
       Default: none
-
-      If set and the variable exists, that value is used instead of querying marketplace.
-
-      **Example:** `MY_VERSION` where `$``{{ env.MY_VERSION }}` is `2.1.0`
     required: false
+    deprecationMessage: Use 'version-source' with a version value instead of a variable name.
   manifest-file:
     description: |-
       **Manifest file path(s)** (newline-separated).
@@ -214,12 +267,18 @@ inputs:
 outputs:
   proposed-version:
     description: |
-      **Proposed extension version** after applying version action (query-version operation only).
+      **Proposed extension version** — the highest version from all sources (query-version operation only).
     value: ${{ steps.query-version.outputs.proposed-version }}
   current-version:
     description: |
       **Current marketplace version** before applying version action (query-version operation only).
+      Only set when `marketplace` is in `version-source`.
     value: ${{ steps.query-version.outputs.current-version }}
+  version-source:
+    description: |
+      **Source that provided the winning version** (query-version operation only).
+      One of: `marketplace`, `manifest`, `vsix`, or `literal`.
+    value: ${{ steps.query-version.outputs.version-source }}
 runs:
   using: composite
   steps:
@@ -234,6 +293,8 @@ runs:
         tfx-version: ${{ inputs.tfx-version }}
         publisher-id: ${{ inputs.publisher-id }}
         extension-id: ${{ inputs.extension-id }}
+        version-source: ${{ inputs.version-source }}
+        marketplace-version-action: ${{ inputs.marketplace-version-action }}
         version-action: ${{ inputs.version-action }}
         extension-version-override: ${{ inputs.extension-version-override }}
         manifest-file: ${{ inputs.manifest-file }}

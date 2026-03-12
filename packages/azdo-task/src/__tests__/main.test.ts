@@ -27,6 +27,7 @@ const normalizeAccountToServiceUrlMock = jest.fn((value: string) => value);
 const validateNodeAvailableMock = jest.fn();
 const validateNpmAvailableMock = jest.fn();
 const validateTfxAvailableMock = jest.fn();
+const versionSourceNeedsMarketplaceMock = jest.fn(() => true);
 
 jest.unstable_mockModule('azure-pipelines-task-lib/task.js', () => ({
   error: tlErrorMock,
@@ -70,6 +71,7 @@ jest.unstable_mockModule('@extension-tasks/core', () => ({
   validateNodeAvailable: validateNodeAvailableMock,
   validateNpmAvailable: validateNpmAvailableMock,
   validateTfxAvailable: validateTfxAvailableMock,
+  versionSourceNeedsMarketplace: versionSourceNeedsMarketplaceMock,
 }));
 
 type PlatformConfig = {
@@ -635,7 +637,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     expect(queryVersionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        versionAction: 'Major',
+        marketplaceVersionAction: 'Major',
       }),
       expect.anything(),
       expect.anything(),

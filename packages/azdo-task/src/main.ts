@@ -473,6 +473,7 @@ async function runQueryVersion(
 
   platform.setOutput('proposedVersion', result.proposedVersion);
   platform.setOutput('currentVersion', result.currentVersion);
+  platform.setOutput('versionSource', result.source);
 }
 
 async function runWaitForValidation(
