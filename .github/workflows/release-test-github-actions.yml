@@ -87,7 +87,7 @@ jobs:
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
-          extension-version: ${{ steps.query.outputs.value }}
+          extension-version: ${{ steps.query.outputs.proposed-version }}
           extension-visibility: private_preview
           update-tasks-version: major
           update-tasks-id: true
