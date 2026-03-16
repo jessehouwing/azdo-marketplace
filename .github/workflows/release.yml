@@ -409,6 +409,7 @@ jobs:
 
       - name: Publish production extension
         uses: jessehouwing/azdo-marketplace/publish@v6
+        id: publish
         with:
           auth-type: oidc
           use: vsix
@@ -419,9 +420,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ env.EXTENSION_ID }}
-          extension-version: ${{ needs.prepare-release.outputs.version }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
 
   # ---------------------------------------------------------------------------
   # Job 6: Create GitHub draft release and tags
@@ -483,19 +482,6 @@ jobs:
             --target "release/$version" `
             $vsixFile
 
-      - name: Update floating tags
-        shell: pwsh
-        run: |
-          $major = "v${{ needs.prepare-release.outputs.major }}"
-          $majorMinor = "v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
-
-          # Force-push floating major and major.minor tags
-          git tag -fa $major -m "Floating tag $major" HEAD
-          git push origin $major --force
-
-          git tag -fa $majorMinor -m "Floating tag $majorMinor" HEAD
-          git push origin $majorMinor --force
-
   # ---------------------------------------------------------------------------
   # Job 7: Publish GitHub release
   # Publishes the draft release after marketplace publication succeeds.
@@ -508,6 +494,11 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+        with:
+          ref: release/v${{ needs.prepare-release.outputs.version }}
+          fetch-depth: 0
+
       - name: Publish draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -517,6 +508,19 @@ jobs:
           gh release edit $version `
             --repo "${{ github.repository }}" `
             --draft=false
+
+      - name: Update floating tags
+        shell: pwsh
+        run: |
+          $major = "v${{ needs.prepare-release.outputs.major }}"
+          $majorMinor = "v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
+
+          # Force-push floating major and major.minor tags
+          git tag -fa $major -m "Floating tag $major" HEAD
+          git push origin $major --force
+
+          git tag -fa $majorMinor -m "Floating tag $majorMinor" HEAD
+          git push origin $majorMinor --force
 
   # ---------------------------------------------------------------------------
   # Job 8: Cleanup release branch
