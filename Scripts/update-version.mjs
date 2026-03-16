@@ -129,8 +129,8 @@ for (const f of docFiles) {
     let content = await fs.readFile(filePath, 'utf-8');
     // GitHub Actions references: jessehouwing/azdo-marketplace[/subpath]@ref
     content = content.replace(
-      /jessehouwing\/azdo-marketplace(\/[a-z-]+)?@\S+/g,
-      (match, subpath) => `jessehouwing/azdo-marketplace${subpath || ''}@v${version}`
+      /(jessehouwing\/azdo-marketplace(?:\/[a-z-]+)?@)[0-9A-Za-z._/-]+/g,
+      `$1v${version}`
     );
     // Azure Pipelines task references: azdo-marketplace@N (major version only)
     content = content.replace(/azdo-marketplace@\d+/g, `azdo-marketplace@${major}`);
