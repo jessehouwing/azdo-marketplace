@@ -159,7 +159,7 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(validateNodeAvailableMock).toHaveBeenCalledWith(platform);
     expect(packageExtensionMock).toHaveBeenCalled();
-    expect(platform.setOutput).toHaveBeenCalledWith('vsix-Ffile', '/tmp/ext.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', '/tmp/ext.vsix');
     expect(getAuthMock).not.toHaveBeenCalled();
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'package completed successfully');
   });
@@ -249,7 +249,7 @@ describe('GitHub Action main entrypoint', () => {
       expect.anything(),
       platform
     );
-    expect(platform.setOutput).toHaveBeenCalledWith('vsix-Ffile', '/tmp/published.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', '/tmp/published.vsix');
   });
 
   it('defaults publish source to manifest when use is omitted', async () => {
@@ -308,7 +308,7 @@ describe('GitHub Action main entrypoint', () => {
       expect.anything(),
       platform
     );
-    expect(platform.setOutput).toHaveBeenCalledWith('vsix-Ffile', '/tmp/temp-12345.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', '/tmp/temp-12345.vsix');
     expectNoLegacyStatusOutputs(platform);
   });
 
@@ -496,12 +496,12 @@ describe('GitHub Action main entrypoint', () => {
     expect(setFailedMock).toHaveBeenCalledWith('Unknown operation: nope');
   });
 
-  it('forwards vsix-Ffile for identity fallback in unpublish', async () => {
+  it('forwards vsix-file for identity fallback in unpublish', async () => {
     const platform = createPlatformMock({
       inputs: {
         operation: 'unpublish',
         'auth-type': 'pat',
-        'vsix-Ffile': '/tmp/extension.vsix',
+        'vsix-file': '/tmp/extension.vsix',
       },
     });
     githubAdapterCtorMock.mockReturnValue(platform);

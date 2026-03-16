@@ -51,31 +51,33 @@ jobs:
     steps:
       - name: Resolve version
         id: resolve
+        shell: pwsh
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            # Extract version from branch name: release/vX.Y.Z → X.Y.Z
-            VERSION="${GITHUB_REF_NAME#release/v}"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          }
+          else {
+            # Extract version from branch name: release/vX.Y.Z -> X.Y.Z
+            $version = "${{ github.ref_name }}" -replace '^release/v', ''
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Validate version format
+        shell: pwsh
         run: |
-          if [[ ! "${{ steps.resolve.outputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Version must be in format x.y.z (e.g., 6.1.0)"
+          if ("${{ steps.resolve.outputs.version }}" -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            Write-Host "::error::Version must be in format x.y.z (e.g., 6.1.0)"
             exit 1
-          fi
+          }
 
       - name: Parse version components
         id: parse
+        shell: pwsh
         run: |
-          IFS='.' read -r major minor patch <<< "${{ steps.resolve.outputs.version }}"
-          {
-            echo "major=$major"
-            echo "minor=$minor"
-            echo "patch=$patch"
-          } >> "$GITHUB_OUTPUT"
+          $major, $minor, $patch = "${{ steps.resolve.outputs.version }}".Split('.')
+          "major=$major" >> $env:GITHUB_OUTPUT
+          "minor=$minor" >> $env:GITHUB_OUTPUT
+          "patch=$patch" >> $env:GITHUB_OUTPUT
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
@@ -83,17 +85,20 @@ jobs:
           fetch-depth: 0
 
       - name: Create or checkout release branch
+        shell: pwsh
         run: |
-          BRANCH="release/v${{ steps.resolve.outputs.version }}"
-          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-            echo "Branch $BRANCH already exists, checking it out"
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git pull origin "$BRANCH"
-          else
-            echo "Creating branch $BRANCH from main"
-            git checkout -b "$BRANCH"
-          fi
+          $branch = "release/v${{ steps.resolve.outputs.version }}"
+          git ls-remote --exit-code --heads origin $branch *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Branch $branch already exists, checking it out"
+            git fetch origin $branch
+            git checkout $branch
+            git pull origin $branch
+          }
+          else {
+            Write-Host "Creating branch $branch from main"
+            git checkout -b $branch
+          }
 
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
@@ -139,20 +144,21 @@ jobs:
         # Disable workflow commands during test execution to prevent test
         # output (e.g. ##vso or ::set-output) from being interpreted as
         # actual workflow commands.
-        shell: bash
+        shell: pwsh
         run: |
-          stop_marker="$(uuidgen)"
-          echo "::stop-commands::$stop_marker"
+          $stopMarker = [guid]::NewGuid().ToString()
+          Write-Host "::stop-commands::$stopMarker"
           npm run test
-          echo "::$stop_marker::"
+          Write-Host "::$stopMarker::"
 
       - name: Bundle
         run: npm run bundle
 
       - name: Run pre-commit checks
+        shell: pwsh
         run: |
-          gopath="$(go env GOPATH)"
-          export PATH="${gopath}/bin:${PATH}"
+          $gopath = go env GOPATH
+          $env:PATH = "$gopath/bin;$env:PATH"
           python3 -m pre_commit run --all-files
 
       - name: Package Azure DevOps extension
@@ -171,17 +177,20 @@ jobs:
           if-no-files-found: error
 
       - name: Commit and push changes
+        shell: pwsh
         run: |
-          BRANCH="release/v${{ steps.resolve.outputs.version }}"
+          $branch = "release/v${{ steps.resolve.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "No changes to commit"
+          }
+          else {
             git commit -m "chore: prepare release v${{ steps.resolve.outputs.version }}"
-          fi
-          git push origin "HEAD:$BRANCH"
+          }
+          git push origin "HEAD:$branch"
 
   # ---------------------------------------------------------------------------
   # Job 2: Preview release to Azure DevOps
@@ -192,7 +201,7 @@ jobs:
     needs: prepare-release
     runs-on: windows-latest
     environment:
-      name: publisher-jessehouwing-dev
+      name: 'publisher-jessehouwing-dev'
       url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}-preview
 
     permissions:
@@ -297,6 +306,7 @@ jobs:
           echo "AZURE_DEVOPS_EXT_PAT=$token" >> $env:GITHUB_ENV
 
       - name: Trigger Azure DevOps test pipeline
+        if: false
         shell: pwsh
         run: |
           az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
@@ -308,6 +318,7 @@ jobs:
           echo "RUN_ID=$runId" >> $env:GITHUB_ENV
 
       - name: Wait for Azure DevOps test pipeline
+        if: false
         shell: pwsh
         run: |
           az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
@@ -413,12 +424,12 @@ jobs:
           extension-version: ${{ needs.prepare-release.outputs.version }}
 
   # ---------------------------------------------------------------------------
-  # Job 6: Create GitHub release and tags
+  # Job 6: Create GitHub draft release and tags
   # Runs in parallel with publish-production after preview and both test jobs.
-  # The cleanup job waits for both to finish before deleting the branch.
+  # The draft is published only after the marketplace release succeeds.
   # ---------------------------------------------------------------------------
   create-release:
-    name: Create GitHub release
+    name: Create GitHub draft release
     needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     runs-on: ubuntu-latest
     permissions:
@@ -437,51 +448,82 @@ jobs:
           path: ${{ runner.temp }}/vsix
 
       - name: Create version tag
+        shell: pwsh
         run: |
-          VERSION="v${{ needs.prepare-release.outputs.version }}"
+          $version = "v${{ needs.prepare-release.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           # Create or update the exact version tag
-          git tag -fa "$VERSION" -m "Release $VERSION" HEAD
-          git push origin "$VERSION" --force
+          git tag -fa $version -m "Release $version" HEAD
+          git push origin $version --force
 
-      - name: Create GitHub release
+      - name: Create GitHub draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
         run: |
-          VERSION="v${{ needs.prepare-release.outputs.version }}"
-          VSIX_FILE=$(find "${{ runner.temp }}/vsix" -name '*.vsix' -type f | head -1)
+          $version = "v${{ needs.prepare-release.outputs.version }}"
+          $vsixFile = Get-ChildItem -Path "${{ runner.temp }}/vsix" -Filter *.vsix -File -Recurse |
+            Select-Object -First 1 -ExpandProperty FullName
 
           # Delete existing release if present (idempotent)
-          gh release delete "$VERSION" --repo "${{ github.repository }}" --yes 2>/dev/null || true
+          try {
+            gh release delete $version --repo "${{ github.repository }}" --yes
+          }
+          catch {
+          }
 
           # Create release with VSIX attachment
-          gh release create "$VERSION" \
-            --repo "${{ github.repository }}" \
-            --title "Release $VERSION" \
-            --generate-notes \
-            --target "release/$VERSION" \
-            "$VSIX_FILE"
+          gh release create $version `
+            --repo "${{ github.repository }}" `
+            --title "Release $version" `
+            --draft `
+            --generate-notes `
+            --target "release/$version" `
+            $vsixFile
 
       - name: Update floating tags
+        shell: pwsh
         run: |
-          MAJOR="v${{ needs.prepare-release.outputs.major }}"
-          MAJOR_MINOR="v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
+          $major = "v${{ needs.prepare-release.outputs.major }}"
+          $majorMinor = "v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
 
           # Force-push floating major and major.minor tags
-          git tag -fa "$MAJOR" -m "Floating tag $MAJOR" HEAD
-          git push origin "$MAJOR" --force
+          git tag -fa $major -m "Floating tag $major" HEAD
+          git push origin $major --force
 
-          git tag -fa "$MAJOR_MINOR" -m "Floating tag $MAJOR_MINOR" HEAD
-          git push origin "$MAJOR_MINOR" --force
+          git tag -fa $majorMinor -m "Floating tag $majorMinor" HEAD
+          git push origin $majorMinor --force
 
   # ---------------------------------------------------------------------------
-  # Job 7: Cleanup release branch
+  # Job 7: Publish GitHub release
+  # Publishes the draft release after marketplace publication succeeds.
+  # ---------------------------------------------------------------------------
+  publish-github-release:
+    name: Publish GitHub release
+    needs: [prepare-release, publish-production, create-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $version = "v${{ needs.prepare-release.outputs.version }}"
+          gh release edit $version `
+            --repo "${{ github.repository }}" `
+            --draft=false
+
+  # ---------------------------------------------------------------------------
+  # Job 8: Cleanup release branch
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup release branch
-    needs: [prepare-release, publish-production, create-release]
+    needs: [prepare-release, publish-production, create-release, publish-github-release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -490,11 +532,16 @@ jobs:
       - name: Delete release branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
         run: |
-          BRANCH="release/v${{ needs.prepare-release.outputs.version }}"
-          echo "Deleting branch $BRANCH"
-          gh api \
-            --method DELETE \
-            "/repos/${{ github.repository }}/git/refs/heads/$BRANCH" \
-            2>/dev/null || echo "Branch already deleted or not found"
-          echo "✅ Branch $BRANCH deleted"
+          $branch = "release/v${{ needs.prepare-release.outputs.version }}"
+          Write-Host "Deleting branch $branch"
+          try {
+            gh api `
+              --method DELETE `
+              "/repos/${{ github.repository }}/git/refs/heads/$branch"
+          }
+          catch {
+            Write-Host "Branch already deleted or not found"
+          }
+          Write-Host "✅ Branch $branch deleted"
