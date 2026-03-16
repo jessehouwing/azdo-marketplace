@@ -110,7 +110,7 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
       # --- Show extension ---
       - name: Show extension metadata
         uses: ./show
