@@ -56,7 +56,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     extension-id: my-extension
     manifest-file: vss-extension.json
 
-- run: echo "VSIX: ${{ steps.publish.outputs.vsix-path }}"
+- run: echo "VSIX: ${{ steps.publish.outputs.vsix-file }}"
 ```
 
 ### Main action inputs
@@ -122,7 +122,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 
 **Package / publish**
 
-- `vsix-path`: Returns the generated VSIX path.
+- `vsix-file`: Returns path to the generated VSIX file.
 
 **Show**
 
@@ -146,7 +146,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     extension-id: my-extension
     manifest-file: vss-extension.json
 
-- run: echo "Packaged: ${{ steps.package.outputs.vsix-path }}"
+- run: echo "Packaged: ${{ steps.package.outputs.vsix-file }}"
 ```
 
 ### publish

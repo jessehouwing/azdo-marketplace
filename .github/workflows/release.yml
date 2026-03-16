@@ -5,14 +5,12 @@ name: Release
 # Required secrets:
 #   AZURE_CLIENT_ID       - Azure AD app client ID for OIDC authentication
 #   AZURE_TENANT_ID       - Azure AD tenant ID for OIDC authentication
-#   AZURE_DEVOPS_PAT      - Azure DevOps PAT for triggering test pipelines
 #
 # Required repository variables:
 #   AZDO_TEST_PIPELINE_NAME  - Name of the Azure DevOps test pipeline to trigger
-#   ACTIONS_TEST_WORKFLOW    - Name/file of the GitHub Actions test workflow to trigger
 #
 # Required environments (with protection rules):
-#   publisher-jessehouwing-dev  - For preview releases (job 2)
+#   publisher-jessehouwing-dev  - For preview release and GitHub Actions tests
 #   publisher-jessehouwing      - For production releases (job 4, requires approval)
 
 on:
@@ -158,9 +156,8 @@ jobs:
           python3 -m pre_commit run --all-files
 
       - name: Package Azure DevOps extension
-        uses: ./
+        uses: jessehouwing/azdo-marketplace/package@v6
         with:
-          operation: package
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
           extension-version: ${{ steps.resolve.outputs.version }}
@@ -188,8 +185,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 2: Preview release to Azure DevOps
-  # Publishes a private preview extension with unique task IDs to the dev org,
-  # then triggers a test pipeline covering PAT, WIF, and Azure RM auth types.
+  # Publishes a private preview extension with unique task IDs to the dev org.
   # ---------------------------------------------------------------------------
   preview-release:
     name: Preview release (Azure DevOps)
@@ -197,7 +193,7 @@ jobs:
     runs-on: windows-latest
     environment:
       name: publisher-jessehouwing-dev
-      url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}
+      url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}-preview
 
     permissions:
       contents: read
@@ -236,46 +232,71 @@ jobs:
           allow-no-subscriptions: true
 
       - name: Publish preview extension
-        uses: ./publish
+        uses: jessehouwing/azdo-marketplace/publish@v6
+        id: publish
         with:
           auth-type: oidc
           use: vsix
           vsix-file: ${{ runner.temp }}/vsix/*.vsix
           publisher-id: ${{ env.PUBLISHER_ID_DEV }}
-          extension-id: ${{ env.EXTENSION_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}-preview
           extension-visibility: private_preview
           update-tasks-id: true
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: ./wait-for-validation
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
-          extension-id: ${{ env.EXTENSION_ID }}
-          extension-version: ${{ needs.prepare-release.outputs.version }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
 
       - name: Install extension
-        uses: ./install
+        uses: jessehouwing/azdo-marketplace/install@v6
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
-          extension-id: ${{ env.EXTENSION_ID }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
       - name: Wait for installation
-        uses: ./wait-for-installation
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
         with:
           auth-type: oidc
-          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
-          extension-id: ${{ env.EXTENSION_ID }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
+  # ---------------------------------------------------------------------------
+  # Job 3: Test Azure Pipelines
+  # Triggers the Azure DevOps test pipeline and waits for completion.
+  # ---------------------------------------------------------------------------
+  test-azure-pipelines:
+    name: Test Azure Pipelines
+    needs: [prepare-release, preview-release]
+    runs-on: windows-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 #v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Get Azure DevOps access token
+        shell: pwsh
+        run: |
+          $token = az account get-access-token `
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+            --query accessToken --output tsv
+          Write-Host "::add-mask::$token"
+          echo "AZURE_DEVOPS_EXT_PAT=$token" >> $env:GITHUB_ENV
+
       - name: Trigger Azure DevOps test pipeline
-        env:
-          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
         shell: pwsh
         run: |
           az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
@@ -287,8 +308,6 @@ jobs:
           echo "RUN_ID=$runId" >> $env:GITHUB_ENV
 
       - name: Wait for Azure DevOps test pipeline
-        env:
-          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
         shell: pwsh
         run: |
           az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
@@ -315,90 +334,27 @@ jobs:
           exit 1
 
   # ---------------------------------------------------------------------------
-  # Job 3: Test GitHub Actions
-  # Triggers a test workflow from the release branch and waits for completion.
+  # Job 4: Test GitHub Actions
+  # Runs the reusable test workflow against the prepared release branch.
   # ---------------------------------------------------------------------------
   test-github-actions:
     name: Test GitHub Actions
     needs: prepare-release
-    runs-on: ubuntu-latest
-
+    uses: ./.github/workflows/release-test-github-actions.yml
+    with:
+      ref: release/v${{ needs.prepare-release.outputs.version }}
+    secrets: inherit
     permissions:
-      actions: write
       contents: read
-
-    steps:
-      - name: Trigger test workflow
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh workflow run "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
-            --repo "${{ github.repository }}" \
-            --ref "release/v${{ needs.prepare-release.outputs.version }}"
-
-      - name: Wait for test workflow
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="release/v${{ needs.prepare-release.outputs.version }}"
-          TIMEOUT=1800  # 30 minutes
-          ELAPSED=0
-          INTERVAL=15
-
-          # Poll until the workflow run appears and completes. The run may
-          # take a few seconds to show up in the API after triggering.
-          while [ $ELAPSED -lt $TIMEOUT ]; do
-            RUN_ID=$(gh run list \
-              --repo "${{ github.repository }}" \
-              --workflow "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
-              --branch "$BRANCH" \
-              --limit 1 \
-              --json databaseId \
-              --jq '.[0].databaseId // empty')
-
-            if [ -z "$RUN_ID" ]; then
-              echo "No run found yet, waiting... (${ELAPSED}s elapsed)"
-              sleep $INTERVAL
-              ELAPSED=$((ELAPSED + INTERVAL))
-              continue
-            fi
-
-            STATUS=$(gh run list \
-              --repo "${{ github.repository }}" \
-              --workflow "${{ vars.ACTIONS_TEST_WORKFLOW }}" \
-              --branch "$BRANCH" \
-              --limit 1 \
-              --json status,conclusion \
-              --jq '.[0] | "\(.status) \(.conclusion // "pending")"')
-
-            echo "Run $RUN_ID: $STATUS (${ELAPSED}s elapsed)"
-
-            if echo "$STATUS" | grep -q "completed"; then
-              if echo "$STATUS" | grep -q "success"; then
-                echo "✅ Test workflow succeeded"
-                exit 0
-              else
-                echo "❌ Test workflow failed: $STATUS"
-                exit 1
-              fi
-            fi
-
-            # Increase interval after the run is found
-            INTERVAL=30
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
-          done
-
-          echo "❌ Test workflow timed out after ${TIMEOUT}s"
-          exit 1
+      id-token: write
 
   # ---------------------------------------------------------------------------
-  # Job 4: Production release to marketplace
+  # Job 5: Production release to marketplace
   # Requires environment approval before running.
   # ---------------------------------------------------------------------------
   publish-production:
     name: Publish to marketplace
-    needs: [prepare-release, preview-release, test-github-actions]
+    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     runs-on: windows-latest
     environment:
       name: publisher-jessehouwing
@@ -441,7 +397,7 @@ jobs:
           allow-no-subscriptions: true
 
       - name: Publish production extension
-        uses: ./publish
+        uses: jessehouwing/azdo-marketplace/publish@v6
         with:
           auth-type: oidc
           use: vsix
@@ -449,7 +405,7 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: ./wait-for-validation
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -457,13 +413,13 @@ jobs:
           extension-version: ${{ needs.prepare-release.outputs.version }}
 
   # ---------------------------------------------------------------------------
-  # Job 5: Create GitHub release and tags
-  # Runs in parallel with publish-production (both gate on jobs 2 + 3).
+  # Job 6: Create GitHub release and tags
+  # Runs in parallel with publish-production after preview and both test jobs.
   # The cleanup job waits for both to finish before deleting the branch.
   # ---------------------------------------------------------------------------
   create-release:
     name: Create GitHub release
-    needs: [prepare-release, preview-release, test-github-actions]
+    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -521,7 +477,7 @@ jobs:
           git push origin "$MAJOR_MINOR" --force
 
   # ---------------------------------------------------------------------------
-  # Job 6: Cleanup release branch
+  # Job 7: Cleanup release branch
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup release branch

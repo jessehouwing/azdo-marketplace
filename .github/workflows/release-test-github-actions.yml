@@ -57,14 +57,6 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build and bundle
-        run: |
-          npm run build
-          npm run bundle
-
       # --- OIDC login (only for oidc auth type) ---
       - name: Azure login (OIDC)
         if: matrix.auth-type == 'oidc'
@@ -82,19 +74,11 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ env.EXTENSION_ID }}
-          version-action: Patch
-
-      - id: version
-        name: Resolve version
-        shell: bash
-        run: |
-          if [[ "${{ steps.query.outcome }}" == "success" && -n "${{ steps.query.outputs.proposed-version }}" ]]; then
-            echo "value=${{ steps.query.outputs.proposed-version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ env.INITIAL_VERSION }}" >> "$GITHUB_OUTPUT"
-          fi
+          version-source: |
+            manifest
+            marketplace
+            1.0.0
+          marketplace-version-action: Patch
 
       # --- Package (manifest mode) ---
       - id: package-manifest
@@ -103,21 +87,21 @@ jobs:
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
-          extension-version: ${{ steps.version.outputs.value }}
+          extension-version: ${{ steps.query.outputs.value }}
           extension-visibility: private_preview
-          update-tasks-version: patch
+          update-tasks-version: major
           update-tasks-id: true
-          output-path: ${{ runner.temp }}
           manifest-file: tests/sample-extension/vss-extension.json
 
       # --- Publish (vsix mode) ---
       - name: Publish from VSIX
         uses: ./publish
+        id: publish
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
           use: vsix
-          vsix-file: ${{ steps.package-manifest.outputs.vsix-path }}
+          vsix-file: ${{ steps.package-manifest.outputs.vsix-file }}
           no-wait-validation: true
 
       # --- Wait for validation ---
@@ -126,7 +110,6 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          vsix-path: ${{ steps.package-manifest.outputs.vsix-path }}
 
       # --- Show extension ---
       - name: Show extension metadata
@@ -143,7 +126,7 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          vsix-path: ${{ steps.package-manifest.outputs.vsix-path }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -153,7 +136,7 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          vsix-path: ${{ steps.package-manifest.outputs.vsix-path }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -163,7 +146,7 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          vsix-path: ${{ steps.package-manifest.outputs.vsix-path }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -173,7 +156,7 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          vsix-path: ${{ steps.package-manifest.outputs.vsix-path }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -183,5 +166,4 @@ jobs:
         with:
           auth-type: ${{ matrix.auth-type }}
           token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
-          publisher-id: ${{ env.PUBLISHER_ID }}
-          extension-id: ${{ env.EXTENSION_ID }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
