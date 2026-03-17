@@ -7,6 +7,7 @@
   "publisher": "jessehouwing-dev",
   "description": "Minimal single-task extension used to validate the release pipeline end-to-end.",
   "categories": ["Azure Pipelines"],
+  "public": false,
   "targets": [
     {
       "id": "Microsoft.VisualStudio.Services"
@@ -14,7 +15,7 @@
   ],
   "contributions": [
     {
-      "id": "ping-task",
+      "id": "PingTask",
       "type": "ms.vss-distributed-task.task",
       "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
