@@ -16,6 +16,7 @@ const getPersonalAccessTokenHandlerMock = jest.fn((token: string) => {
 
 const readManifestMock = jest.fn<() => Promise<any>>();
 const resolveTaskManifestPathsMock = jest.fn<() => string[]>();
+const resolveManifestPathsMock = jest.fn<() => Promise<string[]>>();
 
 const vsixReaderCloseMock = jest.fn<() => Promise<void>>();
 const vsixReaderGetTasksInfoMock =
@@ -32,6 +33,7 @@ jest.unstable_mockModule('azure-devops-node-api', () => ({
 jest.unstable_mockModule('../manifest-utils.js', () => ({
   readManifest: readManifestMock,
   resolveTaskManifestPaths: resolveTaskManifestPathsMock,
+  resolveManifestPaths: resolveManifestPathsMock,
 }));
 
 jest.unstable_mockModule('../vsix-reader.js', () => ({
@@ -107,6 +109,7 @@ describe('waitForInstallation', () => {
   });
 
   it('resolves expected tasks from manifestFiles and verifies versions', async () => {
+    resolveManifestPathsMock.mockResolvedValue(['vss-extension.json']);
     readManifestMock
       .mockResolvedValueOnce({
         contributes: [{ type: 'ms.vss-distributed-task.task', properties: { name: 'Task1' } }],
@@ -143,6 +146,7 @@ describe('waitForInstallation', () => {
   });
 
   it('resolves tasks across multiple manifest files and verifies all referenced task versions', async () => {
+    resolveManifestPathsMock.mockResolvedValue(['vss-extension.a.json', 'vss-extension.b.json']);
     readManifestMock
       .mockResolvedValueOnce({
         contributes: [{ type: 'ms.vss-distributed-task.task', properties: { name: 'TaskA' } }],
@@ -400,6 +404,7 @@ describe('waitForInstallation', () => {
   });
 
   it('falls back when individual task manifest read fails', async () => {
+    resolveManifestPathsMock.mockResolvedValue(['vss-extension.json']);
     readManifestMock
       .mockResolvedValueOnce({
         contributes: [{ type: 'ms.vss-distributed-task.task', properties: { name: 'Task1' } }],
@@ -430,6 +435,55 @@ describe('waitForInstallation', () => {
     expect(platform.warningMessages.some((m) => m.includes('Failed to read task manifest'))).toBe(
       true
     );
+  });
+
+  it('throws when manifestFiles patterns resolve to empty list and no vsixFile is available', async () => {
+    resolveManifestPathsMock.mockResolvedValue([]);
+
+    await expect(
+      waitForInstallation(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          accounts: ['https://dev.azure.com/org1'],
+          manifestFiles: ['no-match-*.json'],
+          rootFolder: '/some/root',
+        },
+        auth,
+        platform
+      )
+    ).rejects.toThrow("no files matched patterns [no-match-*.json] in '/some/root'");
+
+    expect(platform.warningMessages.some((m) => m.includes('no-match-*.json'))).toBe(true);
+    expect(platform.warningMessages.some((m) => m.includes('/some/root'))).toBe(true);
+  });
+
+  it('warns and falls through to vsixFile when manifestFiles patterns resolve to empty list', async () => {
+    resolveManifestPathsMock.mockResolvedValue([]);
+    vsixReaderGetTasksInfoMock.mockResolvedValue([{ name: 'TaskFromVsix', version: '1.0.0' }]);
+    getTaskDefinitionsMock.mockResolvedValue([
+      {
+        name: 'TaskFromVsix',
+        id: 'task-vsix',
+        version: { major: 1, minor: 0, patch: 0 },
+      },
+    ]);
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        manifestFiles: ['no-match-*.json'],
+        vsixFile: 'extension.vsix',
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(true);
+    expect(platform.warningMessages.some((m) => m.includes('no-match-*.json'))).toBe(true);
+    expect(vsixReaderOpenMock).toHaveBeenCalledWith('extension.vsix');
   });
 
   it('does not require auth.serviceUrl and uses account URLs instead', async () => {

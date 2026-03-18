@@ -63,52 +63,66 @@ async function resolveExpectedTasks(
 
   // If manifestFiles are provided, read task versions from all manifests
   if (options.manifestFiles && options.manifestFiles.length > 0) {
-    try {
-      platform.debug(`Reading task versions from ${options.manifestFiles.length} manifest file(s)`);
-      const rootFolder = options.rootFolder || cwd();
-      const manifestFiles = await resolveManifestPaths(rootFolder, options.manifestFiles, platform);
+    platform.debug(`Reading task versions from ${options.manifestFiles.length} manifest file(s)`);
+    const rootFolder = options.rootFolder || cwd();
+    const manifestFiles = await resolveManifestPaths(rootFolder, options.manifestFiles, platform);
 
-      const expectedByTask = new Map<string, Set<string>>();
+    if (manifestFiles.length === 0) {
+      const patternsStr = options.manifestFiles.join(', ');
+      platform.warning(
+        `No manifest files found matching patterns [${patternsStr}] in '${rootFolder}'.`
+      );
+      if (!options.vsixFile) {
+        throw new Error(
+          `manifestFiles was provided but no files matched patterns [${patternsStr}] in '${rootFolder}'. ` +
+            `Provide valid manifest file patterns, a vsixFile, or use expectedTasks directly.`
+        );
+      }
+      // vsixFile is available as fallback; fall through to the vsixFile block below
+    } else {
+      try {
+        const expectedByTask = new Map<string, Set<string>>();
 
-      for (const manifestFile of manifestFiles) {
-        try {
-          const manifest = (await readManifest(manifestFile, platform)) as ExtensionManifest;
-          const taskPaths = resolveTaskManifestPaths(manifest, manifestFile, platform);
+        for (const manifestFile of manifestFiles) {
+          try {
+            const manifest = (await readManifest(manifestFile, platform)) as ExtensionManifest;
+            const taskPaths = resolveTaskManifestPaths(manifest, manifestFile, platform);
 
-          for (const taskPath of taskPaths) {
-            try {
-              const taskManifest = (await readManifest(taskPath, platform)) as any;
-              if (taskManifest.name && taskManifest.version) {
-                const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
-                const existing =
-                  expectedByTask.get(taskManifest.name as string) ?? new Set<string>();
-                existing.add(version);
-                expectedByTask.set(taskManifest.name as string, existing);
-                platform.debug(`Found task ${taskManifest.name} v${version}`);
+            for (const taskPath of taskPaths) {
+              try {
+                const taskManifest = (await readManifest(taskPath, platform)) as any;
+                if (taskManifest.name && taskManifest.version) {
+                  const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
+                  const existing =
+                    expectedByTask.get(taskManifest.name as string) ?? new Set<string>();
+                  existing.add(version);
+                  expectedByTask.set(taskManifest.name as string, existing);
+                  platform.debug(`Found task ${taskManifest.name} v${version}`);
+                }
+              } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
               }
-            } catch (error: unknown) {
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              platform.warning(`Failed to read task manifest ${taskPath}: ${errorMessage}`);
             }
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            platform.warning(`Failed to read manifest ${manifestFile}: ${errorMessage}`);
           }
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          platform.warning(`Failed to read manifest ${manifestFile}: ${errorMessage}`);
         }
-      }
 
-      const tasks: ExpectedTask[] = [...expectedByTask.entries()].map(([name, versions]) => ({
-        name,
-        versions: [...versions],
-      }));
+        const tasks: ExpectedTask[] = [...expectedByTask.entries()].map(([name, versions]) => ({
+          name,
+          versions: [...versions],
+        }));
 
-      if (tasks.length > 0) {
-        platform.debug(`Resolved ${tasks.length} task(s) from manifest file(s)`);
-        return tasks;
+        if (tasks.length > 0) {
+          platform.debug(`Resolved ${tasks.length} task(s) from manifest file(s)`);
+          return tasks;
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        platform.warning(`Failed to resolve tasks from manifest files: ${errorMessage}`);
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      platform.warning(`Failed to resolve tasks from manifest files: ${errorMessage}`);
     }
   }
 
