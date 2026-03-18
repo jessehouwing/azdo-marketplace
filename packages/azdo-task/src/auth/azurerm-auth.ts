@@ -1,8 +1,6 @@
 import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
 import { AzureRMEndpoint } from 'azure-pipelines-tasks-azure-arm-rest/azure-arm-endpoint.js';
 
-const AZURE_DEVOPS_RESOURCE = '499b84ac-1321-427f-aa17-267ca6975798';
-
 /**
  * Get Azure RM authentication for marketplace operations.
  *
@@ -18,16 +16,9 @@ export async function getAzureRmAuth(
     const endpoint = new AzureRMEndpoint(connectionName);
     const azureEndpoint = await endpoint.getEndpoint();
 
-    // The AzureRM endpoint defaults to management audience; switch to ADO.
-    const credentials = azureEndpoint.applicationTokenCredentials as {
-      activeDirectoryResourceId: string;
-      getToken(force?: boolean): Promise<string>;
-    };
-    credentials.activeDirectoryResourceId = AZURE_DEVOPS_RESOURCE;
-
-    // getEndpoint() may have already fetched an ARM-scoped token.
-    // Force refresh so the token is minted for the overridden ADO audience.
-    const token = await credentials.getToken(true);
+    azureEndpoint.applicationTokenCredentials.activeDirectoryResourceId =
+      '499b84ac-1321-427f-aa17-267ca6975798';
+    const token = await azureEndpoint.applicationTokenCredentials.getToken(true);
 
     if (!token) {
       throw new Error('Failed to get access token from Azure RM endpoint');
