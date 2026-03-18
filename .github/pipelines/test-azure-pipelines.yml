@@ -1,17 +1,18 @@
 # Test Azure Pipelines
 #
 # Triggered by the release workflow to validate the azdo-marketplace task
-# against a small sample extension using PAT, WorkloadIdentity, and AzureRM
-# auth types in parallel, on both Linux and Windows hosted runners.
+# against a small sample extension using PAT, OIDC, and WorkflowIdentity auth
+# types in a matrix
+# across Linux and Windows hosted runners.
 #
 # Required service connections:
-#   MarketplacePatConnection           - PAT service connection
-#   MarketplaceWorkloadIdentity        - Workload Identity Federation connection
+#   MarketplacePatConnection          - PAT marketplace service connection name
 #   MarketplaceAzureRmConnection       - Azure RM (OIDC) service connection
+#   MarketplaceWorkloadIdentity        - Workload Identity service connection
 #
 # Required variables:
 #   publisherId  - Marketplace publisher ID (default: jessehouwing-dev)
-#   extensionId  - Extension ID for tests (default: release-test-ping)
+#   extensionIdPrefix  - Prefix used for matrix extension IDs
 
 name: test-$(Date:yyyyMMdd)$(Rev:.r)
 
@@ -22,125 +23,74 @@ parameters:
   - name: publisherId
     type: string
     default: jessehouwing-dev
-  - name: extensionId
+  - name: extensionIdPrefix
     type: string
-    default: release-test-ping
+    default: test
   - name: initialVersion
     type: string
     default: 1.0.0
   - name: organizationUrl
     type: string
     default: https://dev.azure.com/jessehouwing-dev
+  - name: azureRmConnection
+    type: string
+    default: MarketplaceAzureRmConnection
+  - name: workloadIdentityConnection
+    type: string
+    default: MarketplaceWorkloadIdentity
+  - name: marketplaceServiceConnectionName
+    type: string
+    default: 'f16a2f70-0963-4c20-8cbb-8b9c4399797a'
 
 stages:
-  # ----- Linux -----
-  - stage: Linux
-    displayName: Test on Linux
+  - stage: Test
+    displayName: Test Azure Pipelines
 
     jobs:
-      - job: PAT
-        displayName: PAT auth
+      - job: Test
+        displayName: Test ($(authType), $(vmImage))
         pool:
-          vmImage: ubuntu-latest
-        variables:
-          connectionType: PAT
-          connectionName: MarketplacePatConnection
+          vmImage: $(vmImage)
+        strategy:
+          matrix:
+            pat_ubuntu:
+              vmImage: ubuntu-latest
+              authType: pat
+              connectionType: PAT
+              extensionId: ${{ parameters.extensionIdPrefix }}-pat-ubuntu
+            oidc_ubuntu:
+              vmImage: ubuntu-latest
+              authType: oidc
+              connectionType: AzureRM
+              extensionId: ${{ parameters.extensionIdPrefix }}-oidc-ubuntu
+            workflow_identity_ubuntu:
+              vmImage: ubuntu-latest
+              authType: workflowidentity
+              connectionType: WorkloadIdentity
+              extensionId: ${{ parameters.extensionIdPrefix }}-workflow-identity-ubuntu
+            pat_windows:
+              vmImage: windows-latest
+              authType: pat
+              connectionType: PAT
+              extensionId: ${{ parameters.extensionIdPrefix }}-pat-windows
+            oidc_windows:
+              vmImage: windows-latest
+              authType: oidc
+              connectionType: AzureRM
+              extensionId: ${{ parameters.extensionIdPrefix }}-oidc-windows
+            workflow_identity_windows:
+              vmImage: windows-latest
+              authType: workflowidentity
+              connectionType: WorkloadIdentity
+              extensionId: ${{ parameters.extensionIdPrefix }}-workflow-identity-windows
         steps:
           - template: templates/test-extension-lifecycle.yml
             parameters:
               connectionType: $(connectionType)
-              connectionName: $(connectionName)
+              azureRmConnection: ${{ parameters.azureRmConnection }}
+              workloadIdentityConnection: ${{ parameters.workloadIdentityConnection }}
+              marketplaceServiceConnectionName: ${{ parameters.marketplaceServiceConnectionName }}
               publisherId: ${{ parameters.publisherId }}
-              extensionId: ${{ parameters.extensionId }}
-              initialVersion: ${{ parameters.initialVersion }}
-              organizationUrl: ${{ parameters.organizationUrl }}
-
-      - job: WorkloadIdentity
-        displayName: Workload Identity auth
-        pool:
-          vmImage: ubuntu-latest
-        variables:
-          connectionType: WorkloadIdentity
-          connectionName: MarketplaceWorkloadIdentity
-        steps:
-          - template: templates/test-extension-lifecycle.yml
-            parameters:
-              connectionType: $(connectionType)
-              connectionName: $(connectionName)
-              publisherId: ${{ parameters.publisherId }}
-              extensionId: ${{ parameters.extensionId }}
-              initialVersion: ${{ parameters.initialVersion }}
-              organizationUrl: ${{ parameters.organizationUrl }}
-
-      - job: AzureRM
-        displayName: Azure RM auth
-        pool:
-          vmImage: ubuntu-latest
-        variables:
-          connectionType: AzureRM
-          connectionName: MarketplaceAzureRmConnection
-        steps:
-          - template: templates/test-extension-lifecycle.yml
-            parameters:
-              connectionType: $(connectionType)
-              connectionName: $(connectionName)
-              publisherId: ${{ parameters.publisherId }}
-              extensionId: ${{ parameters.extensionId }}
-              initialVersion: ${{ parameters.initialVersion }}
-              organizationUrl: ${{ parameters.organizationUrl }}
-
-  # ----- Windows -----
-  - stage: Windows
-    displayName: Test on Windows
-
-    jobs:
-      - job: PAT
-        displayName: PAT auth
-        pool:
-          vmImage: windows-latest
-        variables:
-          connectionType: PAT
-          connectionName: MarketplacePatConnection
-        steps:
-          - template: templates/test-extension-lifecycle.yml
-            parameters:
-              connectionType: $(connectionType)
-              connectionName: $(connectionName)
-              publisherId: ${{ parameters.publisherId }}
-              extensionId: ${{ parameters.extensionId }}
-              initialVersion: ${{ parameters.initialVersion }}
-              organizationUrl: ${{ parameters.organizationUrl }}
-
-      - job: WorkloadIdentity
-        displayName: Workload Identity auth
-        pool:
-          vmImage: windows-latest
-        variables:
-          connectionType: WorkloadIdentity
-          connectionName: MarketplaceWorkloadIdentity
-        steps:
-          - template: templates/test-extension-lifecycle.yml
-            parameters:
-              connectionType: $(connectionType)
-              connectionName: $(connectionName)
-              publisherId: ${{ parameters.publisherId }}
-              extensionId: ${{ parameters.extensionId }}
-              initialVersion: ${{ parameters.initialVersion }}
-              organizationUrl: ${{ parameters.organizationUrl }}
-
-      - job: AzureRM
-        displayName: Azure RM auth
-        pool:
-          vmImage: windows-latest
-        variables:
-          connectionType: AzureRM
-          connectionName: MarketplaceAzureRmConnection
-        steps:
-          - template: templates/test-extension-lifecycle.yml
-            parameters:
-              connectionType: $(connectionType)
-              connectionName: $(connectionName)
-              publisherId: ${{ parameters.publisherId }}
-              extensionId: ${{ parameters.extensionId }}
+              extensionId: $(extensionId)
               initialVersion: ${{ parameters.initialVersion }}
               organizationUrl: ${{ parameters.organizationUrl }}
