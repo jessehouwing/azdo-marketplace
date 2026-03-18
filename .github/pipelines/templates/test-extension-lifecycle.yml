@@ -9,8 +9,6 @@ parameters:
     type: string
   - name: azureRmConnection
     type: string
-  - name: workloadIdentityConnection
-    type: string
   - name: marketplaceServiceConnectionName
     type: string
   - name: publisherId
@@ -99,8 +97,7 @@ steps:
     inputs:
       operation: queryVersion
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       publisherId: ${{ parameters.publisherId }}
       extensionId: ${{ parameters.extensionId }}
@@ -133,8 +130,7 @@ steps:
     inputs:
       operation: publish
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       use: vsix
       vsixFile: $(packageManifest.vsixFile)
@@ -146,8 +142,7 @@ steps:
     inputs:
       operation: waitForValidation
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       vsixFile: $(publish.vsixFile)
 
@@ -157,8 +152,7 @@ steps:
     inputs:
       operation: share
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
@@ -169,8 +163,7 @@ steps:
     inputs:
       operation: install
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
@@ -181,8 +174,7 @@ steps:
     inputs:
       operation: waitForInstallation
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       publisherId: ${{ parameters.publisherId }}
       extensionId: ${{ parameters.extensionId }}
@@ -195,8 +187,7 @@ steps:
     inputs:
       operation: unshare
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
@@ -207,7 +198,6 @@ steps:
     inputs:
       operation: unpublish
       connectionType: ${{ parameters.connectionType }}
-      connectionNamePAT: $(marketplaceServiceConnectionId)
-      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
       connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       vsixFile: $(publish.vsixFile)
