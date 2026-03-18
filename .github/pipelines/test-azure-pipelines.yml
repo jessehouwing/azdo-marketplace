@@ -69,6 +69,14 @@ stages:
               connectionType: AzureRM
               extensionId: ${{ parameters.extensionIdPrefix }}-oidc-windows
         steps:
+          - task: AzureCLI@2
+            displayName: 'Fetch profile for Service Principal'
+            inputs:
+              azureSubscription: ${{ parameters.azureRmConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798
           - template: templates/test-extension-lifecycle.yml
             parameters:
               connectionType: $(connectionType)
