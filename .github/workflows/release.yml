@@ -254,6 +254,14 @@ jobs:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
 
+      - name: Share extension
+        uses: jessehouwing/azdo-marketplace/share@main
+        with:
+          auth-type: oidc
+          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          accounts: |
+            https://dev.azure.com/jessehouwing-dev
+
       - name: Install extension
         uses: jessehouwing/azdo-marketplace/install@main
         with:
