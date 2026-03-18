@@ -316,7 +316,7 @@ jobs:
           AZURE_DEVOPS_EXT_PAT: ${{ steps.get-azdo-token.outputs.azdo_token }}
           AZDO_PIPELINE_NAME: ${{ vars.AZDO_TEST_PIPELINE_NAME }}
           RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
-          AZDO_ORGANIZATION: https://dev.azure.com/jessehouwing-dev
+          AZDO_ORGANIZATION: https://dev.azure.com/jessehouwing
           AZDO_PROJECT: azure-devops-extensions
         shell: pwsh
         run: |
