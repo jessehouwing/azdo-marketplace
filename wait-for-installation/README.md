@@ -24,6 +24,19 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
     manifest-file: './extension/vss-extension.json'
 ```
 
+### Verify with a Manifest in a Subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    publisher-id: 'my-publisher'
+    extension-id: 'my-extension'
+    accounts: 'myorg'
+    working-directory: './extension'
+    manifest-file: 'vss-extension.json'
+```
+
 ### Verify with VSIX
 
 ```yaml
@@ -113,6 +126,7 @@ Identity inputs:
 
 - `expected-tasks`: JSON array of expected tasks
 - `manifest-file`: Extension manifest path(s), newline-separated
+- `working-directory`: Base directory for `manifest-file` when manifests live in a subfolder
 - `vsix-file`: Path to .vsix file
 
 OR
@@ -236,6 +250,7 @@ Each task can have multiple versions. The verification succeeds if ALL specified
 - `accounts`: Lists organizations/accounts where installation is verified.
 - `expected-tasks`: Supplies explicit JSON task/version expectations.
 - `manifest-file`: Supplies manifest file(s) for task expectation discovery.
+- `working-directory`: Sets the base path used to resolve `manifest-file` in subfolder-based layouts.
 - `vsix-file`: Supplies a VSIX path for task expectation and identity discovery.
 - `timeout-minutes`: Sets total verification timeout window.
 - `polling-interval-seconds`: Sets interval between installation checks.

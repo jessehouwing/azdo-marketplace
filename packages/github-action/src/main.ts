@@ -236,6 +236,7 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
   const extensionPricingInput = platform.getInput('extension-pricing');
 
   const options = {
+    rootFolder: platform.getInput('working-directory') || undefined,
     localizationRoot: platform.getInput('localization-root'),
     manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     manifestFileJs: platform.getInput('manifest-file-js'),
@@ -279,6 +280,10 @@ async function runPublish(
   const result = await publishExtension(
     {
       publishSource,
+      rootFolder:
+        publishSource === 'manifest'
+          ? platform.getInput('working-directory') || undefined
+          : undefined,
       vsixFile: publishSource === 'vsix' ? platform.getInput('vsix-file', true) : undefined,
       manifestGlobs:
         publishSource === 'manifest'
@@ -326,6 +331,7 @@ async function runUnpublish(
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
       vsixFile: platform.getInput('vsix-file'),
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     },
     auth,
@@ -344,6 +350,7 @@ async function runShare(
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
       vsixFile: platform.getInput('vsix-file'),
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
@@ -363,6 +370,7 @@ async function runUnshare(
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
       vsixFile: platform.getInput('vsix-file'),
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
@@ -382,6 +390,7 @@ async function runInstall(
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
       vsixFile: platform.getInput('vsix-file'),
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
@@ -446,6 +455,7 @@ async function runQueryVersion(
       versionSource,
       use: (platform.getInput('use') || 'manifest') as 'manifest' | 'vsix',
       vsixFile: platform.getInput('vsix-file') || undefined,
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     },
     auth,
@@ -472,6 +482,7 @@ async function runWaitForValidation(
       extensionId: platform.getInput('extension-id'),
       vsixFile: platform.getInput('vsix-file'),
       extensionVersion: platform.getInput('extension-version'),
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       timeoutMinutes: timeoutMinutesInput ? parseInt(timeoutMinutesInput, 10) : undefined,
       pollingIntervalSeconds: pollingIntervalSecondsInput
@@ -513,6 +524,7 @@ async function runWaitForInstallation(
       extensionId: platform.getInput('extension-id'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
       expectedTasks,
+      rootFolder: platform.getInput('working-directory') || undefined,
       manifestFiles: platform.getDelimitedInput('manifest-file', '\n'),
       vsixFile: platform.getInput('vsix-file'),
       timeoutMinutes: parseInt(platform.getInput('timeout-minutes') || '10'),

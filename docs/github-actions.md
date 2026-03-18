@@ -45,6 +45,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
 ### Packaging/publish source and overrides
 
 - `manifest-file`
+- `working-directory`
 - `manifest-file-js`
 - `overrides-file`
 - `use` (`manifest` or `vsix`)
@@ -76,7 +77,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `operation: package`
 - Optional:
   - `publisher-id`, `extension-id`
-  - `manifest-file`, `manifest-file-js`, `overrides-file`
+  - `manifest-file`, `working-directory`, `manifest-file-js`, `overrides-file`
   - `extension-version`, `extension-name`, `extension-visibility`
   - `output-path`
   - `bypass-validation`, `update-tasks-version`, `update-tasks-id`
@@ -91,7 +92,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `vsix-file` when `use=vsix`
 - Optional:
   - identity inputs
-  - manifest inputs (`manifest-file`, `manifest-file-js`, `overrides-file`)
+  - manifest inputs (`manifest-file`, `working-directory`, `manifest-file-js`, `overrides-file`)
   - metadata override inputs
   - `share-with`, `no-wait-validation`, `update-tasks-version`, `update-tasks-id`
 
@@ -102,7 +103,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - auth inputs
 - Optional:
   - `publisher-id`, `extension-id` (can be inferred from `manifest-file` or `vsix-file`)
-  - `manifest-file`, `vsix-file`
+  - `manifest-file`, `working-directory`, `vsix-file`
   - tooling/service URL overrides
 
 ### `share`
@@ -113,7 +114,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `share-with`
 - Optional:
   - `publisher-id`, `extension-id` (can be inferred from `manifest-file` or `vsix-file`)
-  - `manifest-file`, `vsix-file`
+  - `manifest-file`, `working-directory`, `vsix-file`
 
 ### `unshare`
 
@@ -123,7 +124,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `unshare-with`
 - Optional:
   - `publisher-id`, `extension-id` (can be inferred from `manifest-file` or `vsix-file`)
-  - `manifest-file`, `vsix-file`
+  - `manifest-file`, `working-directory`, `vsix-file`
 
 ### `install`
 
@@ -133,7 +134,7 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `accounts`
 - Optional:
   - `publisher-id`, `extension-id` (can be inferred from `manifest-file` or `vsix-file`)
-  - `manifest-file`, `vsix-file`
+  - `manifest-file`, `working-directory`, `vsix-file`
   - `extension-version`
 
 ### `show`
@@ -157,7 +158,7 @@ Resolves the proposed extension version from one or more sources. The highest va
 - Optional:
   - `version-source` (default: `marketplace`; newline-separated list of `marketplace`, `manifest`, `vsix`, or semver literals)
   - `marketplace-version-action` (`None`, `Major`, `Minor`, `Patch`; only applies to the marketplace source)
-  - `use`, `vsix-file`, `manifest-file`
+  - `use`, `vsix-file`, `manifest-file`, `working-directory`
 
 ### `wait-for-validation`
 
@@ -166,7 +167,7 @@ Resolves the proposed extension version from one or more sources. The highest va
   - auth inputs
 - Optional:
   - `publisher-id`, `extension-id` (can be inferred from `manifest-file` or `vsix-file`)
-  - `manifest-file`, `vsix-file`
+  - `manifest-file`, `working-directory`, `vsix-file`
   - `max-retries`, `min-timeout`, `max-timeout`
 
 ### `wait-for-installation`
@@ -179,7 +180,22 @@ Resolves the proposed extension version from one or more sources. The highest va
   - `publisher-id` (if omitted, inferred from `vsix-file` when provided)
   - `extension-id` (if omitted, inferred from `vsix-file` when provided)
   - one of `expected-tasks`, `manifest-file`, `vsix-file`
+  - `working-directory` when `manifest-file` points to manifests under a subfolder
   - `timeout-minutes`, `polling-interval-seconds`
+
+## Working directory for manifest-based operations
+
+Use `working-directory` when your extension manifest lives in a subfolder and you want `manifest-file` patterns to stay relative to that folder.
+
+```yaml
+- uses: jessehouwing/azdo-marketplace@v6
+  with:
+    operation: package
+    working-directory: tests/sample-extension
+    manifest-file: vss-extension.json
+```
+
+When `working-directory` is omitted, manifest discovery falls back to the current working directory.
 
 ## Unified action outputs
 

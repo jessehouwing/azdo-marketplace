@@ -59,13 +59,25 @@ When creating a PAT for pipeline automation, include at least the following scop
 - run: echo "VSIX: ${{ steps.publish.outputs.vsix-file }}"
 ```
 
+### Manifests in a subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace@v6
+  with:
+    operation: package
+    working-directory: tests/sample-extension
+    manifest-file: vss-extension.json
+```
+
+For manifest-based operations, `manifest-file` patterns are resolved from `working-directory` when specified. If `working-directory` is omitted, the current working directory is used.
+
 ### Main action inputs
 
-**General**
+#### General
 
 - `operation`: Selects which command to run (`package`, `publish`, `install`, `share`, `unshare`, `unpublish`, `show`, `query-version`, `wait-for-validation`, `wait-for-installation`).
 
-**Connection & Authentication**
+#### Connection & Authentication
 
 - `auth-type`: Chooses authentication mode (`pat`, `basic`, `oidc`) for authenticated operations.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint for supported operations.
@@ -73,21 +85,22 @@ When creating a PAT for pipeline automation, include at least the following scop
 - `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec); `built-in` uses the bundled vesion, while `path` uses `tfx` from PATH.
 - `username`: Provides the username when `auth-type` is `basic`.
 
-**Extension identity**
+#### Extension Identity
 
 - `extension-id`: Sets or overrides the extension identifier inside the publisher namespace (required for `show`, optional for `install`/`share`/`unshare`/`unpublish`/`wait-for-validation`/`query-version` when inferred from manifest or VSIX inputs).
 - `publisher-id`: Sets or overrides the extension publisher identifier (required for `show`, optional for `install`/`share`/`unshare`/`unpublish`/`wait-for-validation`/`query-version` when inferred from manifest or VSIX inputs).
 
-**Input sources**
+#### Input Sources
 
 - `manifest-file`: Points to one or more manifest files used for manifest-based operations and identity fallback in install/share/unshare/unpublish/wait-for-validation/query-version.
+- `working-directory`: Sets the base directory for manifest-based operations. `manifest-file` patterns are resolved from this directory when specified.
 - `manifest-file-js`: Points to a JS manifest module for `tfx --manifest-js`.
 - `overrides-file`: Points to an overrides JSON file merged into manifest packaging/publishing.
 - `use`: Chooses publish input source (`manifest` or `vsix`).
 - `vsix-file`: Points to a pre-built VSIX file when publishing from VSIX source.
 - `vsix-file`: Provides a VSIX file for identity/task discovery in install/share/unshare/validation flows.
 
-**Packaging options**
+#### Packaging Options
 
 - `bypass-validation`: Skips package-time validation checks.
 - `extension-name`: Overrides extension display name during package/publish.
@@ -100,35 +113,35 @@ When creating a PAT for pipeline automation, include at least the following scop
 - `update-tasks-id`: Regenerates deterministic task IDs for extension variants.
 - `update-tasks-version`: Controls task version update strategy (`none`, `major`, `minor`, `patch`).
 
-**Organization targeting**
+#### Organization Targeting
 
 - `accounts`: Provides newline-separated Azure DevOps organizations for install/share/unshare/verification operations.
 
-**Query version**
+#### Query Version Inputs
 
 - `marketplace-version-action`: Controls how the queried marketplace version is transformed (`None`, `Major`, `Minor`, `Patch`).
 - `version-source`: Specifies which version sources to consider (newline-separated); highest valid semver wins. Values: `marketplace`, `manifest`, `vsix`, or a semver literal. Defaults to `marketplace`.
 
-**Wait for validation / installation**
+#### Wait For Validation / Installation
 
 - `polling-interval-seconds`: Sets polling interval between checks.
 - `timeout-minutes`: Sets total wait time.
 
-**Wait for installation**
+#### Wait For Installation
 
 - `expected-tasks`: Provides task/version expectations to verify.
 
 ### Main action outputs
 
-**Package / publish**
+#### Package / Publish
 
 - `vsix-file`: Returns path to the generated VSIX file.
 
-**Show**
+#### Show
 
 - `metadata`: Returns extension metadata JSON.
 
-**Query version**
+#### Query Version Outputs
 
 - `current-version`: Returns the current version before any increment is applied.
 - `proposed-version`: Returns the computed version after applying the version action.
@@ -144,6 +157,7 @@ When creating a PAT for pipeline automation, include at least the following scop
   with:
     publisher-id: my-publisher
     extension-id: my-extension
+    working-directory: extension
     manifest-file: vss-extension.json
 
 - run: echo "Packaged: ${{ steps.package.outputs.vsix-file }}"
@@ -157,6 +171,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
     extension-id: my-extension
+    working-directory: extension
     manifest-file: vss-extension.json
 ```
 
@@ -166,6 +181,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - uses: jessehouwing/azdo-marketplace/install@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: extension
     manifest-file: vss-extension.json
     accounts: myorg
 ```
@@ -176,6 +192,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - uses: jessehouwing/azdo-marketplace/share@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: extension
     manifest-file: vss-extension.json
     accounts: customer-org
 ```
@@ -186,6 +203,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - uses: jessehouwing/azdo-marketplace/unshare@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: extension
     manifest-file: vss-extension.json
     accounts: old-customer-org
 ```
@@ -196,6 +214,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - uses: jessehouwing/azdo-marketplace/unpublish@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: extension
     manifest-file: vss-extension.json
 ```
 
@@ -221,6 +240,8 @@ When creating a PAT for pipeline automation, include at least the following scop
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
     extension-id: my-extension
+    working-directory: extension
+    manifest-file: vss-extension.json
     marketplace-version-action: Patch
 
 - run: echo "Next: ${{ steps.query.outputs.proposed-version }}"
@@ -232,6 +253,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: extension
     manifest-file: vss-extension.json
 ```
 
@@ -244,6 +266,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     publisher-id: my-publisher
     extension-id: my-extension
     accounts: myorg
+    working-directory: extension
     manifest-file: vss-extension.json
 ```
 

@@ -47,6 +47,7 @@ Common input mappings:
 - `publisherId` → `publisher-id`
 - `extensionId` → `extension-id`
 - `manifestFile` → `manifest-file`
+- `workingDirectory` → `working-directory`
 - `use` → `use` (publish flows)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
@@ -61,6 +62,7 @@ Common input mappings:
 - Use `accounts` for `install`, `share`, `unshare`, and wait operations on both platforms.
 - Do not map any publish sharing input; publish-time sharing was removed. Use a dedicated `share` step with `accounts`.
 - For `install`, `share`, `unshare`, `unpublish`, and `waitForValidation`/`wait-for-validation`, identity can be inferred from either manifest (`manifestFile`/`manifest-file`) or VSIX (`vsixFile`/`vsix-file`) inputs.
+- For manifest-based flows, map Azure Pipelines `workingDirectory` to GitHub Actions `working-directory` to keep `manifestFile`/`manifest-file` paths relative to the same subfolder.
 
 ## Account input mapping
 

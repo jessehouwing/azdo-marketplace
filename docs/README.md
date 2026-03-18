@@ -7,10 +7,12 @@ This folder contains implementation and usage documentation for the v6 architect
 - [Azure Pipelines usage](./azure-pipelines.md)
   - How to use the unified `azdo-marketplace@6` task
   - All supported operations and operation-specific inputs
+  - Includes `workingDirectory` for manifest-based operations rooted in a subfolder
 - [GitHub Actions usage](./github-actions.md)
   - How to use the unified `jessehouwing/azdo-marketplace@v6` action
   - All supported operations and operation-specific inputs
   - Availability and usage of composite actions per command
+  - Includes `working-directory` for manifest-based operations rooted in a subfolder
 - [Authentication and OIDC](./authentication-and-oidc.md)
   - PAT, Basic Auth, Azure RM OIDC (Azure Pipelines), GitHub OIDC
   - Service principal setup in Azure

@@ -89,6 +89,17 @@ Only applies when `marketplace` is listed in `version-source`.
     version-source: manifest
 ```
 
+### Use version from a manifest in a subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/query-version@v6
+  id: query
+  with:
+    version-source: manifest
+    working-directory: './extension'
+    manifest-file: 'vss-extension.json'
+```
+
 ### GitVersion integration (no auth required)
 
 ```yaml
@@ -144,6 +155,7 @@ Only applies when `marketplace` is listed in `version-source`.
 - `version-source`: Version sources to consider (newline-separated). Default: `marketplace`.
 - `marketplace-version-action`: Version increment strategy (`None`, `Major`, `Minor`, `Patch`). Default: `None`.
 - `manifest-file`: Manifest file path(s) for reading publisher/extension IDs.
+- `working-directory`: Base directory for `manifest-file` when manifests live in a subfolder.
 - `use`: Input source (`manifest` or `vsix`).
 - `vsix-file`: Path to pre-built `.vsix` file when `use` is `vsix`.
 

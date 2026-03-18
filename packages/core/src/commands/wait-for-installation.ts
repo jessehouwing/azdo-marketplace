@@ -1,10 +1,11 @@
 import { WebApi, getPersonalAccessTokenHandler } from 'azure-devops-node-api';
 import type { ITaskAgentApi } from 'azure-devops-node-api/TaskAgentApi.js';
 import type { TaskDefinition } from 'azure-devops-node-api/interfaces/TaskAgentInterfaces.js';
+import { cwd } from 'process';
 import type { AuthCredentials } from '../auth.js';
 import { resolveExtensionIdentity } from '../extension-identity.js';
 import type { ExtensionManifest } from '../manifest-reader.js';
-import { readManifest, resolveTaskManifestPaths } from '../manifest-utils.js';
+import { readManifest, resolveManifestPaths, resolveTaskManifestPaths } from '../manifest-utils.js';
 import { normalizeAccountsToServiceUrls } from '../organization-utils.js';
 import type { IPlatformAdapter } from '../platform.js';
 import { VsixReader } from '../vsix-reader.js';
@@ -19,6 +20,7 @@ export interface WaitForInstallationOptions {
   extensionId?: string;
   accounts: string[]; // Target organization names or URLs
   expectedTasks?: ExpectedTask[]; // Tasks with expected versions
+  rootFolder?: string; // Root folder for manifest discovery
   manifestFiles?: string[]; // Paths to extension manifests (vss-extension.json) to read task versions
   vsixFile?: string; // Path to VSIX file to read task versions from
   timeoutMinutes?: number; // Default: 10
@@ -63,10 +65,12 @@ async function resolveExpectedTasks(
   if (options.manifestFiles && options.manifestFiles.length > 0) {
     try {
       platform.debug(`Reading task versions from ${options.manifestFiles.length} manifest file(s)`);
+      const rootFolder = options.rootFolder ?? cwd();
+      const manifestFiles = await resolveManifestPaths(rootFolder, options.manifestFiles, platform);
 
       const expectedByTask = new Map<string, Set<string>>();
 
-      for (const manifestFile of options.manifestFiles) {
+      for (const manifestFile of manifestFiles) {
         try {
           const manifest = (await readManifest(manifestFile, platform)) as ExtensionManifest;
           const taskPaths = resolveTaskManifestPaths(manifest, manifestFile, platform);

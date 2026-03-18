@@ -251,6 +251,7 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
   const extensionPricingInput = platform.getInput('extensionPricing');
 
   const options = {
+    rootFolder: platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
     localizationRoot: platform.getPathInput('localizationRoot'),
     manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     manifestFileJs: platform.getPathInput('manifestFileJs'),
@@ -293,6 +294,10 @@ async function runPublish(
   const result = await publishExtension(
     {
       publishSource: use,
+      rootFolder:
+        use === 'manifest'
+          ? platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory')
+          : undefined,
       vsixFile: use === 'vsix' ? platform.getPathInput('vsixFile', true) : undefined,
       manifestGlobs:
         use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
@@ -337,6 +342,8 @@ async function runUnpublish(
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixFile: platform.getPathInput('vsixFile') || platform.getInput('vsixFile'),
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     },
     auth,
@@ -355,6 +362,8 @@ async function runShare(
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixFile: platform.getPathInput('vsixFile') || platform.getInput('vsixFile'),
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
@@ -374,6 +383,8 @@ async function runUnshare(
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixFile: platform.getPathInput('vsixFile') || platform.getInput('vsixFile'),
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
     },
@@ -393,6 +404,8 @@ async function runInstall(
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixFile: platform.getPathInput('vsixFile') || platform.getInput('vsixFile'),
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
     },
@@ -457,6 +470,8 @@ async function runQueryVersion(
       versionSource,
       use: (platform.getInput('use') || 'manifest') as 'manifest' | 'vsix',
       vsixFile: platform.getPathInput('vsixFile') || undefined,
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
     },
     auth,
@@ -486,6 +501,8 @@ async function runWaitForValidation(
       publisherId: platform.getInput('publisherId'),
       extensionId: platform.getInput('extensionId'),
       vsixFile: platform.getPathInput('vsixFile') || platform.getInput('vsixFile'),
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestGlobs: platform.getDelimitedInput('manifestFile', '\n'),
       extensionVersion: platform.getInput('extensionVersion'),
       timeoutMinutes: timeoutMinutesInput ? parseInt(timeoutMinutesInput, 10) : undefined,
@@ -527,6 +544,8 @@ async function runWaitForInstallation(platform: AzdoAdapter, auth: AuthCredentia
       extensionId: platform.getInput('extensionId'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
       expectedTasks,
+      rootFolder:
+        platform.getPathInput('workingDirectory') || platform.getInput('workingDirectory'),
       manifestFiles:
         use === 'manifest' ? platform.getDelimitedInput('manifestFile', '\n') : undefined,
       vsixFile,

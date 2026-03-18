@@ -176,6 +176,7 @@ describe('Azure DevOps main entrypoint', () => {
       inputs: {
         operation: 'package',
         tfxVersion: 'built-in',
+        workingDirectory: 'tests/sample-extension',
         manifestFile: 'vss-extension.json',
         publisherId: 'publisher',
         extensionId: 'extension',
@@ -200,6 +201,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     expect(packageExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         publisherId: 'publisher',
         extensionId: 'extension',
         extensionVersion: '1.2.3',
@@ -223,6 +225,7 @@ describe('Azure DevOps main entrypoint', () => {
         tfxVersion: 'path',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
+        workingDirectory: 'tests/sample-extension',
         use: 'manifest',
         manifestFileJs: 'manifests/build-manifest.js',
         overridesFile: 'manifests/overrides.json',
@@ -241,6 +244,7 @@ describe('Azure DevOps main entrypoint', () => {
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
     expect(publishExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         manifestFileJs: 'manifests/build-manifest.js',
         overridesFile: 'manifests/overrides.json',
       }),
@@ -623,6 +627,7 @@ describe('Azure DevOps main entrypoint', () => {
         operation: 'queryVersion',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
+        workingDirectory: 'tests/sample-extension',
         publisherId: 'publisher',
         extensionId: 'extension',
         marketplaceVersionAction: 'MAJOR',
@@ -637,6 +642,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     expect(queryVersionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         marketplaceVersionAction: 'Major',
       }),
       expect.anything(),
@@ -764,6 +770,7 @@ describe('Azure DevOps main entrypoint', () => {
         operation: 'waitForInstallation',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
+        workingDirectory: 'tests/sample-extension',
         use: 'manifest',
         vsixFile: vsixFile,
       },
@@ -777,7 +784,10 @@ describe('Azure DevOps main entrypoint', () => {
     await importMainAndFlush();
 
     expect(waitForInstallationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ vsixFile }),
+      expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
+        vsixFile,
+      }),
       expect.anything(),
       platform
     );
@@ -789,6 +799,7 @@ describe('Azure DevOps main entrypoint', () => {
         operation: 'install',
         connectionType: 'PAT',
         connectionNamePAT: 'svc-connection',
+        workingDirectory: 'tests/sample-extension',
       },
       delimitedInputs: {
         'manifestFile|\n': ['vss-extension.json'],
@@ -802,6 +813,7 @@ describe('Azure DevOps main entrypoint', () => {
 
     expect(installExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         manifestGlobs: ['vss-extension.json'],
       }),
       expect.anything(),

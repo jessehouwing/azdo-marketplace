@@ -43,5 +43,8 @@ inputs:
     items:
       type: string
 
+  working-directory:
+    type: string
+
   vsix-file:
     type: string

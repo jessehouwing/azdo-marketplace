@@ -68,6 +68,9 @@ inputs:
     items:
       type: string
 
+  working-directory:
+    type: string
+
   manifest-file-js:
     type: string
 

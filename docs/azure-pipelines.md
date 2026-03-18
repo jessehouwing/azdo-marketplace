@@ -50,6 +50,7 @@ These appear across multiple operations.
 ### Manifest / package source
 
 - `manifestFile`
+- `workingDirectory`
 - `localizationRoot`
 - `use` (`manifest` or `vsix`) for `package`, `publish`, and `waitForInstallation`
 - `vsixFile` (publish from VSIX)
@@ -75,7 +76,7 @@ Creates a VSIX from manifest files.
 - Required:
   - `operation: package`
 - Optional:
-  - `manifestFile`, `manifestFileJs`, `overridesFile`, `localizationRoot`
+  - `manifestFile`, `workingDirectory`, `manifestFileJs`, `overridesFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `outputPath`
@@ -93,7 +94,7 @@ Publishes to Marketplace from manifest or prebuilt VSIX.
   - `use`
   - If `use = vsix`: `vsixFile`
 - Optional:
-  - `manifestFile`, `manifestFileJs`, `overridesFile`, `localizationRoot`
+  - `manifestFile`, `workingDirectory`, `manifestFileJs`, `overridesFile`, `localizationRoot`
   - `publisherId`, `extensionId`
   - `extensionVersion`, `extensionName`, `extensionVisibility`, `extensionPricing`
   - `noWaitValidation`
@@ -110,7 +111,7 @@ Removes an extension from Marketplace.
   - `connectionType` + matching connection input
 - Optional:
   - `publisherId`, `extensionId` (can be inferred from `manifestFile` or `vsixFile`)
-  - `manifestFile`, `vsixFile`
+  - `manifestFile`, `workingDirectory`, `vsixFile`
   - `tfxVersion`
 
 ### `share`
@@ -123,7 +124,7 @@ Shares a private extension with organizations.
   - `accounts` (newline-separated)
 - Optional:
   - `publisherId`, `extensionId` (can be inferred from `manifestFile` or `vsixFile`)
-  - `manifestFile`, `vsixFile`
+  - `manifestFile`, `workingDirectory`, `vsixFile`
   - `tfxVersion`
 
 ### `unshare`
@@ -136,7 +137,7 @@ Revokes sharing from organizations.
   - `accounts` (newline-separated)
 - Optional:
   - `publisherId`, `extensionId` (can be inferred from `manifestFile` or `vsixFile`)
-  - `manifestFile`, `vsixFile`
+  - `manifestFile`, `workingDirectory`, `vsixFile`
   - `tfxVersion`
 
 ### `install`
@@ -149,7 +150,7 @@ Installs extension to one or more Azure DevOps organizations.
   - `accounts` (newline-separated)
 - Optional:
   - `publisherId`, `extensionId` (can be inferred from `manifestFile` or `vsixFile`)
-  - `manifestFile`, `vsixFile`
+  - `manifestFile`, `workingDirectory`, `vsixFile`
   - `extensionVersion`
   - `tfxVersion`
 
@@ -178,7 +179,7 @@ Resolves the proposed extension version from one or more sources. The highest va
   - `versionSource` (default: `marketplace`; newline-separated list of `marketplace`, `manifest`, `vsix`, or semver literals)
   - `marketplaceVersionAction` (`None`, `Major`, `Minor`, `Patch`; only applies to the marketplace source; alias: `versionAction`)
   - `setBuildNumber`
-  - `use`, `vsixFile`, `manifestFile`
+  - `use`, `vsixFile`, `manifestFile`, `workingDirectory`
   - `tfxVersion`
 
 ### `waitForValidation`
@@ -190,7 +191,7 @@ Polls Marketplace validation result.
   - `connectionType` + matching connection input
 - Optional:
   - `publisherId`, `extensionId` (can be inferred from `manifestFile` or `vsixFile`)
-  - `manifestFile`, `vsixFile`
+  - `manifestFile`, `workingDirectory`, `vsixFile`
   - `maxRetries`, `minTimeout`, `maxTimeout`
   - `tfxVersion`
 
@@ -208,8 +209,23 @@ Verifies tasks are available after install.
     - `expectedTasks` (JSON)
     - `manifestFile`
     - `vsixFile`
+  - `workingDirectory` when `manifestFile` points to manifests under a subfolder
   - `timeoutMinutes`, `pollingIntervalSeconds`
   - `tfxVersion`
+
+## Working directory for manifest-based operations
+
+Use `workingDirectory` when your extension manifest lives in a subfolder and you want `manifestFile` patterns to stay relative to that folder.
+
+```yaml
+- task: azdo-marketplace@6
+  inputs:
+    operation: package
+    workingDirectory: $(Build.SourcesDirectory)/tests/sample-extension
+    manifestFile: vss-extension.json
+```
+
+When `workingDirectory` is omitted, manifest discovery falls back to the current working directory.
 
 ## Outputs
 
