@@ -63,7 +63,7 @@ steps:
           $escapedType = [uri]::EscapeDataString($endpointType)
           $endpointUrl = "$organizationUrl/$escapedProject/_apis/serviceendpoint/endpoints?endpointNames=$escapedName&type=$escapedType&api-version=7.1"
 
-          $endpointResponse = az rest --method get --uri $endpointUrl --resource 499b84ac-1321-427f-aa17-267ca6975798
+          $endpointResponse = az rest --method get --uri $endpointUrl --resource 499b84ac-1321-427f-aa17-267ca6975798 --allow-no-subscriptions
           $endpointJson = $endpointResponse | ConvertFrom-Json
           $matchingEndpoints = @(
             $endpointJson.value | Where-Object {
@@ -80,7 +80,7 @@ steps:
 
         $token = az account get-access-token `
           --resource 499b84ac-1321-427f-aa17-267ca6975798 `
-          --query accessToken --output tsv
+          --query accessToken --output tsv --allow-no-subscriptions
         if (-not $token) {
           throw 'Failed to acquire Azure DevOps bearer token'
         }
