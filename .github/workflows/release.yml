@@ -260,7 +260,7 @@ jobs:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
-            https://dev.azure.com/jessehouwing-dev
+            https://dev.azure.com/jessehouwing
 
       - name: Install extension
         uses: jessehouwing/azdo-marketplace/install@main

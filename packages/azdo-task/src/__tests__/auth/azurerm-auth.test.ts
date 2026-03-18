@@ -43,7 +43,7 @@ describe('Azure RM Auth', () => {
     const connectionName = 'TestAzureRM';
     const expectedToken = 'azure-ad-token-12345';
 
-    const mockGetToken = jest.fn(async () => expectedToken);
+    const mockGetToken = jest.fn(async (_force?: boolean) => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
@@ -63,13 +63,14 @@ describe('Azure RM Auth', () => {
       token: expectedToken,
     });
     expect(mockGetToken).toHaveBeenCalledTimes(1);
+    expect(mockGetToken).toHaveBeenCalledWith(true);
   });
 
   it('should mask token immediately after retrieval', async () => {
     const connectionName = 'TestAzureRM';
     const expectedToken = 'azure-ad-token-67890';
 
-    const mockGetToken = jest.fn(async () => expectedToken);
+    const mockGetToken = jest.fn(async (_force?: boolean) => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
@@ -91,7 +92,7 @@ describe('Azure RM Auth', () => {
     const expectedToken = 'secret-token';
     const setSecretCalls: string[] = [];
 
-    const mockGetToken = jest.fn(async () => expectedToken);
+    const mockGetToken = jest.fn(async (_force?: boolean) => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
@@ -118,7 +119,7 @@ describe('Azure RM Auth', () => {
     const connectionName = 'MyAzureConnection';
     const expectedToken = 'test-token';
 
-    const mockGetToken = jest.fn(async () => expectedToken);
+    const mockGetToken = jest.fn(async (_force?: boolean) => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
@@ -134,12 +135,13 @@ describe('Azure RM Auth', () => {
 
     expect(mockAzureRmEndpointCtor).toHaveBeenCalledWith(connectionName);
     expect(mockGetToken).toHaveBeenCalledTimes(1);
+    expect(mockGetToken).toHaveBeenCalledWith(true);
   });
 
   it('should throw error when token is null or undefined', async () => {
     const connectionName = 'TestAzureRM';
 
-    const mockGetToken = jest.fn(async () => null);
+    const mockGetToken = jest.fn(async (_force?: boolean) => null);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
@@ -175,7 +177,7 @@ describe('Azure RM Auth', () => {
   it('should throw error when getToken fails', async () => {
     const connectionName = 'TestAzureRM';
 
-    const mockGetToken = jest.fn(async () => {
+    const mockGetToken = jest.fn(async (_force?: boolean) => {
       throw new Error('Token retrieval failed');
     });
     const mockEndpointInstance = {
@@ -198,7 +200,7 @@ describe('Azure RM Auth', () => {
     const connectionName = 'TestAzureRM';
     const expectedToken = 'test-token';
 
-    const mockGetToken = jest.fn(async () => expectedToken);
+    const mockGetToken = jest.fn(async (_force?: boolean) => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {

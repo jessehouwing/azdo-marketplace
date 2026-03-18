@@ -25,7 +25,9 @@ export async function getAzureRmAuth(
     };
     credentials.activeDirectoryResourceId = AZURE_DEVOPS_RESOURCE;
 
-    const token = await credentials.getToken();
+    // getEndpoint() may have already fetched an ARM-scoped token.
+    // Force refresh so the token is minted for the overridden ADO audience.
+    const token = await credentials.getToken(true);
 
     if (!token) {
       throw new Error('Failed to get access token from Azure RM endpoint');
