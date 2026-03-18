@@ -98,7 +98,7 @@ jobs:
           extension-visibility: private_preview
           update-tasks-version: major
           update-tasks-id: true
-          manifest-file: tests/sample-extension/vss-extension.json
+          manifest-file: vss-extension.json
 
       # --- Publish (vsix mode) ---
       - name: Publish from VSIX
