@@ -163,6 +163,7 @@ GitHub Actions references:
 Typical output mapping:
 
 - Azure Pipelines `vsixFile` → GitHub Actions `vsix-file`
+- Azure Pipelines `vsixFileName` → GitHub Actions `vsix-file-name`
 - Azure Pipelines `extensionMetadata` → GitHub Actions `metadata`
 - Azure Pipelines `proposedVersion` → GitHub Actions `proposed-version`
 - Azure Pipelines `currentVersion` → GitHub Actions `current-version`
@@ -183,7 +184,7 @@ Legacy v5/v6 status-style task outputs are not used in GitHub Actions. Use built
 
 Use `${{ steps.<step_id>.conclusion }}` when `continue-on-error: true` is involved and you need post-step branching based on final conclusion semantics.
 
-Current Azure Pipelines v6 task outputs are `vsixFile`, `extensionMetadata`, `proposedVersion`, and `currentVersion`; status-style outputs are legacy and should not be relied on.
+Current Azure Pipelines v6 task outputs are `vsixFile`, `vsixFileName`, `extensionMetadata`, `proposedVersion`, `currentVersion`, and `versionSource`; status-style outputs are legacy and should not be relied on.
 
 ## End-to-end example
 

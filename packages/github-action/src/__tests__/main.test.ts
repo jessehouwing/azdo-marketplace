@@ -160,6 +160,7 @@ describe('GitHub Action main entrypoint', () => {
     expect(validateNodeAvailableMock).toHaveBeenCalledWith(platform);
     expect(packageExtensionMock).toHaveBeenCalled();
     expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', '/tmp/ext.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file-name', 'ext.vsix');
     expect(getAuthMock).not.toHaveBeenCalled();
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'package completed successfully');
   });
@@ -254,6 +255,7 @@ describe('GitHub Action main entrypoint', () => {
       platform
     );
     expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', '/tmp/published.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file-name', 'published.vsix');
   });
 
   it('defaults publish source to manifest when use is omitted', async () => {
@@ -313,6 +315,7 @@ describe('GitHub Action main entrypoint', () => {
       platform
     );
     expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', '/tmp/temp-12345.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file-name', 'temp-12345.vsix');
     expectNoLegacyStatusOutputs(platform);
   });
 

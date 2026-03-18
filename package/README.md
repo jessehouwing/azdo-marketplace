@@ -95,6 +95,7 @@ None - all inputs are optional with sensible defaults.
 ## Outputs
 
 - `vsix-file`: Path to the generated .vsix file
+- `vsix-file-name`: Filename of the generated .vsix file
 
 ## Example: Complete Workflow
 
@@ -137,6 +138,7 @@ jobs:
     manifest-file: vss-extension.json
 
 - run: echo "VSIX: ${{ steps.package.outputs.vsix-file }}"
+- run: echo "VSIX filename: ${{ steps.package.outputs.vsix-file-name }}"
 ```
 
 ## GitHub Marketplace inputs
@@ -161,6 +163,7 @@ jobs:
 ## GitHub Marketplace outputs
 
 - `vsix-file`: Returns the full path to the generated VSIX file.
+- `vsix-file-name`: Returns the generated VSIX filename without the directory path.
 
 ## See Also
 

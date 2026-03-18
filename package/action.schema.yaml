@@ -81,3 +81,6 @@ inputs:
 outputs:
   vsix-file:
     type: string
+
+  vsix-file-name:
+    type: string

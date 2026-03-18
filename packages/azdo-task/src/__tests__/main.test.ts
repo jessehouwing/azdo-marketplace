@@ -167,6 +167,7 @@ describe('Azure DevOps main entrypoint', () => {
     expect(validateNodeAvailableMock).toHaveBeenCalledWith(platform);
     expect(packageExtensionMock).toHaveBeenCalled();
     expect(platform.setOutput).toHaveBeenCalledWith('vsixFile', '/tmp/ext.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsixFileName', 'ext.vsix');
     expect(getAuthMock).not.toHaveBeenCalled();
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'package completed successfully');
   });
@@ -252,6 +253,8 @@ describe('Azure DevOps main entrypoint', () => {
       expect.anything(),
       platform
     );
+    expect(platform.setOutput).toHaveBeenCalledWith('vsixFile', '/tmp/publish.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsixFileName', 'publish.vsix');
     expect(platform.setResult).toHaveBeenCalledWith('Succeeded', 'publish completed successfully');
   });
 

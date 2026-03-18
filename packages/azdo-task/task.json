@@ -342,7 +342,11 @@
   "outputVariables": [
     {
       "name": "vsixFile",
-      "description": "Path to the generated .vsix file (package operation only)"
+      "description": "Path to the generated .vsix file (package/publish operations)"
+    },
+    {
+      "name": "vsixFileName",
+      "description": "Filename of the generated .vsix file (package/publish operations)"
     },
     {
       "name": "extensionMetadata",

@@ -132,7 +132,8 @@ OR
 
 ## Outputs
 
-None
+- `vsix-file`: Path to the generated/final .vsix file used during publish
+- `vsix-file-name`: Filename of the generated/final .vsix file used during publish
 
 ## Example: Complete CI/CD Pipeline
 
@@ -198,6 +199,7 @@ jobs:
 ## GitHub Marketplace outputs
 
 - `vsix-file`: Returns the generated/final VSIX path produced during publish.
+- `vsix-file-name`: Returns the generated/final VSIX filename without the directory path.
 
 ## See Also
 

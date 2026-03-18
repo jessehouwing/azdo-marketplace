@@ -232,12 +232,13 @@ When `workingDirectory` is omitted, manifest discovery falls back to the current
 Declared task output variables (from `task.json`):
 
 - `vsixFile`
+- `vsixFileName`
 - `extensionMetadata`
 - `proposedVersion` — highest version from all sources
 - `currentVersion` — resolved version before increment; when marketplace is queried this is the marketplace version, otherwise it falls back to the selected source version
 - `versionSource` — which source won: `marketplace`, `manifest`, `vsix`, or `literal`
 
-These are referenced as step outputs, for example `$(packageExt.vsixFile)`.
+These are referenced as step outputs, for example `$(packageExt.vsixFile)` and `$(packageExt.vsixFileName)`.
 
 ## queryVersion examples
 

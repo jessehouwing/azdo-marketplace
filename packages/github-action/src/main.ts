@@ -24,6 +24,7 @@ import {
   waitForInstallation,
   waitForValidation,
 } from '@extension-tasks/core';
+import { basename } from 'node:path';
 import { AuthType, getAuth } from './auth/index.js';
 import { GitHubAdapter } from './github-adapter.js';
 
@@ -265,6 +266,7 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
 
   if (result.vsixFile) {
     platform.setOutput('vsix-file', result.vsixFile);
+    platform.setOutput('vsix-file-name', basename(result.vsixFile));
   }
 }
 
@@ -316,6 +318,7 @@ async function runPublish(
 
   if (result.vsixFile) {
     platform.setOutput('vsix-file', result.vsixFile);
+    platform.setOutput('vsix-file-name', basename(result.vsixFile));
   }
 
   platform.debug(`Published: ${JSON.stringify(result)}`);

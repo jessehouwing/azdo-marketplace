@@ -199,7 +199,8 @@ When `working-directory` is omitted, manifest discovery falls back to the curren
 
 ## Unified action outputs
 
-- `vsix-file` (package)
+- `vsix-file` (package/publish)
+- `vsix-file-name` (package/publish)
 - `metadata` (show)
 - `proposed-version` (query-version) — highest version from all sources
 - `current-version` (query-version) — resolved version before increment (from the winning `version-source`)
@@ -239,6 +240,7 @@ Use these when you prefer a dedicated command surface over setting `operation` m
   id: package
 
 - run: echo "VSIX: ${{ steps.package.outputs.vsix-file }}"
+- run: echo "VSIX filename: ${{ steps.package.outputs.vsix-file-name }}"
 ```
 
 ## Recommended publish example (OIDC)

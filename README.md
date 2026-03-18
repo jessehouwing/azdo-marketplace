@@ -57,6 +57,7 @@ When creating a PAT for pipeline automation, include at least the following scop
     manifest-file: vss-extension.json
 
 - run: echo "VSIX: ${{ steps.publish.outputs.vsix-file }}"
+- run: echo "VSIX file name: ${{ steps.publish.outputs.vsix-file-name }}"
 ```
 
 ### Manifests in a subfolder
@@ -136,6 +137,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 #### Package / Publish
 
 - `vsix-file`: Returns path to the generated VSIX file.
+- `vsix-file-name`: Returns the generated VSIX filename (for example `publisher.extension-1.2.3.vsix`).
 
 #### Show
 
@@ -161,6 +163,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
     manifest-file: vss-extension.json
 
 - run: echo "Packaged: ${{ steps.package.outputs.vsix-file }}"
+- run: echo "Packaged filename: ${{ steps.package.outputs.vsix-file-name }}"
 ```
 
 ### publish
