@@ -4,9 +4,8 @@ name: Test GitHub Actions
 # against a small sample extension using PAT and OIDC auth types.
 #
 # Required secrets:
-#   MARKETPLACE_PAT   - VS Marketplace PAT for PAT auth tests
-#   AZURE_CLIENT_ID   - Azure AD app client ID for OIDC auth tests
-#   AZURE_TENANT_ID   - Azure AD tenant ID for OIDC auth tests
+#   AZURE_CLIENT_ID   - Azure AD app client ID for workflow authentication
+#   AZURE_TENANT_ID   - Azure AD tenant ID for workflow authentication
 
 on:
   workflow_call:
@@ -59,14 +58,24 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
-      # --- OIDC login (only for oidc auth type) ---
-      - name: Azure login (OIDC)
-        if: matrix.auth-type == 'oidc'
+      # --- Azure login for workflow token acquisition ---
+      - name: Azure login
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 #v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
+
+      - id: azure-devops-token
+        name: Get Azure DevOps bearer token
+        if: matrix.auth-type == 'pat'
+        shell: pwsh
+        run: |
+          $token = az account get-access-token `
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+            --query accessToken --output tsv
+          Write-Host "::add-mask::$token"
+          "token=$token" >> $env:GITHUB_OUTPUT
 
       # --- Query version ---
       - id: query
@@ -76,7 +85,7 @@ jobs:
         with:
           operation: query-version
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
           version-source: |
@@ -107,7 +116,7 @@ jobs:
         with:
           operation: publish
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           use: vsix
           vsix-file: ${{ steps.package-manifest.outputs.vsix-file }}
           no-wait-validation: true
@@ -118,7 +127,7 @@ jobs:
         with:
           operation: wait-for-validation
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
       # --- Show extension ---
       - name: Show extension metadata
@@ -126,7 +135,7 @@ jobs:
         with:
           operation: show
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
 
@@ -136,7 +145,7 @@ jobs:
         with:
           operation: share
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -147,7 +156,7 @@ jobs:
         with:
           operation: install
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -158,7 +167,7 @@ jobs:
         with:
           operation: wait-for-installation
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -169,7 +178,7 @@ jobs:
         with:
           operation: unshare
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -180,5 +189,5 @@ jobs:
         with:
           operation: unpublish
           auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && secrets.MARKETPLACE_PAT || '' }}
+          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
