@@ -570,4 +570,3 @@ outputs:
 runs:
   using: node24
   main: packages/github-action/dist/bundle.js
-

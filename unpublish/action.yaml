@@ -200,4 +200,3 @@ runs:
         manifest-file: ${{ inputs.manifest-file }}
         working-directory: ${{ inputs.working-directory }}
         vsix-file: ${{ inputs.vsix-file }}
-

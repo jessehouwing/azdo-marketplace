@@ -292,4 +292,3 @@ runs:
         working-directory: ${{ inputs.working-directory }}
         use: ${{ inputs.use }}
         vsix-file: ${{ inputs.vsix-file }}
-

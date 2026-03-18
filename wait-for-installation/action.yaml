@@ -256,4 +256,3 @@ runs:
         vsix-file: ${{ inputs.vsix-file }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         polling-interval-seconds: ${{ inputs.polling-interval-seconds }}
-

@@ -203,4 +203,3 @@ runs:
         working-directory: ${{ inputs.working-directory }}
         vsix-file: ${{ inputs.vsix-file }}
         accounts: ${{ inputs.accounts }}
-
