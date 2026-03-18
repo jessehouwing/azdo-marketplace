@@ -366,6 +366,9 @@ jobs:
             throw 'AZURE_DEVOPS_EXT_PAT is not set. Token step must run before this step.'
           }
 
+          # Disable secure credential store (doesn't work on hosted runners)
+          Invoke-Az -Arguments @('config', 'set', 'core.enable_secure_credential_store=false') | Out-Null
+
           $env:AZURE_DEVOPS_EXT_PAT | az devops login --organization $organization | Out-Null
           if ($LASTEXITCODE -ne 0) {
             throw 'az devops login failed with AZURE_DEVOPS_EXT_PAT.'
