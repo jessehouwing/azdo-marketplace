@@ -235,6 +235,13 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
 
+      - name: Unpublish existing preview extension
+        uses: jessehouwing/azdo-marketplace/unpublish@main
+        with:
+          auth-type: oidc
+          vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
+        continue-on-error: true
+
       - name: Publish preview extension
         uses: jessehouwing/azdo-marketplace/publish@main
         id: publish
