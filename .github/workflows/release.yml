@@ -286,6 +286,8 @@ jobs:
     name: Test Azure Pipelines
     needs: [prepare-release, preview-release]
     runs-on: windows-latest
+    environment:
+      name: 'publisher-jessehouwing'
 
     permissions:
       contents: read
@@ -300,51 +302,116 @@ jobs:
           allow-no-subscriptions: true
 
       - name: Get Azure DevOps access token
+        id: get-azdo-token
         shell: pwsh
         run: |
           $token = az account get-access-token `
             --resource 499b84ac-1321-427f-aa17-267ca6975798 `
             --query accessToken --output tsv
           Write-Host "::add-mask::$token"
-          echo "AZURE_DEVOPS_EXT_PAT=$token" >> $env:GITHUB_ENV
+          echo "azdo_token=$token" >> $env:GITHUB_OUTPUT
 
-  #      - name: Trigger Azure DevOps test pipeline
-  #        if: false
-  #        shell: pwsh
-  #        run: |
-  #          az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
-  #          $runId = az pipelines run `
-  #            --name "${{ vars.AZDO_TEST_PIPELINE_NAME }}" `
-  #            --branch "release/v${{ needs.prepare-release.outputs.version }}" `
-  #            --query id --output tsv
-  #          Write-Host "Triggered pipeline run: $runId"
-  #          echo "RUN_ID=$runId" >> $env:GITHUB_ENV
+      - name: Run Azure DevOps test pipeline
+        env:
+          AZURE_DEVOPS_EXT_PAT: ${{ steps.get-azdo-token.outputs.azdo_token }}
+          AZDO_PIPELINE_NAME: ${{ vars.AZDO_TEST_PIPELINE_NAME }}
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+          AZDO_ORGANIZATION: https://dev.azure.com/jessehouwing-dev
+          AZDO_PROJECT: azure-devops-extensions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
 
-  #      - name: Wait for Azure DevOps test pipeline
-  #        if: false
-  #        shell: pwsh
-  #        run: |
-  #          az devops configure --defaults organization=https://dev.azure.com/jessehouwing-dev
-  #          $timeout = 1800  # 30 minutes
-  #          $elapsed = 0
-  #          $interval = 30
-  #          while ($elapsed -lt $timeout) {
-  #            $status = az pipelines runs show --id $env:RUN_ID --query status --output tsv
-  #            $result = az pipelines runs show --id $env:RUN_ID --query result --output tsv
-  #            Write-Host "Pipeline status: $status, result: $result (${elapsed}s elapsed)"
-  #            if ($status -eq "completed") {
-  #              if ($result -eq "succeeded") {
-  #                Write-Host "✅ Pipeline succeeded"
-  #                exit 0
-  #                Write-Host "❌ Pipeline failed with result: $result"
-  #                exit 1
-  #              }
-  #            }
-  #            Start-Sleep -Seconds $interval
-  #            $elapsed += $interval
-  #          }
-  #          Write-Host "❌ Pipeline timed out after ${timeout}s"
-  #          exit 1
+          function Invoke-Az {
+            param(
+              [Parameter(Mandatory = $true)]
+              [string[]]$Arguments
+            )
+
+            $output = & az @Arguments
+            if ($LASTEXITCODE -ne 0) {
+              throw "Azure CLI command failed: az $($Arguments -join ' ')"
+            }
+
+            return $output
+          }
+
+          $organization = $env:AZDO_ORGANIZATION
+          $project = $env:AZDO_PROJECT
+          $pipelineName = $env:AZDO_PIPELINE_NAME
+          $branch = "release/v$($env:RELEASE_VERSION)"
+          $timeoutSeconds = 1800
+          $intervalSeconds = 30
+
+          if (-not $organization) {
+            throw 'AZDO_ORGANIZATION is empty.'
+          }
+
+          if (-not $project) {
+            throw 'AZDO_PROJECT is empty.'
+          }
+
+          if (-not $pipelineName) {
+            throw 'AZDO_PIPELINE_NAME is empty. Set repository variable AZDO_TEST_PIPELINE_NAME.'
+          }
+
+          if (-not $env:RELEASE_VERSION) {
+            throw 'RELEASE_VERSION is empty. Prepare release output is missing.'
+          }
+
+          Invoke-Az -Arguments @('config', 'set', 'extension.use_dynamic_install=yes_without_prompt') | Out-Null
+          Invoke-Az -Arguments @('extension', 'add', '--name', 'azure-devops', '--upgrade', '--only-show-errors') | Out-Null
+
+          if (-not $env:AZURE_DEVOPS_EXT_PAT) {
+            throw 'AZURE_DEVOPS_EXT_PAT is not set. Token step must run before this step.'
+          }
+
+          $env:AZURE_DEVOPS_EXT_PAT | az devops login --organization $organization | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            throw 'az devops login failed with AZURE_DEVOPS_EXT_PAT.'
+          }
+
+          Invoke-Az -Arguments @('devops', 'configure', '--defaults', "organization=$organization", "project=$project") | Out-Null
+
+          $runId = (Invoke-Az -Arguments @(
+            'pipelines', 'run',
+            '--name', $pipelineName,
+            '--branch', $branch,
+            '--project', $project,
+            '--query', 'id',
+            '--output', 'tsv'
+          )).Trim()
+
+          if (-not $runId) {
+            throw 'Failed to trigger Azure DevOps pipeline run.'
+          }
+
+          Write-Host "Triggered pipeline run: $runId"
+
+          $elapsed = 0
+          while ($elapsed -lt $timeoutSeconds) {
+            $runJson = Invoke-Az -Arguments @('pipelines', 'runs', 'show', '--id', $runId, '--project', $project, '--output', 'json')
+            $run = $runJson | ConvertFrom-Json
+
+            $status = if ($null -ne $run.status) { [string]$run.status } else { '' }
+            $result = if ($null -ne $run.result) { [string]$run.result } else { '' }
+
+            Write-Host "Pipeline status: $status, result: $result (${elapsed}s elapsed)"
+
+            if ($status -eq 'completed') {
+              if ($result -eq 'succeeded') {
+                Write-Host 'Pipeline succeeded'
+                exit 0
+              }
+
+              throw "Pipeline failed with result: $result"
+            }
+
+            Start-Sleep -Seconds $intervalSeconds
+            $elapsed += $intervalSeconds
+          }
+
+          throw "Pipeline timed out after ${timeoutSeconds}s"
 
   # ---------------------------------------------------------------------------
   # Job 4: Test GitHub Actions
