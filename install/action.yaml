@@ -122,7 +122,7 @@ inputs:
 
       - Defaults to `vss-extension.json` if not specified
       - Can specify multiple manifest files
-      - Patterns are relative to the current working directory
+      - Patterns are relative to `working-directory` when specified, otherwise the current working directory
       - For install/share/unpublish/unshare/wait-for-validation/query-version:
         used as fallback source for publisher-id and extension-id when not specified
 
@@ -132,6 +132,20 @@ inputs:
       manifests/dev/vss-extension.json
       manifests/prod/vss-extension.json
       ```
+    required: false
+  working-directory:
+    description: |-
+      **Working directory** used as the base path for manifest-based operations.
+
+      Available for: install, package, publish, query-version, share, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: current working directory
+
+      - Manifest discovery and `manifest-file` patterns are resolved from this directory
+      - Use this when your extension manifest lives in a subfolder
+      - If not specified, the current working directory is used
+
+      **Example:** `tests/sample-extension`
     required: false
   vsix-file:
     description: |-
@@ -186,5 +200,6 @@ runs:
         publisher-id: ${{ inputs.publisher-id }}
         extension-id: ${{ inputs.extension-id }}
         manifest-file: ${{ inputs.manifest-file }}
+        working-directory: ${{ inputs.working-directory }}
         vsix-file: ${{ inputs.vsix-file }}
         accounts: ${{ inputs.accounts }}

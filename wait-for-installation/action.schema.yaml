@@ -40,6 +40,9 @@ inputs:
     items:
       type: string
 
+  working-directory:
+    type: string
+
   expected-tasks:
     type: string
     separators: newline

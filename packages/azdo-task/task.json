@@ -107,12 +107,20 @@
       "label": "Use",
       "required": true,
       "defaultValue": "manifest",
-      "helpMarkDown": "**Input source mode** for operations that support manifest or VSIX input.\n\n- **Manifest files**: Use `manifestFile` (and optional `localizationRoot`) from the current working directory\n- **VSIX file**: Use `vsixFile`",
+      "helpMarkDown": "**Input source mode** for operations that support manifest or VSIX input.\n\n- **Manifest files**: Use `manifestFile` (and optional `localizationRoot`) from `workingDirectory` when specified, otherwise the current working directory\n- **VSIX file**: Use `vsixFile`",
       "visibleRule": "operation = package || operation = publish || operation = waitForInstallation || operation = queryVersion",
       "options": {
         "manifest": "Manifest files",
         "vsix": "VSIX file"
       }
+    },
+    {
+      "name": "workingDirectory",
+      "type": "filePath",
+      "label": "Working Directory",
+      "required": false,
+      "helpMarkDown": "**Working directory** used as the base path for manifest-based operations.\n\n- Manifest discovery and `manifestFile` patterns are resolved from this directory\n- Use this when your extension manifest lives in a subfolder\n- If not specified, the current working directory is used\n\n**Example**: `$(Build.SourcesDirectory)/tests/sample-extension`",
+      "visibleRule": "use = manifest || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation || operation = waitForInstallation"
     },
     {
       "name": "localizationRoot",
@@ -127,7 +135,7 @@
       "type": "multiLine",
       "label": "Manifest File(s)",
       "required": false,
-      "helpMarkDown": "**Manifest file path(s)** (one per line).\n\n- Defaults to `vss-extension.json` if not specified\n- Supports multiple manifest files\n- Paths are relative to the current working directory\n- For install/share/unpublish/unshare/waitForValidation/queryVersion:\n  used as fallback source for Publisher ID and Extension ID when not specified\n\n**Examples**:\n- `vss-extension.json`\n- `manifests/dev/vss-extension.json`\n- `manifests/prod/vss-extension.json`",
+      "helpMarkDown": "**Manifest file path(s)** (one per line).\n\n- Defaults to `vss-extension.json` if not specified\n- Supports multiple manifest files\n- Paths are relative to `workingDirectory` when specified, otherwise the current working directory\n- For install/share/unpublish/unshare/waitForValidation/queryVersion:\n  used as fallback source for Publisher ID and Extension ID when not specified\n\n**Examples**:\n- `vss-extension.json`\n- `manifests/dev/vss-extension.json`\n- `manifests/prod/vss-extension.json`",
       "visibleRule": "use = manifest || operation = unpublish || operation = share || operation = unshare || operation = install || operation = waitForValidation"
     },
     {

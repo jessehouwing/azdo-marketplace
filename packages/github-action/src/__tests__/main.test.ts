@@ -169,6 +169,7 @@ describe('GitHub Action main entrypoint', () => {
       inputs: {
         operation: 'package',
         'tfx-version': 'built-in',
+        'working-directory': 'tests/sample-extension',
         'publisher-id': 'publisher',
         'extension-id': 'extension',
         'extension-version': '1.2.3',
@@ -193,6 +194,7 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(packageExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         publisherId: 'publisher',
         extensionId: 'extension',
         extensionVersion: '1.2.3',
@@ -217,6 +219,7 @@ describe('GitHub Action main entrypoint', () => {
         operation: 'publish',
         'tfx-version': '^0.17.0',
         'auth-type': 'oidc',
+        'working-directory': 'tests/sample-extension',
         use: 'manifest',
         'output-path': '/out',
         'manifest-file-js': 'manifests/build-manifest.js',
@@ -241,6 +244,7 @@ describe('GitHub Action main entrypoint', () => {
     expect(validateAccountUrlMock).toHaveBeenCalledWith('https://dev.azure.com/org');
     expect(publishExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         outputPath: '/out',
         manifestFileJs: 'manifests/build-manifest.js',
         overridesFile: 'manifests/overrides.json',
@@ -501,6 +505,7 @@ describe('GitHub Action main entrypoint', () => {
       inputs: {
         operation: 'unpublish',
         'auth-type': 'pat',
+        'working-directory': 'tests/sample-extension',
         'vsix-file': '/tmp/extension.vsix',
       },
     });
@@ -512,6 +517,7 @@ describe('GitHub Action main entrypoint', () => {
       expect.objectContaining({
         publisherId: undefined,
         extensionId: undefined,
+        rootFolder: 'tests/sample-extension',
         vsixFile: '/tmp/extension.vsix',
       }),
       expect.anything(),
@@ -525,6 +531,7 @@ describe('GitHub Action main entrypoint', () => {
       inputs: {
         operation: 'install',
         'auth-type': 'pat',
+        'working-directory': 'tests/sample-extension',
       },
       delimitedInputs: {
         'manifest-file|\n': ['vss-extension.json'],
@@ -538,6 +545,7 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(installExtensionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         manifestGlobs: ['vss-extension.json'],
       }),
       expect.anything(),
@@ -556,6 +564,7 @@ describe('GitHub Action main entrypoint', () => {
       inputs: {
         operation: 'query-version',
         'auth-type': 'pat',
+        'working-directory': 'tests/sample-extension',
         'publisher-id': 'publisher',
         'extension-id': 'extension',
         'marketplace-version-action': 'major',
@@ -567,6 +576,7 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(queryVersionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         marketplaceVersionAction: 'Major',
       }),
       expect.anything(),
@@ -644,6 +654,7 @@ describe('GitHub Action main entrypoint', () => {
       inputs: {
         operation: 'wait-for-validation',
         'auth-type': 'pat',
+        'working-directory': 'tests/sample-extension',
         'publisher-id': 'publisher',
         'extension-id': 'extension',
         'extension-version': '1.2.3',
@@ -660,6 +671,7 @@ describe('GitHub Action main entrypoint', () => {
 
     expect(waitForValidationMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
         extensionVersion: '1.2.3',
         timeoutMinutes: 14,
         pollingIntervalSeconds: 40,
@@ -669,5 +681,34 @@ describe('GitHub Action main entrypoint', () => {
       platform
     );
     expect(setFailedMock).toHaveBeenCalledWith('Validation failed with status: failed');
+  });
+
+  it('forwards working-directory to wait-for-installation', async () => {
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'wait-for-installation',
+        'auth-type': 'pat',
+        'working-directory': 'tests/sample-extension',
+        'publisher-id': 'publisher',
+        'extension-id': 'extension',
+      },
+      delimitedInputs: {
+        'manifest-file|\n': ['vss-extension.json'],
+        'accounts|\n': ['org1'],
+        'accounts|;': ['org1'],
+      },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(waitForInstallationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rootFolder: 'tests/sample-extension',
+        manifestFiles: ['vss-extension.json'],
+      }),
+      expect.anything(),
+      platform
+    );
   });
 });

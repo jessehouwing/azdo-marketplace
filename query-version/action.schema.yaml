@@ -60,6 +60,9 @@ inputs:
   manifest-file:
     type: string
 
+  working-directory:
+    type: string
+
   use:
     type: choice
     options:
