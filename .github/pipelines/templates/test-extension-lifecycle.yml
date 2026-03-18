@@ -88,6 +88,7 @@ steps:
         }
 
         Write-Host "##vso[task.setvariable variable=marketplaceServiceConnectionId]$marketplaceServiceConnectionId"
+        Write-Host "Resolved marketplace service connection id: $marketplaceServiceConnectionId"
         Write-Host "##vso[task.setsecret]$token"
         Write-Host "##vso[task.setendpoint id=$marketplaceServiceConnectionId;field=authParameter;key=password]$token"
 
@@ -98,12 +99,9 @@ steps:
     inputs:
       operation: queryVersion
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       publisherId: ${{ parameters.publisherId }}
       extensionId: ${{ parameters.extensionId }}
       marketplaceVersionAction: Patch
@@ -135,14 +133,11 @@ steps:
     inputs:
       operation: publish
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       use: vsix
-      vsixFile: $(packageManifest.extension.outputPath)
+      vsixFile: $(packageManifest.vsixFile)
       noWaitValidation: true
 
   # --- Wait for validation ---
@@ -151,13 +146,10 @@ steps:
     inputs:
       operation: waitForValidation
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-      vsixFile: $(publish.extension.outputPath)
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      vsixFile: $(publish.vsixFile)
 
   # --- Share ---
   - task: azdo-marketplace@6
@@ -165,13 +157,10 @@ steps:
     inputs:
       operation: share
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-      vsixFile: $(publish.extension.outputPath)
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
 
   # --- Install ---
@@ -180,13 +169,10 @@ steps:
     inputs:
       operation: install
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-      vsixFile: $(publish.extension.outputPath)
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
 
   # --- Wait for installation ---
@@ -195,15 +181,12 @@ steps:
     inputs:
       operation: waitForInstallation
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
       publisherId: ${{ parameters.publisherId }}
       extensionId: ${{ parameters.extensionId }}
-      vsixFile: $(publish.extension.outputPath)
+      vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
 
   # --- Unshare ---
@@ -212,13 +195,10 @@ steps:
     inputs:
       operation: unshare
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-      vsixFile: $(publish.extension.outputPath)
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      vsixFile: $(publish.vsixFile)
       accounts: ${{ parameters.organizationUrl }}
 
   # --- Unpublish ---
@@ -227,10 +207,7 @@ steps:
     inputs:
       operation: unpublish
       connectionType: ${{ parameters.connectionType }}
-      ${{ if eq(parameters.connectionType, 'PAT') }}:
-        connectionNamePAT: $(marketplaceServiceConnectionId)
-      ${{ if eq(parameters.connectionType, 'WorkloadIdentity') }}:
-        connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
-      ${{ if eq(parameters.connectionType, 'AzureRM') }}:
-        connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-      vsixFile: $(publish.extension.outputPath)
+      connectionNamePAT: $(marketplaceServiceConnectionId)
+      connectionNameWorkloadIdentity: ${{ parameters.workloadIdentityConnection }}
+      connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+      vsixFile: $(publish.vsixFile)
