@@ -20,7 +20,7 @@ pr: none
 parameters:
   - name: publisherId
     type: string
-    default: jessehouwing-dev
+    default: jessehouwing
   - name: extensionIdPrefix
     type: string
     default: test
@@ -29,13 +29,13 @@ parameters:
     default: 1.0.0
   - name: organizationUrl
     type: string
-    default: https://dev.azure.com/jessehouwing-dev
+    default: https://dev.azure.com/jessehouwing
   - name: azureRmConnection
     type: string
-    default: b372500b-dbb4-4416-a0a3-c37b0f909ead
+    default: 1198190d-1c93-4df3-9d5b-82379a7d94b8
   - name: marketplaceServiceConnectionName
     type: string
-    default: 'f16a2f70-0963-4c20-8cbb-8b9c4399797a'
+    default: ca702db9-f203-4430-82a7-02109ac28c33
 
 stages:
   - stage: Test
