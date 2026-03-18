@@ -47,7 +47,7 @@ jobs:
       major: ${{ steps.parse.outputs.major }}
       minor: ${{ steps.parse.outputs.minor }}
       patch: ${{ steps.parse.outputs.patch }}
-      vsix-file: ${{ steps.package.outputs.vsix-file }}
+      vsix-file-name: ${{ steps.package.outputs.vsix-file-name }}
 
     steps:
       - name: Resolve version
@@ -241,7 +241,7 @@ jobs:
         with:
           auth-type: oidc
           use: vsix
-          vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file }}
+          vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
           publisher-id: ${{ env.PUBLISHER_ID_DEV }}
           extension-id: ${{ env.EXTENSION_ID }}-preview
           extension-visibility: private_preview
@@ -398,7 +398,7 @@ jobs:
         with:
           auth-type: oidc
           use: vsix
-          vsix-file: ${{ runner.temp }}/vsix/*.vsix
+          vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
           no-wait-validation: true
 
       - name: Wait for validation
@@ -446,7 +446,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: v${{ needs.prepare-release.outputs.version }}
-          VSIX_FILE: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file }}
+          VSIX_FILE: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
           GITHUB_REPOSITORY_NAME: ${{ github.repository }}
         shell: pwsh
         run: |

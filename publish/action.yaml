@@ -366,6 +366,20 @@ outputs:
       - run: echo "VSIX at $``{{ steps.package.outputs.vsix-file }}"
       ```
     value: ${{ steps.publish.outputs.vsix-file }}
+  vsix-file-name:
+    description: |
+      **Filename of generated .vsix file** (package/publish operations).
+
+      **Example usage:**
+      ```yaml
+      - uses: jessehouwing/azdo-marketplace@v6
+        id: package
+        with:
+          operation: package
+
+      - run: echo "VSIX file name $``{{ steps.package.outputs.vsix-file-name }}"
+      ```
+    value: ${{ steps.publish.outputs.vsix-file-name }}
 runs:
   using: composite
   steps:

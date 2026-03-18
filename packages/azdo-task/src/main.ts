@@ -23,6 +23,7 @@ import {
   waitForValidation,
 } from '@extension-tasks/core';
 import * as tl from 'azure-pipelines-task-lib/task.js';
+import { basename } from 'node:path';
 import { getAuth } from './auth/index.js';
 import { AzdoAdapter } from './azdo-adapter.js';
 
@@ -41,6 +42,7 @@ function normalizeOperation(operation: string): string {
 
 function initializeDeclaredOutputs(platform: AzdoAdapter): void {
   platform.setOutput('vsixFile', '');
+  platform.setOutput('vsixFileName', '');
   platform.setOutput('extensionMetadata', '');
   platform.setOutput('proposedVersion', '');
   platform.setOutput('currentVersion', '');
@@ -280,6 +282,7 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
 
   if (result.vsixFile) {
     platform.setOutput('vsixFile', result.vsixFile);
+    platform.setOutput('vsixFileName', basename(result.vsixFile));
   }
 }
 
@@ -328,6 +331,11 @@ async function runPublish(
     tfxManager,
     platform
   );
+
+  if (result.vsixFile) {
+    platform.setOutput('vsixFile', result.vsixFile);
+    platform.setOutput('vsixFileName', basename(result.vsixFile));
+  }
 
   platform.debug(`Published: ${JSON.stringify(result)}`);
 }

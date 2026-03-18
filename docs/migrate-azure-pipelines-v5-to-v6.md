@@ -234,9 +234,11 @@ In v6, `queryVersion` introduces multi-source version resolution:
 Azure Pipelines v6 task outputs:
 
 - `vsixFile`
+- `vsixFileName`
 - `extensionMetadata`
 - `proposedVersion`
 - `currentVersion`
+- `versionSource`
 
 If your v5 pipeline referenced legacy output variable names, update those references to the v6 names.
 

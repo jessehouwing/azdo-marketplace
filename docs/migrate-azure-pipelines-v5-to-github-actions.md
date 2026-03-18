@@ -192,6 +192,7 @@ v5 Azure Pipelines output references typically looked like pipeline variables.
 In GitHub Actions, consume step outputs instead:
 
 - package output: `${{ steps.package.outputs.vsix-file }}`
+- package filename output: `${{ steps.package.outputs.vsix-file-name }}`
 - show output: `${{ steps.show.outputs.metadata }}`
 - query version outputs: `${{ steps.version.outputs.proposed-version }}`, `${{ steps.version.outputs.current-version }}`
 
