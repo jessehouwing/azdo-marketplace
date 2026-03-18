@@ -6,7 +6,7 @@
 # across Linux and Windows hosted runners.
 #
 # Required service connections:
-#   MarketplacePatConnection          - PAT marketplace service connection name
+#   MarketplacePatConnection          - PAT marketplace service connection name (or resourceId GUID)
 #   MarketplaceAzureRmConnection       - Azure RM (OIDC) service connection
 #   MarketplaceWorkloadIdentity        - Workload Identity service connection
 #
@@ -34,7 +34,7 @@ parameters:
     default: https://dev.azure.com/jessehouwing-dev
   - name: azureRmConnection
     type: string
-    default: MarketplaceAzureRmConnection
+    default: b372500b-dbb4-4416-a0a3-c37b0f909ead
   - name: workloadIdentityConnection
     type: string
     default: MarketplaceWorkloadIdentity
@@ -48,7 +48,7 @@ stages:
 
     jobs:
       - job: Test
-        displayName: Test ($(authType), $(vmImage))
+        displayName: Test
         pool:
           vmImage: $(vmImage)
         strategy:
