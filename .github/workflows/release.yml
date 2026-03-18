@@ -268,7 +268,7 @@ jobs:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
-            https://dev.azure.com/jessehouwing-dev
+            https://dev.azure.com/jessehouwing
 
       - name: Wait for installation
         uses: jessehouwing/azdo-marketplace/wait-for-installation@main
@@ -276,7 +276,7 @@ jobs:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
-            https://dev.azure.com/jessehouwing-dev
+            https://dev.azure.com/jessehouwing
 
   # ---------------------------------------------------------------------------
   # Job 3: Test Azure Pipelines
