@@ -33,13 +33,14 @@ steps:
   # Resolve the marketplace service connection ID by name via az rest (or use
   # the value directly when it is already a GUID) and then overwrite its
   # password auth parameter with the job-scoped token.
-  - task: AzureCLI@2
+  - task: AzureCLI@3
     displayName: Get Azure DevOps bearer token
     condition: and(succeeded(), eq(variables['authType'], 'pat'))
     env:
       MARKETPLACESERVICECONNECTIONNAME: ${{ parameters.marketplaceServiceConnectionName }}
     inputs:
       azureSubscription: ${{ parameters.azureRmConnection }}
+      allowNoSubscriptions: true
       scriptType: pscore
       useGlobalConfig: true
       scriptLocation: inlineScript
