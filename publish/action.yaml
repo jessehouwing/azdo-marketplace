@@ -174,7 +174,7 @@ inputs:
 
       Available for: install, package, publish, query-version, share, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
-      Default: current working directory
+      Default: none
 
       - Manifest discovery and `manifest-file` patterns are resolved from this directory
       - Use this when your extension manifest lives in a subfolder
@@ -395,3 +395,4 @@ runs:
         no-wait-validation: ${{ inputs.no-wait-validation }}
         update-tasks-version: ${{ inputs.update-tasks-version }}
         update-tasks-id: ${{ inputs.update-tasks-id }}
+

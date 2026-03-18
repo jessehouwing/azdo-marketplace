@@ -174,7 +174,7 @@ inputs:
 
       Available for: install, package, publish, query-version, share, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
-      Default: current working directory
+      Default: none
 
       - Manifest discovery and `manifest-file` patterns are resolved from this directory
       - Use this when your extension manifest lives in a subfolder
@@ -246,3 +246,4 @@ runs:
         timeout-minutes: ${{ inputs.timeout-minutes }}
         polling-interval-seconds: ${{ inputs.polling-interval-seconds }}
         vsix-file: ${{ inputs.vsix-file }}
+
