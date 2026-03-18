@@ -47,6 +47,7 @@ jobs:
       major: ${{ steps.parse.outputs.major }}
       minor: ${{ steps.parse.outputs.minor }}
       patch: ${{ steps.parse.outputs.patch }}
+      vsix-file: ${{ steps.package.outputs.vsix-file }}
 
     steps:
       - name: Resolve version
@@ -165,6 +166,7 @@ jobs:
 
       - name: Package Azure DevOps extension
         uses: jessehouwing/azdo-marketplace/package@main
+        id: package
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
@@ -174,8 +176,8 @@ jobs:
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         with:
-          name: vsix-${{ env.EXTENSION_ID }}-${{ steps.resolve.outputs.version }}
-          path: ${{ runner.temp }}/*.vsix
+          name: vsix
+          path: ${{ steps.package.outputs.vsix-file }}
           if-no-files-found: error
 
       - name: Commit and push changes
@@ -219,20 +221,12 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
         with:
           node-version-file: .node-version
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build and bundle
-        run: |
-          npm run build
-          npm run bundle
+          cache: false
 
       - name: Download VSIX artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          name: vsix-${{ env.EXTENSION_ID }}-${{ needs.prepare-release.outputs.version }}
+          name: vsix
           path: ${{ runner.temp }}/vsix
 
       - name: Azure login (OIDC)
@@ -248,7 +242,7 @@ jobs:
         with:
           auth-type: oidc
           use: vsix
-          vsix-file: ${{ runner.temp }}/vsix/*.vsix
+          vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file }}
           publisher-id: ${{ env.PUBLISHER_ID_DEV }}
           extension-id: ${{ env.EXTENSION_ID }}-preview
           extension-visibility: private_preview
@@ -385,7 +379,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
         with:
           node-version-file: .node-version
-          cache: npm
+          cache: false
 
       - name: Download VSIX artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
@@ -436,7 +430,7 @@ jobs:
       - name: Download VSIX artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          name: vsix-${{ env.EXTENSION_ID }}-${{ needs.prepare-release.outputs.version }}
+          name: vsix
           path: ${{ runner.temp }}/vsix
 
       - name: Create version tag
@@ -453,22 +447,25 @@ jobs:
       - name: Create GitHub draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: v${{ needs.prepare-release.outputs.version }}
+          VSIX_FILE: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file }}
+          GITHUB_REPOSITORY_NAME: ${{ github.repository }}
         shell: pwsh
         run: |
-          $version = "v${{ needs.prepare-release.outputs.version }}"
-          $vsixFile = Get-ChildItem -Path "${{ runner.temp }}/vsix" -Filter *.vsix -File -Recurse |
-            Select-Object -First 1 -ExpandProperty FullName
+          $version = $env:RELEASE_VERSION
+          $vsixFile = $env:VSIX_FILE
+          $repository = $env:GITHUB_REPOSITORY_NAME
 
           # Delete existing release if present (idempotent)
           try {
-            gh release delete $version --repo "${{ github.repository }}" --yes
+            gh release delete $version --repo $repository --yes
           }
           catch {
           }
 
           # Create release with VSIX attachment
           gh release create $version `
-            --repo "${{ github.repository }}" `
+            --repo $repository `
             --title "Release $version" `
             --draft `
             --generate-notes `
