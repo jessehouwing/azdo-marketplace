@@ -1,13 +1,14 @@
-import { AzureRMEndpoint } from 'azure-pipelines-tasks-azure-arm-rest/azure-arm-endpoint.js';
 import { AuthCredentials, IPlatformAdapter } from '@extension-tasks/core';
+import { AzureRMEndpoint } from 'azure-pipelines-tasks-azure-arm-rest/azure-arm-endpoint.js';
+
+const AZURE_DEVOPS_RESOURCE = '499b84ac-1321-427f-aa17-267ca6975798';
 
 /**
- * Get Azure RM authentication using workload identity federation (OIDC)
- * Note: This is a simplified implementation. Full OIDC support for marketplace
- * requires additional Azure configuration and token exchange.
+ * Get Azure RM authentication for marketplace operations.
  *
- * For now, we get the endpoint and use the token from it.
- * In a real implementation, you'd need to exchange the OIDC token for a marketplace token.
+ * Azure RM endpoints default to ARM resource tokens, but marketplace/tfx calls
+ * require an Azure DevOps audience token. We override the target resource on
+ * the credential before requesting a fresh access token.
  */
 export async function getAzureRmAuth(
   connectionName: string,
@@ -17,8 +18,14 @@ export async function getAzureRmAuth(
     const endpoint = new AzureRMEndpoint(connectionName);
     const azureEndpoint = await endpoint.getEndpoint();
 
-    // Get the token from the application token credentials
-    const token = await azureEndpoint.applicationTokenCredentials.getToken();
+    // The AzureRM endpoint defaults to management audience; switch to ADO.
+    const credentials = azureEndpoint.applicationTokenCredentials as {
+      activeDirectoryResourceId: string;
+      getToken(force?: boolean): Promise<string>;
+    };
+    credentials.activeDirectoryResourceId = AZURE_DEVOPS_RESOURCE;
+
+    const token = await credentials.getToken();
 
     if (!token) {
       throw new Error('Failed to get access token from Azure RM endpoint');

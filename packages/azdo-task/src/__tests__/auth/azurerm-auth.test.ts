@@ -1,5 +1,5 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { IPlatformAdapter } from '@extension-tasks/core';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 const mockAzureRmEndpointCtor = jest.fn();
 
@@ -43,10 +43,12 @@ describe('Azure RM Auth', () => {
     const connectionName = 'TestAzureRM';
     const expectedToken = 'azure-ad-token-12345';
 
+    const mockGetToken = jest.fn(async () => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => expectedToken,
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
@@ -60,16 +62,19 @@ describe('Azure RM Auth', () => {
       serviceUrl: 'https://marketplace.visualstudio.com',
       token: expectedToken,
     });
+    expect(mockGetToken).toHaveBeenCalledTimes(1);
   });
 
   it('should mask token immediately after retrieval', async () => {
     const connectionName = 'TestAzureRM';
     const expectedToken = 'azure-ad-token-67890';
 
+    const mockGetToken = jest.fn(async () => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => expectedToken,
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
@@ -86,10 +91,12 @@ describe('Azure RM Auth', () => {
     const expectedToken = 'secret-token';
     const setSecretCalls: string[] = [];
 
+    const mockGetToken = jest.fn(async () => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => expectedToken,
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
@@ -111,10 +118,12 @@ describe('Azure RM Auth', () => {
     const connectionName = 'MyAzureConnection';
     const expectedToken = 'test-token';
 
+    const mockGetToken = jest.fn(async () => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => expectedToken,
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
@@ -124,15 +133,18 @@ describe('Azure RM Auth', () => {
     await getAzureRmAuth(connectionName, mockPlatform);
 
     expect(mockAzureRmEndpointCtor).toHaveBeenCalledWith(connectionName);
+    expect(mockGetToken).toHaveBeenCalledTimes(1);
   });
 
   it('should throw error when token is null or undefined', async () => {
     const connectionName = 'TestAzureRM';
 
+    const mockGetToken = jest.fn(async () => null);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => null,
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
@@ -163,12 +175,14 @@ describe('Azure RM Auth', () => {
   it('should throw error when getToken fails', async () => {
     const connectionName = 'TestAzureRM';
 
+    const mockGetToken = jest.fn(async () => {
+      throw new Error('Token retrieval failed');
+    });
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => {
-            throw new Error('Token retrieval failed');
-          },
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
@@ -184,10 +198,12 @@ describe('Azure RM Auth', () => {
     const connectionName = 'TestAzureRM';
     const expectedToken = 'test-token';
 
+    const mockGetToken = jest.fn(async () => expectedToken);
     const mockEndpointInstance = {
       getEndpoint: async () => ({
         applicationTokenCredentials: {
-          getToken: async () => expectedToken,
+          activeDirectoryResourceId: 'https://management.azure.com/',
+          getToken: mockGetToken,
         },
       }),
     };
