@@ -103,6 +103,7 @@ steps:
       publisherId: ${{ parameters.publisherId }}
       extensionId: ${{ parameters.extensionId }}
       marketplaceVersionAction: Patch
+      workingDirectory: tests/sample-extension
       versionSource: |
         manifest
         marketplace
