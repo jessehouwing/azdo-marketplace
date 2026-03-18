@@ -37,6 +37,7 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 - `extensionId` → `extension-id`
 - `extensionTag` → `extension-id`
 - `manifestFile` → `manifest-file`
+- `rootFolder` → `working-directory`
 - `use` → `use` (publish flows)
 - `vsixFile` → `vsix-file`
 - `extensionVersion` → `extension-version`
@@ -54,6 +55,7 @@ Common conversions from Azure Pipelines-style names to GitHub Actions inputs:
 
 Package/publish metadata inputs available in v6:
 
+- `working-directory` for manifest-based operations when your extension files live below the repository root.
 - `localization-root` for localization files in manifest-based package/publish flows.
 - `extension-pricing` (`default`, `free`, `paid`) to override marketplace pricing metadata.
 - Publish-time sharing input is removed; run `operation: share` with `accounts` after publish.

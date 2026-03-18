@@ -82,6 +82,7 @@ Use this mapping carefully when updating YAML:
 | `manifestGlobs`, `manifestPath`                              | `manifestFile`                                           | Single multi-line manifest input used by package, publish, and waitForInstallation.                    |
 | `updateTasksVersion` (boolean) + `updateTasksVersionType`    | `updateTasksVersion` (`none`\|`major`\|`minor`\|`patch`) | `none` replaces the old disabled/false behavior.                                                       |
 | `serviceUrl` for install/wait-install style flows            | `accounts`                                               | `install` and `waitForInstallation` no longer take `serviceUrl`; each account resolves to service URL. |
+| `rootFolder`                                                 | `workingDirectory`                                       | Base path for manifest-based operations when manifests live in a subfolder.                            |
 | `extensionTag`                                               | _(removed)_                                              | Compose full value into `extensionId` yourself.                                                        |
 | `outputVariable` custom name settings                        | _(removed)_                                              | Use built-in task output variables instead.                                                            |
 | `versionAction`                                              | `marketplaceVersionAction`                               | **Removed** as alias. Use `marketplaceVersionAction` instead.                                          |
@@ -166,9 +167,9 @@ For OIDC setup and Entra workload federation details, see:
 
 ## Path handling changes
 
-- `rootFolder` is removed in v6 Azure Pipelines task configuration.
-- Unrooted file operations now resolve from the current working directory.
-- Keep `manifestFile` and `localizationRoot` paths relative to the working directory.
+- Use `workingDirectory` in v6 when your manifests live in a subfolder.
+- If `workingDirectory` is omitted, manifest-based operations resolve from the current working directory.
+- Keep `manifestFile`, `manifestFileJs`, `overridesFile`, and `localizationRoot` paths relative to `workingDirectory` when it is specified.
 
 ## Version resolution changes (queryVersion)
 

@@ -62,6 +62,16 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
     update-tasks-id: 'true'
 ```
 
+### Publish from a Manifest in a Subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/publish@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: './my-extension'
+    manifest-file: 'vss-extension.json'
+```
+
 ## Inputs
 
 ### Required Inputs
@@ -97,6 +107,7 @@ OR
 #### Manifest Source (when use is manifest)
 
 - `manifest-file`: Manifest file path(s), newline-separated
+- `working-directory`: Base directory for manifest-based operations; `manifest-file` patterns resolve from here when specified
 - `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
 - `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
 
@@ -170,6 +181,7 @@ jobs:
 - `extension-id`: Overrides extension identity used for publish.
 - `use`: Chooses publish source (`manifest` or `vsix`).
 - `manifest-file`: Provides one or more manifest files for manifest publishing.
+- `working-directory`: Sets the base path used to resolve manifest inputs in subfolder-based layouts.
 - `manifest-file-js`: Provides a JS manifest module for `tfx --manifest-js`.
 - `overrides-file`: Provides an overrides JSON file merged into manifest publishing.
 - `vsix-file`: Provides the VSIX path when publishing from VSIX source.

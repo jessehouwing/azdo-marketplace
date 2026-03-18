@@ -36,6 +36,16 @@ Validate that an Azure DevOps extension has been successfully processed by the m
     vsix-file: ${{ steps.package.outputs.vsix-file }}
 ```
 
+### Validate Using Manifest Identity Fallback from a Subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: './extension'
+    manifest-file: 'vss-extension.json'
+```
+
 ### With OIDC Authentication
 
 ```yaml
@@ -61,6 +71,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
 Identity (choose one):
 
 - `publisher-id` + `extension-id`
+- `manifest-file` (with optional `working-directory`) as a fallback source for identity metadata
 - `vsix-file` (fallback source for identity metadata)
 
 OR
@@ -86,6 +97,8 @@ OR
 
 #### Identity Fallback
 
+- `manifest-file`: Manifest path(s) used to infer `publisher-id` and `extension-id` when omitted
+- `working-directory`: Base directory for `manifest-file` when manifests live in a subfolder
 - `vsix-file`: Path to VSIX file used to infer `publisher-id` and `extension-id` when omitted
 
 ## Outputs
@@ -153,6 +166,8 @@ This action polls the marketplace to check if your extension has been successful
 - `extension-id`: Identifies the extension to validate.
 - `extension-version`: Targets a specific extension version for validation checks.
 - `vsix-file`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+- `manifest-file`: Provides manifest-based identity fallback when publisher/extension IDs are omitted.
+- `working-directory`: Sets the base path used to resolve `manifest-file` in subfolder-based layouts.
 - `timeout-minutes`: Sets total wait time for validation in minutes (default: `10`).
 - `polling-interval-seconds`: Sets polling interval between validation checks in seconds (default: `30`).
 

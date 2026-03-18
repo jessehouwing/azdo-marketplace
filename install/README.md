@@ -49,6 +49,17 @@ Install an Azure DevOps extension to specific accounts/organizations.
       myorg2
 ```
 
+### Install Using Manifest Identity Fallback from a Subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/install@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: './extension'
+    manifest-file: 'vss-extension.json'
+    accounts: 'myorg'
+```
+
 ### With OIDC Authentication
 
 ```yaml
@@ -76,6 +87,7 @@ Install an Azure DevOps extension to specific accounts/organizations.
 Identity (choose one):
 
 - `publisher-id` + `extension-id`
+- `manifest-file` (with optional `working-directory`) as a fallback source for identity metadata
 - `vsix-file` (fallback source for identity metadata)
 
 OR
@@ -95,6 +107,8 @@ OR
 
 #### Identity Fallback
 
+- `manifest-file`: Manifest path(s) used to infer `publisher-id` and `extension-id` when omitted
+- `working-directory`: Base directory for `manifest-file` when manifests live in a subfolder
 - `vsix-file`: Path to VSIX file used to infer `publisher-id` and `extension-id` when omitted
 
 ## Outputs
@@ -152,6 +166,8 @@ jobs:
 - `publisher-id`: Identifies the publisher that owns the extension to install.
 - `extension-id`: Identifies the extension to install.
 - `vsix-file`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+- `manifest-file`: Provides manifest-based identity fallback when publisher/extension IDs are omitted.
+- `working-directory`: Sets the base path used to resolve `manifest-file` in subfolder-based layouts.
 - `accounts`: Lists target organizations/accounts where the extension is installed.
 
 ## GitHub Marketplace outputs

@@ -34,6 +34,16 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
     output-path: './dist'
 ```
 
+### Manifest in a Subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/package@v6
+  with:
+    working-directory: './my-extension'
+    manifest-file: 'vss-extension.json'
+    output-path: './dist'
+```
+
 ## Inputs
 
 ### Required Inputs
@@ -63,6 +73,7 @@ None - all inputs are optional with sensible defaults.
 #### Manifest Source
 
 - `manifest-file`: Manifest file path(s), newline-separated (default: `vss-extension.json`)
+- `working-directory`: Base directory for manifest-based operations; `manifest-file` patterns resolve from here when specified
 - `manifest-file-js`: JS manifest module path for tfx `--manifest-js`
 - `overrides-file`: JSON overrides file for tfx `--overrides-file` (merged with generated overrides)
 
@@ -134,6 +145,7 @@ jobs:
 - `publisher-id`: Overrides publisher identity used in packaging.
 - `extension-id`: Overrides extension identity used in packaging.
 - `manifest-file`: Provides one or more manifest files for package input.
+- `working-directory`: Sets the base path used to resolve `manifest-file` in subfolder-based layouts.
 - `manifest-file-js`: Provides a JS manifest module for `tfx --manifest-js`.
 - `overrides-file`: Provides an overrides JSON file merged into the packaging manifest.
 - `extension-version`: Overrides extension version in the package.

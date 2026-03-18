@@ -43,6 +43,17 @@ Unshare an Azure DevOps extension from specific organizations.
       old-org-2
 ```
 
+### Unshare Using Manifest Identity Fallback from a Subfolder
+
+```yaml
+- uses: jessehouwing/azdo-marketplace/unshare@v6
+  with:
+    token: ${{ secrets.MARKETPLACE_TOKEN }}
+    working-directory: './extension'
+    manifest-file: 'vss-extension.json'
+    accounts: 'old-org'
+```
+
 ### With OIDC Authentication
 
 ```yaml
@@ -70,6 +81,7 @@ Unshare an Azure DevOps extension from specific organizations.
 Identity (choose one):
 
 - `publisher-id` + `extension-id`
+- `manifest-file` (with optional `working-directory`) as a fallback source for identity metadata
 - `vsix-file` (fallback source for identity metadata)
 
 OR
@@ -89,6 +101,8 @@ OR
 
 #### Identity Fallback
 
+- `manifest-file`: Manifest path(s) used to infer `publisher-id` and `extension-id` when omitted
+- `working-directory`: Base directory for `manifest-file` when manifests live in a subfolder
 - `vsix-file`: Path to VSIX file used to infer `publisher-id` and `extension-id` when omitted
 
 ## Outputs
@@ -140,6 +154,8 @@ jobs:
 - `publisher-id`: Identifies the publisher that owns the extension to unshare.
 - `extension-id`: Identifies the extension to unshare.
 - `vsix-file`: Provides VSIX-based identity fallback when publisher/extension IDs are omitted.
+- `manifest-file`: Provides manifest-based identity fallback when publisher/extension IDs are omitted.
+- `working-directory`: Sets the base path used to resolve `manifest-file` in subfolder-based layouts.
 - `accounts`: Lists organizations/accounts to remove extension access from.
 
 ## GitHub Marketplace outputs
