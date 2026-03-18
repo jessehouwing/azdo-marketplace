@@ -82,7 +82,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 - `auth-type`: Chooses authentication mode (`pat`, `basic`, `oidc`) for authenticated operations.
 - `service-url`: Overrides the Azure DevOps/Marketplace endpoint for supported operations.
 - `token`: Provides the secret token used for `pat` and `basic` authentication.
-- `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec); `built-in` uses the bundled vesion, while `path` uses `tfx` from PATH.
+- `tfx-version`: Selects the `tfx-cli` source (`built-in`, `path`, or npm version spec); `built-in` uses the bundled version, while `path` uses `tfx` from PATH.
 - `username`: Provides the username when `auth-type` is `basic`.
 
 #### Extension Identity
