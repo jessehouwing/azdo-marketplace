@@ -434,6 +434,69 @@ function runCommand(command, args, cwd) {
   });
 }
 
+function runCommandForOutput(command, args, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve(stdout);
+        return;
+      }
+
+      const detail = stderr.trim() || stdout.trim();
+      reject(
+        new Error(
+          `Command failed (${code}): ${command} ${args.join(' ')}${detail ? `\n${detail}` : ''}`
+        )
+      );
+    });
+  });
+}
+
+async function getChangedFilesInDirectory(directory) {
+  const relativeDirectory = path.relative(rootDir, directory) || '.';
+  const output = await runCommandForOutput(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all', '--', relativeDirectory],
+    rootDir
+  );
+
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .map((line) => {
+      const pathText = line.slice(3);
+      const resolvedPath = pathText.includes(' -> ') ? pathText.split(' -> ').at(-1) : pathText;
+      return path.resolve(rootDir, resolvedPath);
+    })
+    .filter((fullPath) => {
+      const relativeToDirectory = path.relative(directory, fullPath);
+      return (
+        relativeToDirectory &&
+        !relativeToDirectory.startsWith('..') &&
+        !path.isAbsolute(relativeToDirectory)
+      );
+    });
+}
+
 const runtimeNpmFlags = [
   '--omit=dev',
   '--omit=optional',
@@ -516,7 +579,7 @@ async function dedupeRuntimeDependencies(target) {
   await runCommand(npmCommand, dedupeArgs, distDir);
 }
 
-async function normalizeTextLineEndings(directory, { skipDirectories = new Set() } = {}) {
+async function normalizeTextLineEndings(directory) {
   const textExtensions = new Set([
     '.js',
     '.mjs',
@@ -546,44 +609,30 @@ async function normalizeTextLineEndings(directory, { skipDirectories = new Set()
     return;
   }
 
-  const stack = [directory];
+  const changedFiles = await getChangedFilesInDirectory(directory);
 
-  while (stack.length > 0) {
-    const current = stack.pop();
-    if (!current) {
+  for (const fullPath of changedFiles) {
+    if (!(await pathExists(fullPath))) {
       continue;
     }
 
-    const entries = await fs.readdir(current, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(current, entry.name);
+    // Skip files with extensions that are never text to avoid unnecessary reads.
+    const ext = path.extname(fullPath).toLowerCase();
+    if (ext && !textExtensions.has(ext)) {
+      continue;
+    }
 
-      if (entry.isDirectory()) {
-        stack.push(fullPath);
-        continue;
-      }
+    const content = await fs.readFile(fullPath);
 
-      if (!entry.isFile()) {
-        continue;
-      }
+    // Skip likely binary files.
+    if (content.includes(0)) {
+      continue;
+    }
 
-      // Skip files with extensions that are never text to avoid unnecessary reads.
-      const ext = path.extname(entry.name).toLowerCase();
-      if (ext && !textExtensions.has(ext)) {
-        continue;
-      }
-
-      const content = await fs.readFile(fullPath);
-
-      // Skip likely binary files.
-      if (content.includes(0)) {
-        continue;
-      }
-
-      const normalized = content.toString('utf8').replace(/\r\n/g, '\n');
-      if (normalized !== content.toString('utf8')) {
-        await fs.writeFile(fullPath, normalized, 'utf8');
-      }
+    const text = content.toString('utf8');
+    const normalized = text.replace(/\r\n/g, '\n');
+    if (normalized !== text) {
+      await fs.writeFile(fullPath, normalized, 'utf8');
     }
   }
 }
