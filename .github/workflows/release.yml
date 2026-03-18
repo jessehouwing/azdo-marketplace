@@ -28,7 +28,7 @@ permissions: {}
 
 env:
   PUBLISHER_ID: jessehouwing
-  PUBLISHER_ID_DEV: jessehouwing-dev
+  PUBLISHER_ID_DEV: jessehouwing
   EXTENSION_ID: azdo-marketplace-extension
 
 jobs:
@@ -203,7 +203,7 @@ jobs:
     needs: prepare-release
     runs-on: windows-latest
     environment:
-      name: 'publisher-jessehouwing-dev'
+      name: 'publisher-jessehouwing'
       url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}-preview
 
     permissions:
