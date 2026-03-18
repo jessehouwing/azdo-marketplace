@@ -65,7 +65,7 @@ async function resolveExpectedTasks(
   if (options.manifestFiles && options.manifestFiles.length > 0) {
     try {
       platform.debug(`Reading task versions from ${options.manifestFiles.length} manifest file(s)`);
-      const rootFolder = options.rootFolder ?? cwd();
+      const rootFolder = options.rootFolder || cwd();
       const manifestFiles = await resolveManifestPaths(rootFolder, options.manifestFiles, platform);
 
       const expectedByTask = new Map<string, Set<string>>();
