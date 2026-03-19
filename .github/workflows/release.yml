@@ -461,7 +461,7 @@ jobs:
       - name: Download VSIX artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          name: vsix-${{ env.EXTENSION_ID }}-${{ needs.prepare-release.outputs.version }}
+          name: vsix
           path: ${{ runner.temp }}/vsix
 
       - name: Azure login (OIDC)
