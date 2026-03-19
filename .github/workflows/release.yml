@@ -239,7 +239,8 @@ jobs:
         uses: jessehouwing/azdo-marketplace/unpublish@main
         with:
           auth-type: oidc
-          vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}-preview
         continue-on-error: true
 
       - name: Publish preview extension
