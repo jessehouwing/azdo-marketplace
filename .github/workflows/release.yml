@@ -582,7 +582,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           $major = "v${{ needs.prepare-release.outputs.major }}"
           $majorMinor = "v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
 
