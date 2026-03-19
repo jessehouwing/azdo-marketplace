@@ -66,7 +66,7 @@ jobs:
       - id: query
         name: Query next patch version
         continue-on-error: true
-        uses: jessehouwing/azdo-marketplace/query-version@main
+        uses: jessehouwing/azdo-marketplace/query-version@v6.1.1
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
@@ -86,7 +86,7 @@ jobs:
 
       - id: package
         name: Package VSIX
-        uses: jessehouwing/azdo-marketplace/package@main
+        uses: jessehouwing/azdo-marketplace/package@v6.1.1
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
@@ -104,7 +104,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish from VSIX
-        uses: jessehouwing/azdo-marketplace/publish@main
+        uses: jessehouwing/azdo-marketplace/publish@v6.1.1
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
@@ -113,7 +113,7 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azdo-marketplace/wait-for-validation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.1
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
@@ -121,7 +121,7 @@ jobs:
 
       - name: Share extension
         if: ${{ inputs.organization_urls != '' }}
-        uses: jessehouwing/azdo-marketplace/share@main
+        uses: jessehouwing/azdo-marketplace/share@v6.1.1
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
@@ -130,7 +130,7 @@ jobs:
 
       - name: Install extension
         if: ${{ inputs.organization_urls != '' }}
-        uses: jessehouwing/azdo-marketplace/install@main
+        uses: jessehouwing/azdo-marketplace/install@v6.1.1
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}
@@ -139,7 +139,7 @@ jobs:
 
       - name: Wait for installation
         if: ${{ inputs.organization_urls != '' }}
-        uses: jessehouwing/azdo-marketplace/wait-for-installation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.1.1
         with:
           auth-type: pat
           token: ${{ secrets.MARKETPLACE_PAT }}

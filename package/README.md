@@ -7,7 +7,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ### Basic Example
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.1.1
   with:
     manifest-file: './my-extension/vss-extension.json'
     output-path: './dist'
@@ -16,7 +16,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ### With Version Override
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.1.1
   with:
     manifest-file: './my-extension/vss-extension.json'
     extension-version: '1.2.3'
@@ -26,7 +26,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ### With Task Version Updates
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.1.1
   with:
     manifest-file: './my-extension/vss-extension.json'
     extension-version: ${{ github.ref_name }}
@@ -37,7 +37,7 @@ Create a .vsix package file for an Azure DevOps extension from your extension ma
 ### Manifest in a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.1.1
   with:
     working-directory: './my-extension'
     manifest-file: 'vss-extension.json'
@@ -112,7 +112,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: jessehouwing/azdo-marketplace/package@v6
+      - uses: jessehouwing/azdo-marketplace/package@v6.1.1
         id: package
         with:
           manifest-file: './extension/vss-extension.json'
@@ -130,7 +130,7 @@ jobs:
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.1.1
   id: package
   with:
     publisher-id: my-publisher

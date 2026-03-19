@@ -9,7 +9,7 @@ Unshare an Azure DevOps extension from specific organizations.
 ### Unshare from Single Organization
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -20,7 +20,7 @@ Unshare an Azure DevOps extension from specific organizations.
 ### Unshare from Multiple Organizations
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -34,7 +34,7 @@ Unshare an Azure DevOps extension from specific organizations.
 ### Unshare Using VSIX Identity Fallback
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     vsix-file: ${{ steps.package.outputs.vsix-file }}
@@ -46,7 +46,7 @@ Unshare an Azure DevOps extension from specific organizations.
 ### Unshare Using Manifest Identity Fallback from a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: './extension'
@@ -63,7 +63,7 @@ Unshare an Azure DevOps extension from specific organizations.
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
   with:
     auth-type: 'oidc'
     publisher-id: 'my-publisher'
@@ -125,7 +125,7 @@ jobs:
   unshare:
     runs-on: ubuntu-latest
     steps:
-      - uses: jessehouwing/azdo-marketplace/unshare@v6
+      - uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -136,7 +136,7 @@ jobs:
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.1.1
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
