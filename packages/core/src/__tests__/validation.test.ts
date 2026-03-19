@@ -1,14 +1,15 @@
 import { jest } from '@jest/globals';
 import {
-  validateExtensionId,
-  validatePublisherId,
+  resolveVsixFile,
   validateAccountUrl,
-  validateVersion,
+  validateAzureCliAvailable,
   validateBinaryAvailable,
+  validateExtensionId,
   validateNodeAvailable,
   validateNpmAvailable,
+  validatePublisherId,
   validateTfxAvailable,
-  validateAzureCliAvailable,
+  validateVersion,
 } from '../validation.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
@@ -327,6 +328,75 @@ describe('validation', () => {
       await validateAzureCliAvailable(platform, true);
 
       expect(debugSpy).toHaveBeenCalledWith('az version: available');
+    });
+  });
+
+  describe('resolveVsixFile', () => {
+    it('should return undefined when pattern is undefined', async () => {
+      const platform = new MockPlatformAdapter();
+      const result = await resolveVsixFile(undefined, platform);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return the literal path when no wildcards are present', async () => {
+      const platform = new MockPlatformAdapter();
+      const result = await resolveVsixFile('/some/path/my.vsix', platform);
+      expect(result).toBe('/some/path/my.vsix');
+    });
+
+    it('should not call findMatch for a literal path', async () => {
+      const platform = new MockPlatformAdapter();
+      const findMatchSpy = jest.spyOn(platform, 'findMatch');
+      await resolveVsixFile('/some/path/my.vsix', platform);
+      expect(findMatchSpy).not.toHaveBeenCalled();
+    });
+
+    it('should resolve a glob pattern with a single match', async () => {
+      const platform = new MockPlatformAdapter();
+      jest.spyOn(platform, 'findMatch').mockResolvedValue(['/output/my-ext-1.0.0.vsix']);
+      const result = await resolveVsixFile('**/*.vsix', platform);
+      expect(result).toBe('/output/my-ext-1.0.0.vsix');
+    });
+
+    it('should call findMatch with the pattern for a glob containing *', async () => {
+      const platform = new MockPlatformAdapter();
+      const findMatchSpy = jest.spyOn(platform, 'findMatch').mockResolvedValue(['/output/my.vsix']);
+      await resolveVsixFile('*.vsix', platform);
+      expect(findMatchSpy).toHaveBeenCalledWith(process.cwd(), ['*.vsix']);
+    });
+
+    it('should call findMatch with the pattern for a glob containing ?', async () => {
+      const platform = new MockPlatformAdapter();
+      const findMatchSpy = jest.spyOn(platform, 'findMatch').mockResolvedValue(['/output/my.vsix']);
+      await resolveVsixFile('my?.vsix', platform);
+      expect(findMatchSpy).toHaveBeenCalledWith(process.cwd(), ['my?.vsix']);
+    });
+
+    it('should throw when a glob pattern matches no files', async () => {
+      const platform = new MockPlatformAdapter();
+      jest.spyOn(platform, 'findMatch').mockResolvedValue([]);
+      await expect(resolveVsixFile('**/*.vsix', platform)).rejects.toThrow(
+        'No VSIX file found matching pattern: **/*.vsix'
+      );
+    });
+
+    it('should throw when a glob pattern matches more than one file', async () => {
+      const platform = new MockPlatformAdapter();
+      jest.spyOn(platform, 'findMatch').mockResolvedValue(['/output/a.vsix', '/output/b.vsix']);
+      await expect(resolveVsixFile('**/*.vsix', platform)).rejects.toThrow(
+        'Multiple VSIX files found matching pattern: **/*.vsix'
+      );
+    });
+
+    it('should log a debug message when a glob pattern is used', async () => {
+      const platform = new MockPlatformAdapter();
+      jest.spyOn(platform, 'findMatch').mockResolvedValue(['/output/my.vsix']);
+      const debugSpy = jest.spyOn(platform, 'debug');
+
+      await resolveVsixFile('**/*.vsix', platform);
+
+      expect(debugSpy).toHaveBeenCalledWith('Pattern found in vsixFile: **/*.vsix');
+      expect(debugSpy).toHaveBeenCalledWith('Resolved vsixFile pattern to: /output/my.vsix');
     });
   });
 });

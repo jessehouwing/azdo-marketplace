@@ -6,6 +6,7 @@ import {
   packageExtension,
   publishExtension,
   queryVersion,
+  resolveVsixFile,
   shareExtension,
   showExtension,
   TaskResult,
@@ -34,6 +35,11 @@ async function validateSingleFileInputs(
 ): Promise<void> {
   for (const input of inputs) {
     if (!input.value) {
+      continue;
+    }
+
+    // Glob patterns are validated later by resolveVsixFile — skip existence check here
+    if (input.value.includes('*') || input.value.includes('?')) {
       continue;
     }
 
@@ -286,7 +292,10 @@ async function runPublish(
         publishSource === 'manifest'
           ? platform.getInput('working-directory') || undefined
           : undefined,
-      vsixFile: publishSource === 'vsix' ? platform.getInput('vsix-file', true) : undefined,
+      vsixFile:
+        publishSource === 'vsix'
+          ? await resolveVsixFile(platform.getInput('vsix-file', true), platform)
+          : undefined,
       manifestGlobs:
         publishSource === 'manifest'
           ? platform.getDelimitedInput('manifest-file', '\n')
@@ -333,7 +342,7 @@ async function runUnpublish(
     {
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
-      vsixFile: platform.getInput('vsix-file'),
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file'), platform),
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     },
@@ -352,7 +361,7 @@ async function runShare(
     {
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
-      vsixFile: platform.getInput('vsix-file'),
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file'), platform),
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       shareWith: platform.getDelimitedInput('accounts', '\n', true),
@@ -372,7 +381,7 @@ async function runUnshare(
     {
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
-      vsixFile: platform.getInput('vsix-file'),
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file'), platform),
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       unshareWith: platform.getDelimitedInput('accounts', '\n', true),
@@ -392,7 +401,7 @@ async function runInstall(
     {
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
-      vsixFile: platform.getInput('vsix-file'),
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file'), platform),
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
       accounts: platform.getDelimitedInput('accounts', '\n', true),
@@ -457,7 +466,7 @@ async function runQueryVersion(
       marketplaceVersionAction: normalizedVersionAction,
       versionSource,
       use: (platform.getInput('use') || 'manifest') as 'manifest' | 'vsix',
-      vsixFile: platform.getInput('vsix-file') || undefined,
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file') || undefined, platform),
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
     },
@@ -483,7 +492,7 @@ async function runWaitForValidation(
     {
       publisherId: platform.getInput('publisher-id'),
       extensionId: platform.getInput('extension-id'),
-      vsixFile: platform.getInput('vsix-file'),
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file'), platform),
       extensionVersion: platform.getInput('extension-version'),
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestGlobs: platform.getDelimitedInput('manifest-file', '\n'),
@@ -529,7 +538,7 @@ async function runWaitForInstallation(
       expectedTasks,
       rootFolder: platform.getInput('working-directory') || undefined,
       manifestFiles: platform.getDelimitedInput('manifest-file', '\n'),
-      vsixFile: platform.getInput('vsix-file'),
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file'), platform),
       timeoutMinutes: parseInt(platform.getInput('timeout-minutes') || '10'),
       pollingIntervalSeconds: parseInt(platform.getInput('polling-interval-seconds') || '30'),
     },

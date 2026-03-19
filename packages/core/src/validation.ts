@@ -280,3 +280,36 @@ export async function validateAzureCliAvailable(
 ): Promise<void> {
   await validateBinaryAvailable('az', platform, logVersion);
 }
+
+/**
+ * Resolves a vsix file path or glob pattern to a single file path.
+ * If the input contains wildcards (* or ?), uses platform.findMatch to expand it and
+ * expects exactly one match. Otherwise returns the literal path unchanged.
+ * @param pattern Literal path or glob pattern, or undefined
+ * @param platform Platform adapter (provides findMatch for glob resolution)
+ * @returns Resolved file path, or undefined if no pattern was given
+ * @throws Error if a pattern matches zero or more than one file
+ */
+export async function resolveVsixFile(
+  pattern: string | undefined,
+  platform: IPlatformAdapter
+): Promise<string | undefined> {
+  if (!pattern) {
+    return undefined;
+  }
+  if (!pattern.includes('*') && !pattern.includes('?')) {
+    return pattern;
+  }
+  platform.debug(`Pattern found in vsixFile: ${pattern}`);
+  const matches = await platform.findMatch(process.cwd(), [pattern]);
+  if (matches.length === 0) {
+    throw new Error(`No VSIX file found matching pattern: ${pattern}`);
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `Multiple VSIX files found matching pattern: ${pattern}. Expected exactly one match. Found:\n${matches.join('\n')}`
+    );
+  }
+  platform.debug(`Resolved vsixFile pattern to: ${matches[0]}`);
+  return matches[0];
+}

@@ -67,6 +67,7 @@ jest.unstable_mockModule('@extension-tasks/core', () => ({
   validateTfxAvailable: validateTfxAvailableMock,
   validateAzureCliAvailable: validateAzureCliAvailableMock,
   versionSourceNeedsMarketplace: versionSourceNeedsMarketplaceMock,
+  resolveVsixFile: jest.fn(async (pattern: string | undefined) => pattern),
 }));
 
 type PlatformConfig = {
