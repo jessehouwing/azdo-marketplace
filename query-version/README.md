@@ -5,7 +5,7 @@ Query an extension version from multiple sources and optionally increment it. Su
 ## Usage
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     auth-type: pat
@@ -54,7 +54,7 @@ Only applies when `marketplace` is listed in `version-source`.
 ### Auto-increment marketplace version (default behavior)
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     auth-type: pat
@@ -67,7 +67,7 @@ Only applies when `marketplace` is listed in `version-source`.
 ### First publish with fallback
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     auth-type: pat
@@ -83,7 +83,7 @@ Only applies when `marketplace` is listed in `version-source`.
 ### Use version from manifest only (no auth required)
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     version-source: manifest
@@ -92,7 +92,7 @@ Only applies when `marketplace` is listed in `version-source`.
 ### Use version from a manifest in a subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     version-source: manifest
@@ -103,7 +103,7 @@ Only applies when `marketplace` is listed in `version-source`.
 ### GitVersion integration (no auth required)
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     version-source: |
@@ -113,7 +113,7 @@ Only applies when `marketplace` is listed in `version-source`.
 ### Highest-wins across multiple sources
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     auth-type: pat
@@ -134,7 +134,7 @@ Only applies when `marketplace` is listed in `version-source`.
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.1.2
   id: query
   with:
     auth-type: oidc
