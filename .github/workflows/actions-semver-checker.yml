@@ -25,8 +25,8 @@ jobs:
         with:
           floating-versions-use: tags
           check-minor-version: error
-          check-release-immutability: none
+          check-release-immutability: error
           ignore-preview-releases: true
           check-releases: error
           token: ${{ secrets.GITHUB_TOKEN }}
-          auto-fix: false
+          auto-fix: true
