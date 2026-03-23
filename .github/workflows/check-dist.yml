@@ -43,20 +43,19 @@ jobs:
       - name: Build and bundle
         run: |
           npm run build
-          npm run bundle
+          npm run bundle:actions
 
       - name: Verify runtime dependency manifests
         run: |
-          test -f packages/azdo-task/dist/runtime-dependencies.json
           test -f packages/github-action/dist/runtime-dependencies.json
         shell: bash
 
       - name: Compare the expected and actual dist/ directories
         run: |
-          if ! git diff --quiet -- packages/*/dist/; then
+          if ! git diff --quiet -- packages/github-action/dist/; then
             echo "Detected uncommitted changes after build. See status below:"
-            git diff --name-status -- packages/*/dist/
-            git diff -- packages/*/dist/
+            git diff --name-status -- packages/github-action/dist/
+            git diff -- packages/github-action/dist/
             exit 1
           fi
         id: diff
@@ -68,5 +67,4 @@ jobs:
         with:
           name: dist-diff
           path: |
-            packages/azdo-task/dist/
             packages/github-action/dist/
