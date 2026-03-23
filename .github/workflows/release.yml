@@ -575,11 +575,38 @@ jobs:
           $vsixFile = $env:VSIX_FILE
           $repository = $env:GITHUB_REPOSITORY_NAME
 
+          # Determine previous semantic version tag for generated release notes.
+          $currentVersion = [System.Management.Automation.SemanticVersion]($version.TrimStart('v'))
+          $previousTag = git tag --list 'v*.*.*' |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
+            ForEach-Object {
+              [PSCustomObject]@{
+                Tag = $_
+                Version = [System.Management.Automation.SemanticVersion]($_.TrimStart('v'))
+              }
+            } |
+            Where-Object { $_.Version -lt $currentVersion } |
+            Sort-Object Version -Descending |
+            Select-Object -First 1 -ExpandProperty Tag
+
           # Delete existing release if present (idempotent)
           try {
             gh release delete $version --repo $repository --yes
           }
           catch {
+          }
+
+          if ($previousTag) {
+            Write-Host "Using previous release notes start tag: $previousTag"
+          }
+          else {
+            Write-Host "No previous semantic version tag found. Generating notes from repository start."
+          }
+
+          $notesStartTagArg = @()
+          if ($previousTag) {
+            $notesStartTagArg = @('--notes-start-tag', $previousTag)
           }
 
           # Create release with VSIX attachment
@@ -588,6 +615,7 @@ jobs:
             --title "Release $version" `
             --draft `
             --generate-notes `
+            @notesStartTagArg `
             --target "release/$version" `
             $vsixFile
 
