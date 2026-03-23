@@ -7,7 +7,7 @@ const kind = Symbol.for('bare.url.kind')
 
 const isWindows = Bare.platform === 'win32'
 
-module.exports = exports = class URL {
+class URL {
   static get [kind]() {
     return 0 // Compatibility version
   }
@@ -256,6 +256,8 @@ module.exports = exports = class URL {
   }
 }
 
+module.exports = exports = URL
+
 // https://url.spec.whatwg.org/#url-opaque-path
 function hasOpaquePath(url) {
   return url.pathname[0] !== '/'
@@ -265,8 +267,6 @@ function hasOpaquePath(url) {
 function cannotHaveCredentialsOrPort(url) {
   return url.hostname === '' || url.protocol === 'file:'
 }
-
-const URL = exports
 
 exports.URL = URL
 exports.URLSearchParams = URLSearchParams
@@ -278,6 +278,8 @@ exports.isURL = function isURL(value) {
 
   return typeof value === 'object' && value !== null && value[kind] === URL[kind]
 }
+
+exports.isURLSearchParams = URLSearchParams.isURLSearchParams
 
 // https://url.spec.whatwg.org/#dom-url-parse
 exports.parse = function parse(input, base) {

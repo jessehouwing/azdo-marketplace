@@ -25,6 +25,8 @@ declare class URL {
 declare namespace URL {
   export function isURL(value: unknown): value is URL
 
+  export function isURLSearchParams(value: unknown): value is URLSearchParams
+
   export function parse(input: string, base?: string | URL): URL | null
 
   export function canParse(input: string, base?: string | URL): boolean
