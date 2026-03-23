@@ -35,7 +35,7 @@ steps:
   # password auth parameter with the job-scoped token.
   - task: AzureCLI@2
     displayName: Get Azure DevOps bearer token
-    condition: and(succeeded(), eq(variables['authType'], 'pat'))
+    condition: and(succeeded(), eq('${{ parameters.connectionType }}', 'PAT'))
     env:
       MARKETPLACESERVICECONNECTIONNAME: ${{ parameters.marketplaceServiceConnectionName }}
     inputs:

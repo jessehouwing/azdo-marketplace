@@ -291,15 +291,30 @@ jobs:
   # Triggers the Azure DevOps test pipeline and waits for completion.
   # ---------------------------------------------------------------------------
   test-azure-pipelines:
-    name: Test Azure Pipelines
+    name: Test Azure Pipelines (${{ matrix.connectionType }}, ${{ matrix.vmImage }})
     needs: [prepare-release, preview-release]
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vmImage: ubuntu-latest
+            connectionType: PAT
+          - vmImage: ubuntu-latest
+            connectionType: AzureRM
+          - vmImage: windows-latest
+            connectionType: PAT
+          - vmImage: windows-latest
+            connectionType: AzureRM
     environment:
       name: 'publisher-jessehouwing'
 
     permissions:
       contents: read
       id-token: write
+
+    outputs:
+      pipeline-run-url: ${{ steps.run-azdo-pipeline.outputs.pipeline_run_url }}
 
     steps:
       - name: Azure login (OIDC)
@@ -320,12 +335,15 @@ jobs:
           echo "azdo_token=$token" >> $env:GITHUB_OUTPUT
 
       - name: Run Azure DevOps test pipeline
+        id: run-azdo-pipeline
         env:
           AZURE_DEVOPS_EXT_PAT: ${{ steps.get-azdo-token.outputs.azdo_token }}
           AZDO_PIPELINE_NAME: ${{ vars.AZDO_TEST_PIPELINE_NAME }}
           RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
           AZDO_ORGANIZATION: https://dev.azure.com/jessehouwing
           AZDO_PROJECT: azure-devops-extensions
+          TEST_VM_IMAGE: ${{ matrix.vmImage }}
+          TEST_CONNECTION_TYPE: ${{ matrix.connectionType }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -367,6 +385,20 @@ jobs:
             throw 'RELEASE_VERSION is empty. Prepare release output is missing.'
           }
 
+          switch ($env:TEST_CONNECTION_TYPE) {
+            'PAT' { }
+            'AzureRM' { }
+            default { throw "Unsupported TEST_CONNECTION_TYPE: $($env:TEST_CONNECTION_TYPE)" }
+          }
+
+          $osSuffix = switch ($env:TEST_VM_IMAGE) {
+            'ubuntu-latest' { 'ubuntu' }
+            'windows-latest' { 'windows' }
+            default { throw "Unsupported TEST_VM_IMAGE: $($env:TEST_VM_IMAGE)" }
+          }
+
+          $extensionId = "test-azp-$($env:TEST_CONNECTION_TYPE)-$osSuffix"
+
           Invoke-Az -Arguments @('config', 'set', 'extension.use_dynamic_install=yes_without_prompt') | Out-Null
           Invoke-Az -Arguments @('extension', 'add', '--name', 'azure-devops', '--upgrade', '--only-show-errors') | Out-Null
 
@@ -383,6 +415,10 @@ jobs:
             '--name', $pipelineName,
             '--branch', $branch,
             '--project', $project,
+            '--parameters',
+            "vmImage=$($env:TEST_VM_IMAGE)",
+            "connectionType=$($env:TEST_CONNECTION_TYPE)",
+            "extensionId=$extensionId",
             '--query', 'id',
             '--output', 'tsv'
           )).Trim()
@@ -391,7 +427,12 @@ jobs:
             throw 'Failed to trigger Azure DevOps pipeline run.'
           }
 
+          $runUrl = "$organization/$project/_build/results?buildId=$runId&view=results"
+          "pipeline_run_url=$runUrl" >> $env:GITHUB_OUTPUT
+
           Write-Host "Triggered pipeline run: $runId"
+          Write-Host "Pipeline run URL: $runUrl"
+          "- Azure Pipelines run: [$runId]($runUrl)" >> $env:GITHUB_STEP_SUMMARY
 
           $elapsed = 0
           while ($elapsed -lt $timeoutSeconds) {
