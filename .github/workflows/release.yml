@@ -293,7 +293,7 @@ jobs:
   test-azure-pipelines:
     name: Test Azure Pipelines (${{ matrix.connectionType }}, ${{ matrix.vmImage }})
     needs: [prepare-release, preview-release]
-    runs-on: windows-latest
+    runs-on: ubuntu-slim
     strategy:
       fail-fast: false
       matrix:
