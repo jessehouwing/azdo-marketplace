@@ -25,6 +25,18 @@ jobs:
           node-version-file: '.node-version'
           cache: 'npm'
 
+      - name: Pin npm version
+        run: |
+          $packageManager = node -p "require('./package.json').packageManager ?? ''"
+          if ($packageManager -notmatch '^npm@(.+)$') {
+            throw "Expected packageManager in package.json to be in the format npm@<version>, got '$packageManager'"
+          }
+
+          $npmVersion = $Matches[1]
+          npm i -g "npm@$npmVersion"
+          node --version
+          npm --version
+
       - name: Install dependencies
         run: npm ci
 
