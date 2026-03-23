@@ -147,7 +147,7 @@ outputs:
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@v6
+      - uses: jessehouwing/azdo-marketplace@v6.1.3
         id: show
         with:
           operation: show
@@ -161,7 +161,7 @@ runs:
   using: composite
   steps:
     - id: show
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@v6.1.3
       with:
         operation: show
         auth-type: ${{ inputs.auth-type }}
