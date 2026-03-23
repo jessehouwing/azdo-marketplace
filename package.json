@@ -1,6 +1,7 @@
 {
   "name": "azdo-marketplace",
   "version": "6.0.0-alpha.1",
+  "packageManager": "npm@11.6.1",
   "description": "AzDo Marketplace",
   "repository": {
     "type": "git",

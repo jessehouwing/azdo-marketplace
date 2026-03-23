@@ -1,5 +1,11 @@
-module.exports = class URLSearchParams {
+const kind = Symbol.for('bare.url.search-params.kind')
+
+class URLSearchParams {
   static _urls = new WeakMap()
+
+  static get [kind]() {
+    return 0 // Compatibility version
+  }
 
   // https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams
   constructor(init, url = null) {
@@ -16,6 +22,10 @@ module.exports = class URLSearchParams {
         this.append(name, value)
       }
     }
+  }
+
+  get [kind]() {
+    return URLSearchParams[kind]
   }
 
   // https://url.spec.whatwg.org/#dom-urlsearchparams-size
@@ -171,4 +181,12 @@ module.exports = class URLSearchParams {
 
     return output
   }
+}
+
+module.exports = exports = URLSearchParams
+
+exports.isURLSearchParams = function isURLSearchParams(value) {
+  if (value instanceof URLSearchParams) return true
+
+  return typeof value === 'object' && value !== null && value[kind] === URLSearchParams[kind]
 }

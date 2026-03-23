@@ -16,4 +16,8 @@ declare class URLSearchParams {
   constructor(init: string | Record<string, string> | Iterable<[string, string]>)
 }
 
+declare namespace URLSearchParams {
+  export function isURLSearchParams(value: unknown): value is URLSearchParams
+}
+
 export = URLSearchParams
