@@ -308,13 +308,11 @@ jobs:
             connectionType: AzureRM
     environment:
       name: 'publisher-jessehouwing'
+      url: ${{ steps.run-azdo-pipeline.outputs.pipeline_run_url }}
 
     permissions:
       contents: read
       id-token: write
-
-    outputs:
-      pipeline-run-url: ${{ steps.run-azdo-pipeline.outputs.pipeline_run_url }}
 
     steps:
       - name: Azure login (OIDC)
@@ -482,7 +480,6 @@ jobs:
     name: Publish to marketplace
     needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     runs-on: windows-latest
-    if: false
     environment:
       name: publisher-jessehouwing
       url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID }}.${{ env.EXTENSION_ID }}
@@ -538,7 +535,6 @@ jobs:
     name: Create GitHub draft release
     needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     runs-on: ubuntu-latest
-    if: false
     permissions:
       contents: write
 
@@ -629,7 +625,6 @@ jobs:
     name: Publish GitHub release
     needs: [prepare-release, publish-production, create-release]
     runs-on: ubuntu-latest
-    if: false
     permissions:
       contents: write
 
@@ -672,7 +667,6 @@ jobs:
     name: Cleanup release branch
     needs: [prepare-release, publish-production, create-release, publish-github-release]
     runs-on: ubuntu-latest
-    if: false
     permissions:
       contents: write
 
