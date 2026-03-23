@@ -293,9 +293,22 @@ jobs:
   test-azure-pipelines:
     name: Test Azure Pipelines
     needs: [prepare-release, preview-release]
-    runs-on: windows-latest
+    runs-on: ubuntu-slim
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vmImage: ubuntu-latest
+            connectionType: PAT
+          - vmImage: ubuntu-latest
+            connectionType: AzureRM
+          - vmImage: windows-latest
+            connectionType: PAT
+          - vmImage: windows-latest
+            connectionType: AzureRM
     environment:
       name: 'publisher-jessehouwing'
+      url: ${{ steps.run-azdo-pipeline.outputs.pipeline_run_url }}
 
     permissions:
       contents: read
@@ -320,12 +333,15 @@ jobs:
           echo "azdo_token=$token" >> $env:GITHUB_OUTPUT
 
       - name: Run Azure DevOps test pipeline
+        id: run-azdo-pipeline
         env:
           AZURE_DEVOPS_EXT_PAT: ${{ steps.get-azdo-token.outputs.azdo_token }}
           AZDO_PIPELINE_NAME: ${{ vars.AZDO_TEST_PIPELINE_NAME }}
           RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
           AZDO_ORGANIZATION: https://dev.azure.com/jessehouwing
           AZDO_PROJECT: azure-devops-extensions
+          TEST_VM_IMAGE: ${{ matrix.vmImage }}
+          TEST_CONNECTION_TYPE: ${{ matrix.connectionType }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -367,6 +383,20 @@ jobs:
             throw 'RELEASE_VERSION is empty. Prepare release output is missing.'
           }
 
+          switch ($env:TEST_CONNECTION_TYPE) {
+            'PAT' { }
+            'AzureRM' { }
+            default { throw "Unsupported TEST_CONNECTION_TYPE: $($env:TEST_CONNECTION_TYPE)" }
+          }
+
+          $osSuffix = switch ($env:TEST_VM_IMAGE) {
+            'ubuntu-latest' { 'ubuntu' }
+            'windows-latest' { 'windows' }
+            default { throw "Unsupported TEST_VM_IMAGE: $($env:TEST_VM_IMAGE)" }
+          }
+
+          $extensionId = "test-azp-$($env:TEST_CONNECTION_TYPE)-$osSuffix"
+
           Invoke-Az -Arguments @('config', 'set', 'extension.use_dynamic_install=yes_without_prompt') | Out-Null
           Invoke-Az -Arguments @('extension', 'add', '--name', 'azure-devops', '--upgrade', '--only-show-errors') | Out-Null
 
@@ -383,6 +413,10 @@ jobs:
             '--name', $pipelineName,
             '--branch', $branch,
             '--project', $project,
+            '--parameters',
+            "vmImage=$($env:TEST_VM_IMAGE)",
+            "connectionType=$($env:TEST_CONNECTION_TYPE)",
+            "extensionId=$extensionId",
             '--query', 'id',
             '--output', 'tsv'
           )).Trim()
@@ -391,7 +425,12 @@ jobs:
             throw 'Failed to trigger Azure DevOps pipeline run.'
           }
 
+          $runUrl = "$organization/$project/_build/results?buildId=$runId&view=results"
+          "pipeline_run_url=$runUrl" >> $env:GITHUB_OUTPUT
+
           Write-Host "Triggered pipeline run: $runId"
+          Write-Host "Pipeline run URL: $runUrl"
+          "- Azure Pipelines run: [$runId]($runUrl)" >> $env:GITHUB_STEP_SUMMARY
 
           $elapsed = 0
           while ($elapsed -lt $timeoutSeconds) {
@@ -534,11 +573,38 @@ jobs:
           $vsixFile = $env:VSIX_FILE
           $repository = $env:GITHUB_REPOSITORY_NAME
 
+          # Determine previous semantic version tag for generated release notes.
+          $currentVersion = [System.Management.Automation.SemanticVersion]($version.TrimStart('v'))
+          $previousTag = git tag --list 'v*.*.*' |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
+            ForEach-Object {
+              [PSCustomObject]@{
+                Tag = $_
+                Version = [System.Management.Automation.SemanticVersion]($_.TrimStart('v'))
+              }
+            } |
+            Where-Object { $_.Version -lt $currentVersion } |
+            Sort-Object Version -Descending |
+            Select-Object -First 1 -ExpandProperty Tag
+
           # Delete existing release if present (idempotent)
           try {
             gh release delete $version --repo $repository --yes
           }
           catch {
+          }
+
+          if ($previousTag) {
+            Write-Host "Using previous release notes start tag: $previousTag"
+          }
+          else {
+            Write-Host "No previous semantic version tag found. Generating notes from repository start."
+          }
+
+          $notesStartTagArg = @()
+          if ($previousTag) {
+            $notesStartTagArg = @('--notes-start-tag', $previousTag)
           }
 
           # Create release with VSIX attachment
@@ -547,6 +613,7 @@ jobs:
             --title "Release $version" `
             --draft `
             --generate-notes `
+            @notesStartTagArg `
             --target "release/$version" `
             $vsixFile
 

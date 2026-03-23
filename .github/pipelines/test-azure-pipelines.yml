@@ -1,8 +1,9 @@
 # Test Azure Pipelines
 #
 # Triggered by the release workflow to validate the azdo-marketplace task
-# against a small sample extension using PAT and OIDC auth types in a matrix
-# across Linux and Windows hosted runners.
+# against a small sample extension for a single auth + OS scenario.
+# The matrix fan-out lives in GitHub Actions so each scenario is visible
+# directly in the Actions summary.
 #
 # Required service connections:
 #   MarketplacePatConnection          - PAT marketplace service connection name (or resourceId GUID)
@@ -10,7 +11,11 @@
 #
 # Required variables:
 #   publisherId  - Marketplace publisher ID (default: jessehouwing-dev)
-#   extensionIdPrefix  - Prefix used for matrix extension IDs
+#
+# Required parameters per run:
+#   vmImage        - Hosted agent image (ubuntu-latest/windows-latest)
+#   connectionType - PAT|AzureRM
+#   extensionId    - Fully qualified test extension id
 
 name: test-$(Date:yyyyMMdd)$(Rev:.r)
 
@@ -21,9 +26,15 @@ parameters:
   - name: publisherId
     type: string
     default: jessehouwing
-  - name: extensionIdPrefix
+  - name: extensionId
     type: string
-    default: test
+    default: test-azp-PAT-ubuntu
+  - name: vmImage
+    type: string
+    default: ubuntu-latest
+  - name: connectionType
+    type: string
+    default: PAT
   - name: initialVersion
     type: string
     default: 1.0.0
@@ -43,46 +54,189 @@ stages:
 
     jobs:
       - job: Test
-        displayName: Test
+        displayName: Test (${{ parameters.connectionType }}, ${{ parameters.vmImage }})
         pool:
-          vmImage: $(vmImage)
-        strategy:
-          matrix:
-            pat_ubuntu:
-              vmImage: ubuntu-latest
-              authType: pat
-              connectionType: PAT
-              extensionId: ${{ parameters.extensionIdPrefix }}-pat-ubuntu
-            oidc_ubuntu:
-              vmImage: ubuntu-latest
-              authType: oidc
-              connectionType: AzureRM
-              extensionId: ${{ parameters.extensionIdPrefix }}-oidc-ubuntu
-            pat_windows:
-              vmImage: windows-latest
-              authType: pat
-              connectionType: PAT
-              extensionId: ${{ parameters.extensionIdPrefix }}-pat-windows
-            oidc_windows:
-              vmImage: windows-latest
-              authType: oidc
-              connectionType: AzureRM
-              extensionId: ${{ parameters.extensionIdPrefix }}-oidc-windows
+          vmImage: ${{ parameters.vmImage }}
         steps:
+          - checkout: self
+
+          - task: NodeTool@0
+            displayName: Setup Node.js
+            inputs:
+              versionSpec: 24.x
+
+          # For PAT matrix entries, acquire a short-lived marketplace token at runtime
+          # from the OIDC-backed Azure RM connection so no PAT secret is stored.
+          # Resolve the marketplace service connection ID by name via az rest (or use
+          # the value directly when it is already a GUID) and then overwrite its
+          # password auth parameter with the job-scoped token.
           - task: AzureCLI@2
-            displayName: 'Fetch profile for Service Principal'
+            displayName: Get Azure DevOps bearer token
+            condition: and(succeeded(), eq('${{ parameters.connectionType }}', 'PAT'))
+            env:
+              MARKETPLACESERVICECONNECTIONNAME: ${{ parameters.marketplaceServiceConnectionName }}
             inputs:
               azureSubscription: ${{ parameters.azureRmConnection }}
+              allowNoSubscriptions: true
               scriptType: pscore
+              useGlobalConfig: true
               scriptLocation: inlineScript
               inlineScript: |
-                az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798
-          - template: templates/test-extension-lifecycle.yml
-            parameters:
-              connectionType: $(connectionType)
-              azureRmConnection: ${{ parameters.azureRmConnection }}
-              marketplaceServiceConnectionName: ${{ parameters.marketplaceServiceConnectionName }}
+                $organizationUrl = $env:SYSTEM_COLLECTIONURI.TrimEnd('/')
+                $projectName = $env:SYSTEM_TEAMPROJECT
+                $connectionName = $env:MARKETPLACESERVICECONNECTIONNAME
+                $endpointType = 'CloudMarketplaceEndpoint'
+
+                if (-not $connectionName) {
+                  throw 'MARKETPLACESERVICECONNECTIONNAME is required'
+                }
+
+                $parsedGuid = [guid]::Empty
+                if ([guid]::TryParse($connectionName, [ref]$parsedGuid)) {
+                  $marketplaceServiceConnectionId = $parsedGuid.ToString()
+                }
+                else {
+                  $escapedProject = [uri]::EscapeDataString($projectName)
+                  $escapedName = [uri]::EscapeDataString($connectionName)
+                  $escapedType = [uri]::EscapeDataString($endpointType)
+                  $endpointUrl = "$organizationUrl/$escapedProject/_apis/serviceendpoint/endpoints?endpointNames=$escapedName&type=$escapedType&api-version=7.1"
+
+                  $endpointResponse = az rest --method get --uri $endpointUrl --resource 499b84ac-1321-427f-aa17-267ca6975798
+                  $endpointJson = $endpointResponse | ConvertFrom-Json
+                  $matchingEndpoints = @(
+                    $endpointJson.value | Where-Object {
+                      $_.name -eq $connectionName -and $_.type -eq $endpointType
+                    }
+                  )
+
+                  if ($matchingEndpoints.Count -ne 1) {
+                    throw "Expected exactly one service connection named '$connectionName' with type '$endpointType' in project '$projectName', found $($matchingEndpoints.Count)"
+                  }
+
+                  $marketplaceServiceConnectionId = $matchingEndpoints[0].id
+                }
+
+                $token = az account get-access-token `
+                  --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+                  --query accessToken --output tsv
+                if (-not $token) {
+                  throw 'Failed to acquire Azure DevOps bearer token'
+                }
+
+                Write-Host "##vso[task.setvariable variable=marketplaceServiceConnectionId]$marketplaceServiceConnectionId"
+                Write-Host "Resolved marketplace service connection id: $marketplaceServiceConnectionId"
+                Write-Host "##vso[task.setsecret]$token"
+                Write-Host "##vso[task.setendpoint id=$marketplaceServiceConnectionId;field=authParameter;key=password]$token"
+
+          - task: azdo-marketplace@6
+            name: queryVersion
+            displayName: Query next patch version
+            continueOnError: true
+            inputs:
+              operation: queryVersion
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
               publisherId: ${{ parameters.publisherId }}
-              extensionId: $(extensionId)
-              initialVersion: ${{ parameters.initialVersion }}
-              organizationUrl: ${{ parameters.organizationUrl }}
+              extensionId: ${{ parameters.extensionId }}
+              marketplaceVersionAction: Patch
+              workingDirectory: tests/sample-extension
+              versionSource: |
+                manifest
+                marketplace
+                ${{ parameters.initialVersion }}
+
+          # --- Package from manifest ---
+          - task: azdo-marketplace@6
+            name: packageManifest
+            displayName: Package from manifest
+            inputs:
+              operation: package
+              publisherId: ${{ parameters.publisherId }}
+              extensionId: ${{ parameters.extensionId }}
+              extensionVersion: $(queryVersion.proposedVersion)
+              extensionVisibility: private_preview
+              updateTasksVersion: patch
+              updateTasksId: true
+              outputPath: $(Build.ArtifactStagingDirectory)
+              manifestFile: vss-extension.json
+              workingDirectory: tests/sample-extension
+
+          # --- Publish from VSIX ---
+          - task: azdo-marketplace@6
+            displayName: Publish from VSIX
+            name: publish
+            inputs:
+              operation: publish
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              use: vsix
+              vsixFile: $(packageManifest.vsixFile)
+              noWaitValidation: true
+
+          # --- Wait for validation ---
+          - task: azdo-marketplace@6
+            displayName: Wait for validation
+            inputs:
+              operation: waitForValidation
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              vsixFile: $(publish.vsixFile)
+
+          # --- Share ---
+          - task: azdo-marketplace@6
+            displayName: Share extension
+            inputs:
+              operation: share
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              vsixFile: $(publish.vsixFile)
+              accounts: ${{ parameters.organizationUrl }}
+
+          # --- Install ---
+          - task: azdo-marketplace@6
+            displayName: Install extension
+            inputs:
+              operation: install
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              vsixFile: $(publish.vsixFile)
+              accounts: ${{ parameters.organizationUrl }}
+
+          # --- Wait for installation ---
+          - task: azdo-marketplace@6
+            displayName: Wait for installation
+            inputs:
+              operation: waitForInstallation
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              publisherId: ${{ parameters.publisherId }}
+              extensionId: ${{ parameters.extensionId }}
+              vsixFile: $(publish.vsixFile)
+              accounts: ${{ parameters.organizationUrl }}
+
+          # --- Unshare ---
+          - task: azdo-marketplace@6
+            displayName: Unshare extension
+            inputs:
+              operation: unshare
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              vsixFile: $(publish.vsixFile)
+              accounts: ${{ parameters.organizationUrl }}
+
+          # --- Unpublish ---
+          - task: azdo-marketplace@6
+            displayName: Unpublish extension
+            inputs:
+              operation: unpublish
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              vsixFile: $(publish.vsixFile)
