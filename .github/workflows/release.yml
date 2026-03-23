@@ -291,7 +291,7 @@ jobs:
   # Triggers the Azure DevOps test pipeline and waits for completion.
   # ---------------------------------------------------------------------------
   test-azure-pipelines:
-    name: Test Azure Pipelines (${{ matrix.connectionType }}, ${{ matrix.vmImage }})
+    name: Test Azure Pipelines
     needs: [prepare-release, preview-release]
     runs-on: ubuntu-slim
     strategy:
