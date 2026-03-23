@@ -1,6 +1,6 @@
 {
   "name": "@extension-tasks/github-action",
-  "version": "6.0.0-alpha.1",
+  "version": "6.1.4",
   "description": "GitHub Actions adapter for extension tasks",
   "type": "module",
   "main": "./build/main.js",
