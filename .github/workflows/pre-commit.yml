@@ -34,7 +34,7 @@ jobs:
           go-version: stable
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Install pre-commit
         run: python3 -m pip install --user pre-commit
