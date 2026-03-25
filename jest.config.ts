@@ -12,10 +12,7 @@ const config: Config = {
       'ts-jest',
       {
         useESM: true,
-        tsconfig: {
-          module: 'Node16',
-          moduleResolution: 'Node16',
-        },
+        tsconfig: 'tsconfig.jest.json',
         diagnostics: {
           ignoreCodes: [151002], // Suppress Node16 module kind warning
         },
