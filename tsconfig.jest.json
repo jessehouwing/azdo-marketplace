@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "jest"],
+    "noEmit": true,
+    "module": "Node16",
+    "moduleResolution": "Node16"
+  },
+  "include": ["packages/*/src/**/*.ts", "jest.config.ts"]
+}
