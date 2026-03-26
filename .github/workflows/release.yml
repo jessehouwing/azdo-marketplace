@@ -124,7 +124,7 @@ jobs:
         run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Update version references
         run: node Scripts/update-version.mjs ${{ steps.resolve.outputs.version }}
