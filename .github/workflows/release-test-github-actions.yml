@@ -45,7 +45,7 @@ jobs:
       id-token: write
 
     env:
-      EXTENSION_ID: ${{ format('test-gha-{0}-{1}', matrix.auth-type, matrix.os == 'ubuntu-latest' && 'ubuntu' || 'windows') }}
+      EXTENSION_ID: ${{ format('azdo-gha-{0}-{1}', matrix.auth-type, matrix.os == 'ubuntu-latest' && 'ubuntu' || 'windows') }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
