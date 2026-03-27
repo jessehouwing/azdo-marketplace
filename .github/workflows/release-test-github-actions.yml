@@ -182,12 +182,3 @@ jobs:
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
-
-      # --- Unpublish ---
-      - name: Unpublish extension
-        uses: ./
-        with:
-          operation: unpublish
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
