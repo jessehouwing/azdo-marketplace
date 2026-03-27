@@ -387,7 +387,7 @@ jobs:
             default { throw "Unsupported TEST_VM_IMAGE: $($env:TEST_VM_IMAGE)" }
           }
 
-          $extensionId = "test-azp-$($env:TEST_CONNECTION_TYPE)-$osSuffix"
+          $extensionId = "azdo-azp-$($env:TEST_CONNECTION_TYPE)-$osSuffix"
 
           Invoke-Az -Arguments @('config', 'set', 'extension.use_dynamic_install=yes_without_prompt') | Out-Null
           Invoke-Az -Arguments @('extension', 'add', '--name', 'azure-devops', '--upgrade', '--only-show-errors') | Out-Null
