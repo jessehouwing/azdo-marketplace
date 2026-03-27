@@ -230,13 +230,3 @@ stages:
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
               vsixFile: $(publish.vsixFile)
               accounts: ${{ parameters.organizationUrl }}
-
-          # --- Unpublish ---
-          - task: azdo-marketplace@6
-            displayName: Unpublish extension
-            inputs:
-              operation: unpublish
-              connectionType: ${{ parameters.connectionType }}
-              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
-              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-              vsixFile: $(publish.vsixFile)
