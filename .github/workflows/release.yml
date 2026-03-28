@@ -206,7 +206,7 @@ jobs:
     runs-on: windows-latest
     environment:
       name: 'publisher-jessehouwing'
-      url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}-preview
+      url: https://marketplace.visualstudio.com/items?itemName=${{ env.PUBLISHER_ID_DEV }}.${{ env.EXTENSION_ID }}-pre
 
     permissions:
       contents: read
@@ -243,7 +243,7 @@ jobs:
           use: vsix
           vsix-file: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
           publisher-id: ${{ env.PUBLISHER_ID_DEV }}
-          extension-id: ${{ env.EXTENSION_ID }}-preview
+          extension-id: ${{ env.EXTENSION_ID }}-pre
           extension-visibility: private_preview
           update-tasks-id: true
           no-wait-validation: true
