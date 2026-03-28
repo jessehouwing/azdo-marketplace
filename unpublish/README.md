@@ -9,7 +9,7 @@ Remove an Azure DevOps extension from the Visual Studio Marketplace.
 ### Basic Example
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unpublish@v6
+- uses: jessehouwing/azdo-marketplace/unpublish@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -19,7 +19,7 @@ Remove an Azure DevOps extension from the Visual Studio Marketplace.
 ### Unpublish Using VSIX Identity Fallback
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unpublish@v6
+- uses: jessehouwing/azdo-marketplace/unpublish@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     vsix-file: ${{ steps.package.outputs.vsix-file }}
@@ -28,7 +28,7 @@ Remove an Azure DevOps extension from the Visual Studio Marketplace.
 ### Unpublish Using Manifest Identity Fallback from a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unpublish@v6
+- uses: jessehouwing/azdo-marketplace/unpublish@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: './extension'
@@ -44,7 +44,7 @@ Remove an Azure DevOps extension from the Visual Studio Marketplace.
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/unpublish@v6
+- uses: jessehouwing/azdo-marketplace/unpublish@v6.1.5
   with:
     auth-type: 'oidc'
     publisher-id: 'my-publisher'
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.inputs.confirm == 'UNPUBLISH'
     steps:
-      - uses: jessehouwing/azdo-marketplace/unpublish@v6
+      - uses: jessehouwing/azdo-marketplace/unpublish@v6.1.5
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -115,7 +115,7 @@ jobs:
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unpublish@v6
+- uses: jessehouwing/azdo-marketplace/unpublish@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher

@@ -7,7 +7,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
 ### Basic Validation
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -18,7 +18,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
 ### With Custom Timeout and Polling
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -30,7 +30,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
 ### Validate Using VSIX Identity Fallback
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     vsix-file: ${{ steps.package.outputs.vsix-file }}
@@ -39,7 +39,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
 ### Validate Using Manifest Identity Fallback from a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: './extension'
@@ -55,7 +55,7 @@ Validate that an Azure DevOps extension has been successfully processed by the m
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
   with:
     auth-type: 'oidc'
     publisher-id: 'my-publisher'
@@ -121,13 +121,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Publish Extension
-        uses: jessehouwing/azdo-marketplace/publish@v6
+        uses: jessehouwing/azdo-marketplace/publish@v6.1.5
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           manifest-file: './extension/vss-extension.json'
 
       - name: Validate Extension
-        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -148,7 +148,7 @@ This action polls the marketplace to check if your extension has been successful
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.1.5
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
