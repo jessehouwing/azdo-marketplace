@@ -9,7 +9,7 @@ Share an Azure DevOps extension with specific organizations.
 ### Share with Single Organization
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.1.6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -20,7 +20,7 @@ Share an Azure DevOps extension with specific organizations.
 ### Share with Multiple Organizations
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.1.6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -34,7 +34,7 @@ Share an Azure DevOps extension with specific organizations.
 ### Share Using VSIX Identity Fallback
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.1.6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     vsix-file: ${{ steps.package.outputs.vsix-file }}
@@ -46,7 +46,7 @@ Share an Azure DevOps extension with specific organizations.
 ### Share Using Manifest Identity Fallback from a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.1.6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: './extension'
@@ -63,7 +63,7 @@ Share an Azure DevOps extension with specific organizations.
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.1.6
   with:
     auth-type: 'oidc'
     publisher-id: 'my-publisher'
@@ -122,7 +122,7 @@ jobs:
   share:
     runs-on: ubuntu-latest
     steps:
-      - uses: jessehouwing/azdo-marketplace/share@v6
+      - uses: jessehouwing/azdo-marketplace/share@v6.1.6
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -135,7 +135,7 @@ jobs:
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.1.6
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher

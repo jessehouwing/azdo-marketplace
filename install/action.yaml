@@ -190,7 +190,7 @@ runs:
   using: composite
   steps:
     - id: install
-      uses: jessehouwing/azdo-marketplace@main
+      uses: jessehouwing/azdo-marketplace@v6.1.6
       with:
         operation: install
         auth-type: ${{ inputs.auth-type }}
