@@ -56,18 +56,18 @@
     "jest": "^30.3.0",
     "js-yaml": "^4.1.1",
     "prettier": "^3.4.2",
-    "rollup": "^4.60.0",
+    "rollup": "^4.60.1",
     "tfx-cli": "^0.23.1",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.57.2",
+    "typescript-eslint": "^8.58.0",
     "yauzl": "^3.2.1",
     "yazl": "^3.3.1"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.57.1",
-    "@rollup/rollup-win32-x64-gnu": "^4.57.1",
-    "@rollup/rollup-win32-x64-msvc": "^4.57.1"
+    "@rollup/rollup-linux-x64-gnu": "^4.60.1",
+    "@rollup/rollup-win32-x64-gnu": "^4.60.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.60.1"
   }
 }
