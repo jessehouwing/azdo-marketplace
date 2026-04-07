@@ -448,6 +448,22 @@ function runCommand(command, args, cwd) {
   });
 }
 
+async function buildWorkspaceDependencies(target) {
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const tscBuildArgs = [
+    'exec',
+    '--',
+    'tsc',
+    '-b',
+    '--force',
+    path.join('packages', 'core', 'tsconfig.json'),
+    path.join(target.packageDir, 'tsconfig.json'),
+  ];
+
+  console.log(`Refreshing TypeScript build outputs for ${target.name}...`);
+  await runCommand(npmCommand, tscBuildArgs, rootDir);
+}
+
 function runCommandForOutput(command, args, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -750,6 +766,9 @@ async function bundle() {
     };
 
     console.log(`\nBundling ${target.name}...`);
+    await buildWorkspaceDependencies(target);
+    step('refresh workspace builds');
+
     await buildWithRollup(target);
     step('rollup build');
 
