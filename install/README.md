@@ -15,7 +15,7 @@ Install an Azure DevOps extension to specific accounts/organizations.
 ### Install to Single Account
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.1.7
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -26,7 +26,7 @@ Install an Azure DevOps extension to specific accounts/organizations.
 ### Install to Multiple Accounts
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.1.7
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -40,7 +40,7 @@ Install an Azure DevOps extension to specific accounts/organizations.
 ### Install Using VSIX Identity Fallback
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.1.7
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     vsix-file: ${{ steps.package.outputs.vsix-file }}
@@ -52,7 +52,7 @@ Install an Azure DevOps extension to specific accounts/organizations.
 ### Install Using Manifest Identity Fallback from a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.1.7
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: './extension'
@@ -69,7 +69,7 @@ Install an Azure DevOps extension to specific accounts/organizations.
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.1.7
   with:
     auth-type: 'oidc'
     publisher-id: 'my-publisher'
@@ -131,14 +131,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Publish Extension
-        uses: jessehouwing/azdo-marketplace/publish@v6
+        uses: jessehouwing/azdo-marketplace/publish@v6.1.7
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           manifest-file: './extension/vss-extension.json'
           extension-version: '1.0.${{ github.run_number }}'
 
       - name: Install to Test Org
-        uses: jessehouwing/azdo-marketplace/install@v6
+        uses: jessehouwing/azdo-marketplace/install@v6.1.7
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -149,7 +149,7 @@ jobs:
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.1.7
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
