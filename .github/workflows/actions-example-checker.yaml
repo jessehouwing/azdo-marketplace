@@ -21,4 +21,4 @@ jobs:
             **/action.schema.yml
             **/*.md
           sparse-checkout-cone-mode: false
-      - uses: jessehouwing/actions-example-checker@6eae14fcd8b6d4d1f0cde6b2ada154c1c046d2cb # v0.0.6
+      - uses: jessehouwing/actions-example-checker@2320f85090ee4e37c4d96692165563986baa4323 # v0.0.7
