@@ -21,4 +21,26 @@ jobs:
             **/action.schema.yml
             **/*.md
           sparse-checkout-cone-mode: false
+
+      - name: Resolve version from ref or tags
+        id: version
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if [[ "$BRANCH_NAME" =~ ^release/(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Using version from release branch: ${BASH_REMATCH[1]}"
+            echo "tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n1)
+          if [ -z "$latest" ]; then
+            echo "No version tags found matching vx.y.z pattern and branch '$BRANCH_NAME' is not release/vx.y.z"
+            exit 1
+          fi
+          echo "Using latest version tag: $latest"
+          echo "tag=$latest" >> "$GITHUB_OUTPUT"
+
       - uses: jessehouwing/actions-example-checker@1b5353c42fbb52256d465de4a7d2021c5d6cb87b # v0.0.8
+        with:
+          version: ${{ steps.version.outputs.tag }}
