@@ -197,12 +197,40 @@ jobs:
           git push origin "HEAD:$branch"
 
   # ---------------------------------------------------------------------------
-  # Job 2: Preview release to Azure DevOps
+  # Job 2: Validate documentation version references
+  # Ensures docs and action examples only reference the version being released.
+  # ---------------------------------------------------------------------------
+  validate-documentation-versions:
+    name: Validate documentation versions
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+        with:
+          ref: release/v${{ needs.prepare-release.outputs.version }}
+          sparse-checkout: |
+            **/action.yaml
+            **/action.yml
+            **/action.schema.yaml
+            **/action.schema.yml
+            **/*.md
+          sparse-checkout-cone-mode: false
+
+      - name: Validate documentation action versions
+        uses: jessehouwing/actions-example-checker@1b5353c42fbb52256d465de4a7d2021c5d6cb87b # v0.0.8
+        with:
+          version: v${{ needs.prepare-release.outputs.version }}
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Preview release to Azure DevOps
   # Publishes a private preview extension with unique task IDs to the dev org.
   # ---------------------------------------------------------------------------
   preview-release:
     name: Preview release (Azure DevOps)
-    needs: prepare-release
+    needs: [prepare-release, validate-documentation-versions]
     runs-on: windows-latest
     environment:
       name: 'publisher-jessehouwing'
@@ -279,7 +307,7 @@ jobs:
             https://dev.azure.com/jessehouwing
 
   # ---------------------------------------------------------------------------
-  # Job 3: Test Azure Pipelines
+  # Job 4: Test Azure Pipelines
   # Triggers the Azure DevOps test pipeline and waits for completion.
   # ---------------------------------------------------------------------------
   test-azure-pipelines:
@@ -450,12 +478,12 @@ jobs:
           throw "Pipeline timed out after ${timeoutSeconds}s"
 
   # ---------------------------------------------------------------------------
-  # Job 4: Test GitHub Actions
+  # Job 5: Test GitHub Actions
   # Runs the reusable test workflow against the prepared release branch.
   # ---------------------------------------------------------------------------
   test-github-actions:
     name: Test GitHub Actions
-    needs: prepare-release
+    needs: [prepare-release, validate-documentation-versions]
     uses: ./.github/workflows/release-test-github-actions.yml
     with:
       ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -465,7 +493,7 @@ jobs:
       id-token: write
 
   # ---------------------------------------------------------------------------
-  # Job 5: Production release to marketplace
+  # Job 6: Production release to marketplace
   # Requires environment approval before running.
   # ---------------------------------------------------------------------------
   publish-production:
@@ -519,7 +547,7 @@ jobs:
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
 
   # ---------------------------------------------------------------------------
-  # Job 6: Create GitHub draft release and tags
+  # Job 7: Create GitHub draft release and tags
   # Runs in parallel with publish-production after preview and both test jobs.
   # The draft is published only after the marketplace release succeeds.
   # ---------------------------------------------------------------------------
@@ -610,7 +638,7 @@ jobs:
             $vsixFile
 
   # ---------------------------------------------------------------------------
-  # Job 7: Publish GitHub release
+  # Job 8: Publish GitHub release
   # Publishes the draft release after marketplace publication succeeds.
   # ---------------------------------------------------------------------------
   publish-github-release:
@@ -653,7 +681,7 @@ jobs:
           git push origin $majorMinor --force
 
   # ---------------------------------------------------------------------------
-  # Job 8: Cleanup release branch
+  # Job 9: Cleanup release branch
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup release branch
