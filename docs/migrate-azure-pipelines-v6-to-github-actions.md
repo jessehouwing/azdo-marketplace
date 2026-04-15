@@ -35,7 +35,7 @@ Azure Pipelines uses:
 GitHub Actions uses:
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.1.8
   with:
     operation: publish
 ```
@@ -87,7 +87,7 @@ env:
   EXTENSION_ID_SUFFIX: -dev
 
 steps:
-  - uses: jessehouwing/azdo-marketplace@v6
+  - uses: jessehouwing/azdo-marketplace@v6.1.8
     with:
       operation: publish
       extension-id: ${{ format('{0}{1}', env.EXTENSION_ID_BASE, env.EXTENSION_ID_SUFFIX) }}
@@ -233,11 +233,11 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - id: package
-        uses: jessehouwing/azdo-marketplace@v6
+        uses: jessehouwing/azdo-marketplace@v6.1.8
         with:
           operation: package
 
-      - uses: jessehouwing/azdo-marketplace@v6
+      - uses: jessehouwing/azdo-marketplace@v6.1.8
         with:
           operation: publish
           auth-type: oidc

@@ -7,7 +7,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 ### Publish from Manifest
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     manifest-file: './my-extension/vss-extension.json'
@@ -16,7 +16,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 ### Publish from VSIX
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     use: 'vsix'
@@ -32,7 +32,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     auth-type: 'oidc'
     manifest-file: './my-extension/vss-extension.json'
@@ -41,7 +41,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 ### Publish with Basic Authentication (On-Premises)
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     auth-type: 'basic'
     username: ${{ secrets.TFS_USERNAME }}
@@ -53,7 +53,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 ### Publish with Version Override and Task Updates
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     manifest-file: './my-extension/vss-extension.json'
@@ -65,7 +65,7 @@ Publish an Azure DevOps extension to the Visual Studio Marketplace.
 ### Publish from a Manifest in a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: './my-extension'
@@ -151,7 +151,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Publish to Marketplace
-        uses: jessehouwing/azdo-marketplace/publish@v6
+        uses: jessehouwing/azdo-marketplace/publish@v6.1.8
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           manifest-file: './extension/vss-extension.json'
@@ -163,7 +163,7 @@ jobs:
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.1.8
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
