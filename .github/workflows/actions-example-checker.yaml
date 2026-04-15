@@ -21,6 +21,7 @@ jobs:
             **/action.schema.yml
             **/*.md
           sparse-checkout-cone-mode: false
+          fetch-depth: 0
 
       - name: Resolve version from ref or tags
         id: version
