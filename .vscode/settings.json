@@ -33,5 +33,8 @@
     "**/dist": true,
     "**/*.vsix": true,
     "**/coverage": true
+  },
+  "airun.settings": {
+    "workspaceId": "5875660a-fceb-4140-a92e-8481dfe1df94"
   }
 }
