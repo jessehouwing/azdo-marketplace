@@ -69,9 +69,5 @@
     "@rollup/rollup-linux-x64-gnu": "^4.60.1",
     "@rollup/rollup-win32-x64-gnu": "^4.60.1",
     "@rollup/rollup-win32-x64-msvc": "^4.60.1"
-  },
-  "dependencies": {
-    "@actions/glob": "^0.7.0",
-    "uuid": "^14.0.0"
   }
 }
