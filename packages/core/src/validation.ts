@@ -173,7 +173,7 @@ async function getBinaryVersion(
     const exitCode = await platform.exec(binary, args, {
       silent: true,
       ignoreReturnCode: true,
-    } as any);
+    });
 
     // If exec succeeds, binary is available
     if (exitCode === 0) {
