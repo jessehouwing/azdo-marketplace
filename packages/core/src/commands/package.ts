@@ -169,6 +169,11 @@ export async function packageExtension(
 
       if (shouldUpdateTaskVersion) {
         if (resolvedTaskUpdateOptions.extensionVersion) {
+          if (resolvedTaskUpdateOptions.extensionVersion.split('.').length > 3) {
+            platform.warning(
+              `Version '${resolvedTaskUpdateOptions.extensionVersion}' contains a 4-part revision which is not supported in task.json (Major, Minor, Patch only). The revision part will be ignored when updating task versions.`
+            );
+          }
           await editor.updateAllTaskVersions(
             resolvedTaskUpdateOptions.extensionVersion,
             taskVersionUpdateType

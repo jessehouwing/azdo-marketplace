@@ -352,6 +352,36 @@ describe('packageExtension', () => {
     expect(platform.infoMessages).toContain('Task manifests updated successfully');
   });
 
+  it('should warn when a 4-part version is used with updateTasksVersion', async () => {
+    const fixture = await createManifestTaskFixture({ prefix: 'package-4part-warn-' });
+
+    jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+      exitCode: 0,
+      json: { path: '/output/extension.vsix' },
+      stdout: '',
+      stderr: '',
+    });
+
+    try {
+      await packageExtension(
+        {
+          rootFolder: fixture.root,
+          manifestGlobs: ['vss-extension.json'],
+          extensionVersion: '2.0.0.42',
+          updateTasksVersion: 'major',
+        },
+        tfxManager,
+        platform
+      );
+    } finally {
+      await fixture.cleanup();
+    }
+
+    expect(
+      platform.warningMessages.some((m) => m.includes('4-part revision') && m.includes('2.0.0.42'))
+    ).toBe(true);
+  });
+
   it('should log and throw when task manifest update fails', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
 

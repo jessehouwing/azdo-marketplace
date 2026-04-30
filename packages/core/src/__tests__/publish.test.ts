@@ -610,6 +610,37 @@ describe('publishExtension', () => {
     expect(platform.infoMessages).toContain('Task manifests updated successfully');
   });
 
+  it('should warn when a 4-part version is used with updateTasksVersion', async () => {
+    const fixture = await createManifestTaskFixture({ prefix: 'publish-4part-warn-' });
+
+    jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+      exitCode: 0,
+      json: { published: true, packaged: '/out/ext.vsix' },
+      stdout: '',
+      stderr: '',
+    });
+
+    try {
+      await publishExtension(
+        withManifestDefaults({
+          rootFolder: fixture.root,
+          manifestGlobs: ['vss-extension.json'],
+          extensionVersion: '2.0.0.42',
+          updateTasksVersion: 'major',
+        }),
+        auth,
+        tfxManager,
+        platform
+      );
+    } finally {
+      await fixture.cleanup();
+    }
+
+    expect(
+      platform.warningMessages.some((m) => m.includes('4-part revision') && m.includes('2.0.0.42'))
+    ).toBe(true);
+  });
+
   it('should modify vsix before publishing when overrides are provided', async () => {
     const tempDir = await fs.mkdtemp(join(tmpdir(), 'publish-vsix-'));
     const originalGetTempDir = platform.getTempDir.bind(platform);
