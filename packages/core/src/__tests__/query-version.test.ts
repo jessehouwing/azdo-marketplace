@@ -254,6 +254,52 @@ describe('queryVersion', () => {
 
       expect(result.version).toBe('1.2.4.4');
     });
+
+    it('increments revision of a 4-part marketplace version', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Revision',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.2.3.5');
+    });
+
+    it('adds revision starting at 1 for a 3-part marketplace version', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Revision',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.2.3.1');
+    });
   });
 
   describe('defaults to marketplace when no versionSource specified', () => {

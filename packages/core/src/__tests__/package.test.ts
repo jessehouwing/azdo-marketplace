@@ -382,6 +382,39 @@ describe('packageExtension', () => {
     ).toBe(true);
   });
 
+  it('should apply only first 3 parts of 4-part version to task.json', async () => {
+    const fixture = await createManifestTaskFixture({
+      prefix: 'package-4part-task-',
+      taskVersion: { Major: 1, Minor: 0, Patch: 0 },
+    });
+
+    jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+      exitCode: 0,
+      json: { path: '/output/extension.vsix' },
+      stdout: '',
+      stderr: '',
+    });
+
+    try {
+      await packageExtension(
+        {
+          rootFolder: fixture.root,
+          manifestGlobs: ['vss-extension.json'],
+          extensionVersion: '3.5.7.42',
+          updateTasksVersion: 'major',
+        },
+        tfxManager,
+        platform
+      );
+    } finally {
+      // Read the task.json to verify
+      const taskJson = JSON.parse(await fs.readFile(fixture.taskJsonPath, 'utf-8'));
+      await fixture.cleanup();
+      // Only 3-part version should be set on task
+      expect(taskJson.version).toEqual({ Major: 3, Minor: 5, Patch: 7 });
+    }
+  });
+
   it('should log and throw when task manifest update fails', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
 

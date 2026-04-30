@@ -6,7 +6,7 @@ import type { TfxManager } from '../tfx-manager.js';
 import { VsixReader } from '../vsix-reader.js';
 import { showExtension } from './show.js';
 
-export type VersionAction = 'None' | 'Major' | 'Minor' | 'Patch';
+export type VersionAction = 'None' | 'Major' | 'Minor' | 'Patch' | 'Revision';
 
 /** The source that produced the winning version. */
 export type VersionSource = 'marketplace' | 'manifest' | 'vsix' | 'literal';
@@ -107,6 +107,8 @@ function applyVersionAction(version: string, versionAction: VersionAction): stri
       return `${major}.${minor + 1}.0${revisionSuffix}`;
     case 'Patch':
       return `${major}.${minor}.${patch + 1}${revisionSuffix}`;
+    case 'Revision':
+      return `${major}.${minor}.${patch}.${(revision ?? 0) + 1}`;
     default:
       return version;
   }
