@@ -233,10 +233,10 @@ inputs:
       Required for: none.
       Default: none
 
-      - Must follow semantic versioning: `major.minor.patch`
+      - Must follow semantic versioning: `major.minor.patch` or `major.minor.patch.revision`
       - Useful for CI/CD pipelines to inject build numbers
 
-      **Examples:** `1.2.3`, `1.0.$``{{ github.run_number }}`
+      **Examples:** `1.2.3`, `1.2.3.4`, `1.0.$``{{ github.run_number }}`
     required: false
   extension-name:
     description: |-

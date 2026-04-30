@@ -161,6 +161,99 @@ describe('queryVersion', () => {
         )
       ).rejects.toThrow('No valid version candidates found');
     });
+
+    it('returns 4-part marketplace version when action is None', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'None',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.2.3.4');
+      expect(result.source).toBe('marketplace');
+    });
+
+    it('increments major version of 4-part marketplace version, preserving revision', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Major',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('2.0.0.4');
+    });
+
+    it('increments minor version of 4-part marketplace version, preserving revision', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Minor',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.3.0.4');
+    });
+
+    it('increments patch version of 4-part marketplace version, preserving revision', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Patch',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.2.4.4');
+    });
   });
 
   describe('defaults to marketplace when no versionSource specified', () => {
@@ -201,6 +294,22 @@ describe('queryVersion', () => {
       );
 
       expect(result.version).toBe('3.0.0');
+      expect(result.source).toBe('literal');
+    });
+
+    it('uses a 4-part semver literal as version', async () => {
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          versionSource: ['3.0.0.42'],
+        },
+        undefined,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('3.0.0.42');
       expect(result.source).toBe('literal');
     });
 
@@ -294,6 +403,23 @@ describe('queryVersion', () => {
 
       expect(result.currentVersion).toBe('2.5.7');
       expect(result.proposedVersion).toBe('3.1.0');
+    });
+
+    it('correctly compares 3-part and 4-part versions, picking the highest', async () => {
+      // 1.2.3.4 has an implicit revision=4, so it should beat 1.2.3
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          versionSource: ['1.2.3', '1.2.3.4'],
+        },
+        undefined,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.2.3.4');
+      expect(result.source).toBe('literal');
     });
   });
 
