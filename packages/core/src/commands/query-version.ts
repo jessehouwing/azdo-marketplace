@@ -98,15 +98,15 @@ function applyVersionAction(version: string, versionAction: VersionAction): stri
   }
 
   const [major, minor, patch, revision] = parts;
-  const revisionSuffix = revision !== undefined ? `.${revision}` : '';
+  const is4Part = revision !== undefined;
 
   switch (versionAction) {
     case 'Major':
-      return `${major + 1}.0.0${revisionSuffix}`;
+      return `${major + 1}.0.0${is4Part ? '.0' : ''}`;
     case 'Minor':
-      return `${major}.${minor + 1}.0${revisionSuffix}`;
+      return `${major}.${minor + 1}.0${is4Part ? '.0' : ''}`;
     case 'Patch':
-      return `${major}.${minor}.${patch + 1}${revisionSuffix}`;
+      return `${major}.${minor}.${patch + 1}${is4Part ? '.0' : ''}`;
     case 'Revision':
       return `${major}.${minor}.${patch}.${(revision ?? 0) + 1}`;
     default:
