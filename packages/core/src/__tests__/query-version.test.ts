@@ -186,7 +186,7 @@ describe('queryVersion', () => {
       expect(result.source).toBe('marketplace');
     });
 
-    it('increments major version of 4-part marketplace version, dropping revision', async () => {
+    it('increments major version of 4-part marketplace version, preserving revision', async () => {
       jest.spyOn(tfxManager, 'execute').mockResolvedValue({
         exitCode: 0,
         json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
@@ -206,10 +206,10 @@ describe('queryVersion', () => {
         platform
       );
 
-      expect(result.version).toBe('2.0.0');
+      expect(result.version).toBe('2.0.0.4');
     });
 
-    it('increments minor version of 4-part marketplace version, dropping revision', async () => {
+    it('increments minor version of 4-part marketplace version, preserving revision', async () => {
       jest.spyOn(tfxManager, 'execute').mockResolvedValue({
         exitCode: 0,
         json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
@@ -229,10 +229,10 @@ describe('queryVersion', () => {
         platform
       );
 
-      expect(result.version).toBe('1.3.0');
+      expect(result.version).toBe('1.3.0.4');
     });
 
-    it('increments patch version of 4-part marketplace version, dropping revision', async () => {
+    it('increments patch version of 4-part marketplace version, preserving revision', async () => {
       jest.spyOn(tfxManager, 'execute').mockResolvedValue({
         exitCode: 0,
         json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3.4' },
@@ -252,7 +252,7 @@ describe('queryVersion', () => {
         platform
       );
 
-      expect(result.version).toBe('1.2.4');
+      expect(result.version).toBe('1.2.4.4');
     });
 
     it('increments revision of a 4-part marketplace version', async () => {
@@ -299,6 +299,75 @@ describe('queryVersion', () => {
       );
 
       expect(result.version).toBe('1.2.3.1');
+    });
+
+    it('increments major version of 3-part marketplace version, staying 3-part', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Major',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('2.0.0');
+    });
+
+    it('increments minor version of 3-part marketplace version, staying 3-part', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Minor',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.3.0');
+    });
+
+    it('increments patch version of 3-part marketplace version, staying 3-part', async () => {
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { extensionId: 'ext', publisher: 'pub', version: '1.2.3' },
+        stdout: '',
+        stderr: '',
+      });
+
+      const result = await queryVersion(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          marketplaceVersionAction: 'Patch',
+          versionSource: ['marketplace'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      expect(result.version).toBe('1.2.4');
     });
   });
 
