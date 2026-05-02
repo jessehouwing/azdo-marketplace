@@ -19,7 +19,7 @@ BuildTasks/*Extension*/common.ts
 *.env
 BuildTasks/**/*.js
 BuildTasks/**/*.js.map
-
+.idea/
 tsconfig.tsbuildinfo
 /*.pfx
 vsixsigntool.exe
