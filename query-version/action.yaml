@@ -188,8 +188,10 @@ inputs:
       - `Major`: Increment major and reset minor/patch
       - `Minor`: Increment minor and reset patch
       - `Patch`: Increment patch
+      - `Revision`: Increment revision (4th part)
 
       **Example:** If latest is `1.2.3` and action is `Minor`, result is `1.3.0`
+      **Example:** If latest is `1.2.3.4` and action is `Revision`, result is `1.2.3.5`
     required: false
     default: None
   manifest-file:

@@ -152,6 +152,7 @@ inputs:
       - Major
       - Minor
       - Patch
+      - Revision
 
   timeout-minutes:
     type: number

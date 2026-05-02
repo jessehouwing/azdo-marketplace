@@ -352,6 +352,59 @@ describe('packageExtension', () => {
     expect(platform.infoMessages).toContain('Task manifests updated successfully');
   });
 
+  it.each([
+    {
+      version: '2.0.0',
+      expectedTaskVersion: { Major: 2, Minor: 0, Patch: 0 },
+      expectsWarning: false,
+    },
+    {
+      version: '2.0.0.42',
+      expectedTaskVersion: { Major: 2, Minor: 0, Patch: 0 },
+      expectsWarning: true,
+    },
+    {
+      version: '3.5.7.42',
+      expectedTaskVersion: { Major: 3, Minor: 5, Patch: 7 },
+      expectsWarning: true,
+    },
+  ])(
+    'version $version applies $expectedTaskVersion to task.json (warning: $expectsWarning)',
+    async ({ version, expectedTaskVersion, expectsWarning }) => {
+      const fixture = await createManifestTaskFixture({ prefix: `package-4part-${version}-` });
+
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { path: '/output/extension.vsix' },
+        stdout: '',
+        stderr: '',
+      });
+
+      let taskJson!: { version: { Major: number; Minor: number; Patch: number } };
+      try {
+        await packageExtension(
+          {
+            rootFolder: fixture.root,
+            manifestGlobs: ['vss-extension.json'],
+            extensionVersion: version,
+            updateTasksVersion: 'major',
+          },
+          tfxManager,
+          platform
+        );
+      } finally {
+        taskJson = JSON.parse(await fs.readFile(fixture.taskJsonPath, 'utf-8'));
+        await fixture.cleanup();
+      }
+
+      const hasWarning = platform.warningMessages.some(
+        (m) => m.includes('4-part revision') && m.includes(version)
+      );
+      expect(hasWarning).toBe(expectsWarning);
+      expect(taskJson.version).toEqual(expectedTaskVersion);
+    }
+  );
+
   it('should log and throw when task manifest update fails', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
 

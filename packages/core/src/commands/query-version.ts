@@ -6,7 +6,7 @@ import type { TfxManager } from '../tfx-manager.js';
 import { VsixReader } from '../vsix-reader.js';
 import { showExtension } from './show.js';
 
-export type VersionAction = 'None' | 'Major' | 'Minor' | 'Patch';
+export type VersionAction = 'None' | 'Major' | 'Minor' | 'Patch' | 'Revision';
 
 /** The source that produced the winning version. */
 export type VersionSource = 'marketplace' | 'manifest' | 'vsix' | 'literal';
@@ -43,25 +43,31 @@ export interface QueryVersionResult {
   source: VersionSource;
 }
 
-const SEMVER_REGEX = /^\d+\.\d+\.\d+$/;
+const SEMVER_REGEX = /^\d+\.\d+\.\d+(?:\.\d+)?$/;
 
 /**
  * Parse a version string into its numeric parts.
- * Returns undefined if the string is not valid semver (major.minor.patch).
+ * Returns undefined if the string is not valid semver (major.minor.patch or major.minor.patch.revision).
  */
-function parseSemver(version: string): [number, number, number] | undefined {
+function parseSemver(version: string): [number, number, number, number | undefined] | undefined {
   if (!SEMVER_REGEX.test(version)) {
     return undefined;
   }
-  const parts = version.split('.').map((p) => Number.parseInt(p, 10));
-  if (parts.length !== 3 || parts.some(Number.isNaN)) {
+  const parts = version.split('.');
+  if (parts.some((p) => Number.isNaN(Number.parseInt(p, 10)))) {
     return undefined;
   }
-  return parts as [number, number, number];
+  return [
+    Number.parseInt(parts[0], 10),
+    Number.parseInt(parts[1], 10),
+    Number.parseInt(parts[2], 10),
+    parts[3] !== undefined ? Number.parseInt(parts[3], 10) : undefined,
+  ];
 }
 
 /**
  * Compare two semver strings. Returns positive if a > b, negative if a < b, 0 if equal.
+ * Supports both 3-part (major.minor.patch) and 4-part (major.minor.patch.revision) versions.
  */
 function compareSemver(a: string, b: string): number {
   const pa = parseSemver(a);
@@ -69,9 +75,11 @@ function compareSemver(a: string, b: string): number {
   if (!pa || !pb) {
     return 0;
   }
-  for (let i = 0; i < 3; i++) {
-    if (pa[i] !== pb[i]) {
-      return pa[i] - pb[i];
+  for (let i = 0; i < 4; i++) {
+    const partA = pa[i] ?? 0;
+    const partB = pb[i] ?? 0;
+    if (partA !== partB) {
+      return partA - partB;
     }
   }
   return 0;
@@ -84,16 +92,23 @@ function applyVersionAction(version: string, versionAction: VersionAction): stri
 
   const parts = parseSemver(version);
   if (!parts) {
-    throw new Error(`Version '${version}' is not a valid semantic version (major.minor.patch)`);
+    throw new Error(
+      `Version '${version}' is not a valid semantic version (major.minor.patch or major.minor.patch.revision)`
+    );
   }
+
+  const [major, minor, patch, revision] = parts;
+  const is4Part = revision !== undefined;
 
   switch (versionAction) {
     case 'Major':
-      return `${parts[0] + 1}.0.0`;
+      return `${major + 1}.0.0${is4Part ? '.0' : ''}`;
     case 'Minor':
-      return `${parts[0]}.${parts[1] + 1}.0`;
+      return `${major}.${minor + 1}.0${is4Part ? '.0' : ''}`;
     case 'Patch':
-      return `${parts[0]}.${parts[1]}.${parts[2] + 1}`;
+      return `${major}.${minor}.${patch + 1}${is4Part ? '.0' : ''}`;
+    case 'Revision':
+      return `${major}.${minor}.${patch}.${(revision ?? 0) + 1}`;
     default:
       return version;
   }
@@ -315,7 +330,7 @@ export async function queryVersion(
   if (candidates.length === 0) {
     throw new Error(
       'No valid version candidates found from the specified version sources. ' +
-        'Ensure at least one source provides a valid semver version (major.minor.patch).'
+        'Ensure at least one source provides a valid semver version (major.minor.patch or major.minor.patch.revision).'
     );
   }
 

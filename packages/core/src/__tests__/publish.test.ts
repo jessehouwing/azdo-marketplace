@@ -610,6 +610,61 @@ describe('publishExtension', () => {
     expect(platform.infoMessages).toContain('Task manifests updated successfully');
   });
 
+  it.each([
+    {
+      version: '2.0.0',
+      expectedTaskVersion: { Major: 2, Minor: 0, Patch: 0 },
+      expectsWarning: false,
+    },
+    {
+      version: '2.0.0.42',
+      expectedTaskVersion: { Major: 2, Minor: 0, Patch: 0 },
+      expectsWarning: true,
+    },
+    {
+      version: '3.5.7.42',
+      expectedTaskVersion: { Major: 3, Minor: 5, Patch: 7 },
+      expectsWarning: true,
+    },
+  ])(
+    'version $version applies $expectedTaskVersion to task.json (warning: $expectsWarning)',
+    async ({ version, expectedTaskVersion, expectsWarning }) => {
+      const fixture = await createManifestTaskFixture({ prefix: `publish-4part-${version}-` });
+
+      jest.spyOn(tfxManager, 'execute').mockResolvedValue({
+        exitCode: 0,
+        json: { published: true, packaged: '/out/ext.vsix' },
+        stdout: '',
+        stderr: '',
+      });
+
+      let taskJson!: { version: { Major: number; Minor: number; Patch: number } };
+      try {
+        await publishExtension(
+          withManifestDefaults({
+            rootFolder: fixture.root,
+            manifestGlobs: ['vss-extension.json'],
+            extensionVersion: version,
+            updateTasksVersion: 'major',
+          }),
+          auth,
+          tfxManager,
+          platform
+        );
+      } finally {
+        const { promises: fsPromises } = await import('fs');
+        taskJson = JSON.parse(await fsPromises.readFile(fixture.taskJsonPath, 'utf-8'));
+        await fixture.cleanup();
+      }
+
+      const hasWarning = platform.warningMessages.some(
+        (m) => m.includes('4-part revision') && m.includes(version)
+      );
+      expect(hasWarning).toBe(expectsWarning);
+      expect(taskJson.version).toEqual(expectedTaskVersion);
+    }
+  );
+
   it('should modify vsix before publishing when overrides are provided', async () => {
     const tempDir = await fs.mkdtemp(join(tmpdir(), 'publish-vsix-'));
     const originalGetTempDir = platform.getTempDir.bind(platform);

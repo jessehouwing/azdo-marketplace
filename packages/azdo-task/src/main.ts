@@ -484,6 +484,9 @@ async function runQueryVersion(
     if (input === 'patch') {
       return 'Patch' as const;
     }
+    if (input === 'revision') {
+      return 'Revision' as const;
+    }
     return 'None' as const;
   })();
 
