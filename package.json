@@ -52,7 +52,7 @@
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.1",
     "eslint": "^10.2.1",
-    "globals": "^17.5.0",
+    "globals": "^17.6.0",
     "jest": "^30.3.0",
     "js-yaml": "^4.1.1",
     "prettier": "^3.8.3",
