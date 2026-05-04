@@ -220,7 +220,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Validate documentation action versions
-        uses: jessehouwing/actions-example-checker@1b5353c42fbb52256d465de4a7d2021c5d6cb87b # v0.0.8
+        uses: jessehouwing/actions-example-checker@23a7e240c5db2fe7ac8bf7c739f2e1ca9cb13168 # v0.0.9
         with:
           version: v${{ needs.prepare-release.outputs.version }}
 
