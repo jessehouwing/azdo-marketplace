@@ -51,7 +51,7 @@
     "@types/node": "^24.12.2",
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.1",
-    "eslint": "^10.2.1",
+    "eslint": "^10.3.0",
     "globals": "^17.6.0",
     "jest": "^30.3.0",
     "js-yaml": "^4.1.1",
