@@ -43,7 +43,7 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
@@ -54,7 +54,7 @@
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
     "jest": "^30.4.2",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.2.0",
     "prettier": "^3.8.3",
     "rollup": "^4.60.4",
     "tfx-cli": "^0.23.1",
@@ -62,7 +62,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4",
-    "yauzl": "^3.3.1",
+    "yauzl": "^3.3.2",
     "yazl": "^3.3.1"
   },
   "optionalDependencies": {
