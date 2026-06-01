@@ -42,7 +42,7 @@ jobs:
           echo "Using latest version tag: $latest"
           echo "tag=$latest" >> "$GITHUB_OUTPUT"
 
-      - uses: jessehouwing/actions-example-checker@23a7e240c5db2fe7ac8bf7c739f2e1ca9cb13168 # v0.0.9
+      - uses: jessehouwing/actions-example-checker@e3da7e6d7f20cae310f6ea57fb3d776320a7d13f # v0.0.10
         with:
           version: |
             ${{ steps.version.outputs.tag }}
