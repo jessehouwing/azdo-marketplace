@@ -51,7 +51,7 @@
     "@types/node": "^24.12.4",
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.1",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "globals": "^17.6.0",
     "jest": "^30.4.2",
     "js-yaml": "^4.2.0",
@@ -61,7 +61,7 @@
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.4",
+    "typescript-eslint": "^8.60.1",
     "yauzl": "^3.3.2",
     "yazl": "^3.3.1"
   },
