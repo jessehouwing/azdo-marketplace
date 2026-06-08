@@ -14,6 +14,11 @@ const getPersonalAccessTokenHandlerMock = jest.fn((token: string) => {
   return { kind: 'pat-handler' };
 });
 
+// Separate mock for TaskAgentApiBase.prototype.getTaskDefinitions.
+// The concrete TaskAgentApi class drops the allVersions param, so production code
+// calls the base class prototype directly to pass allVersions=true.
+const taskAgentApiBaseGetTaskDefinitionsMock = jest.fn<() => Promise<any[]>>();
+
 const readManifestMock = jest.fn<() => Promise<any>>();
 const resolveTaskManifestPathsMock = jest.fn<() => string[]>();
 const resolveManifestPathsMock = jest.fn<() => Promise<string[]>>();
@@ -28,6 +33,26 @@ const vsixReaderOpenMock = jest.fn<(path: string) => Promise<any>>();
 jest.unstable_mockModule('azure-devops-node-api', () => ({
   WebApi: webApiCtorMock,
   getPersonalAccessTokenHandler: getPersonalAccessTokenHandlerMock,
+}));
+
+// Mock the base class so that TaskAgentApiBase.prototype.getTaskDefinitions.call(...)
+// routes through our controllable mock instead of making real HTTP calls.
+jest.unstable_mockModule('azure-devops-node-api/TaskAgentApiBase.js', () => ({
+  TaskAgentApiBase: class {
+    getTaskDefinitions(...args: any[]) {
+      return taskAgentApiBaseGetTaskDefinitionsMock(...args);
+    }
+  },
+}));
+
+// Mock the base class so that TaskAgentApiBase.prototype.getTaskDefinitions.call(...)
+// routes through our controllable mock instead of making real HTTP calls
+jest.unstable_mockModule('azure-devops-node-api/TaskAgentApiBase.js', () => ({
+  TaskAgentApiBase: class {
+    getTaskDefinitions(...args: any[]) {
+      return taskAgentApiBaseGetTaskDefinitionsMock(...args);
+    }
+  },
 }));
 
 jest.unstable_mockModule('../manifest-utils.js', () => ({
@@ -60,6 +85,22 @@ describe('waitForInstallation', () => {
       serviceUrl: 'https://dev.azure.com/org1',
       token: 'test-token',
     };
+
+    // By default the base-class mock delegates to the same mock as the concrete class.
+    // This means tests that only configure getTaskDefinitionsMock automatically cover
+    // both the UUID-discovery call (getTaskDefinitions()) and the allVersions call
+    // (TaskAgentApiBase.prototype.getTaskDefinitions(..., true)).
+    taskAgentApiBaseGetTaskDefinitionsMock.mockImplementation((...args: any[]) =>
+      getTaskDefinitionsMock(...args)
+    );
+
+    // By default the base-class mock delegates to the same function as the concrete mock.
+    // This means tests that only set up getTaskDefinitionsMock work for both the UUID
+    // discovery call (getTaskDefinitions()) and the allVersions call
+    // (TaskAgentApiBase.prototype.getTaskDefinitions(..., allVersions=true)).
+    taskAgentApiBaseGetTaskDefinitionsMock.mockImplementation((...args: any[]) =>
+      getTaskDefinitionsMock(...args)
+    );
 
     vsixReaderOpenMock.mockResolvedValue({
       getTasksInfo: vsixReaderGetTasksInfoMock,
@@ -573,22 +614,14 @@ describe('waitForInstallation', () => {
     let now = 0;
     const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
 
-    let pollCount = 0;
-    getTaskDefinitionsMock.mockImplementation(async () => {
-      pollCount++;
-      if (pollCount < 3) {
-        // First two polls: task present but only a higher version
-        return [
-          {
-            name: 'MyTask',
-            id: 'task-1',
-            version: { major: 1, minor: 5, patch: 0 },
-            friendlyName: 'My Task',
-          },
-        ];
+    // UUID is pre-known — the all-tasks endpoint is never called (no discovery needed).
+    // Only the base-class allVersions call is made each poll.
+    let baseCallCount = 0;
+    taskAgentApiBaseGetTaskDefinitionsMock.mockImplementation(async () => {
+      baseCallCount++;
+      if (baseCallCount >= 2) {
+        now = 120_000; // trigger timeout on second call
       }
-      // Third poll: timeout
-      now = 120_000;
       return [
         {
           name: 'MyTask',
@@ -604,7 +637,7 @@ describe('waitForInstallation', () => {
         publisherId: 'pub',
         extensionId: 'ext',
         accounts: ['https://dev.azure.com/org1'],
-        expectedTasks: [{ name: 'MyTask', versions: ['1.2.0'] }],
+        expectedTasks: [{ name: 'MyTask', id: 'task-1', versions: ['1.2.0'] }],
         timeoutMinutes: 1,
         pollingIntervalSeconds: 0,
       },
@@ -614,23 +647,14 @@ describe('waitForInstallation', () => {
 
     expect(result.success).toBe(false);
 
-    // Warning should mention the higher installed version
+    // Warning should mention the higher installed version and be emitted exactly once
     const higherVersionWarnings = platform.warningMessages.filter(
       (m) => m.includes('MyTask@1.2.0') && m.includes('1.5.0')
     );
-
-    // Emitted exactly once, regardless of poll count
     expect(higherVersionWarnings).toHaveLength(1);
 
-    // Warning appears after polling (no info messages about it mid-poll)
-    const lastPollInfoIndex = platform.infoMessages.findLastIndex((m) =>
-      m.includes('Poll attempt')
-    );
-    const warnIndex = platform.warningMessages.indexOf(higherVersionWarnings[0]);
-    // The warning map is flushed after the while loop, so all poll messages precede it
-    // We can't easily interleave info/warning order, but we can confirm it exists once
-    expect(warnIndex).toBeGreaterThanOrEqual(0);
-    void lastPollInfoIndex;
+    // All-tasks endpoint not called — UUID was pre-known
+    expect(getTaskDefinitionsMock).not.toHaveBeenCalled();
 
     nowSpy.mockRestore();
   });
@@ -639,15 +663,12 @@ describe('waitForInstallation', () => {
     let now = 0;
     const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
 
-    let pollCount = 0;
-    getTaskDefinitionsMock.mockImplementation(async (taskId?: string) => {
-      if (taskId === 'task-uuid-1') {
-        // UUID re-query: version not present yet, then times out
-        now = 120_000;
-        return [];
+    let baseCallCount = 0;
+    taskAgentApiBaseGetTaskDefinitionsMock.mockImplementation(async () => {
+      baseCallCount++;
+      if (baseCallCount >= 2) {
+        now = 120_000; // trigger timeout on second call
       }
-      pollCount++;
-      // All polls: only higher version visible in the main query
       return [
         {
           name: 'MyTask',
@@ -677,6 +698,9 @@ describe('waitForInstallation', () => {
       (m) => m.includes('MyTask@2.1.0') && m.includes('2.3.0')
     );
     expect(higherVersionWarnings).toHaveLength(1);
+
+    // All-tasks endpoint not called — UUID was pre-known
+    expect(getTaskDefinitionsMock).not.toHaveBeenCalled();
 
     nowSpy.mockRestore();
   });
