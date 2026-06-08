@@ -47,11 +47,11 @@ import require$$1$5 from 'node:dns';
 import require$$5$5 from 'string_decoder';
 import * as child from 'child_process';
 import { setTimeout as setTimeout$1 } from 'timers';
-import * as require$$5 from 'stream';
-import require$$5__default, { Writable } from 'stream';
 import { cwd } from 'process';
 import require$$1$7, { Buffer as Buffer$1 } from 'buffer';
 import require$$1$6 from 'zlib';
+import * as require$$5 from 'stream';
+import require$$5__default, { Writable } from 'stream';
 import require$$0$6 from 'url';
 import { basename as basename$1 } from 'node:path';
 
@@ -30016,236 +30016,6 @@ class ArgBuilder {
 }
 
 /**
- * JSON output stream parser for tfx CLI output
- * Parses mixed output from tfx --json --debug-log-stream stderr
- */
-/**
- * Stream that separates tfx JSON output from debug messages
- * The tfx CLI with --json flag outputs JSON to stdout but also emits
- * debug messages and command echoes. This stream separates them.
- */
-class JsonOutputStream extends Writable {
-    lineWriter;
-    /** Accumulated JSON string */
-    jsonString = '';
-    /** Non-JSON messages (debug output, warnings, etc.) */
-    messages = [];
-    /**
-     * @param lineWriter Function to write non-JSON lines (for logging)
-     */
-    constructor(lineWriter) {
-        super();
-        this.lineWriter = lineWriter;
-    }
-    /**
-     * Process a chunk of data from the stream
-     */
-    _write(chunk, _encoding, callback) {
-        const chunkStr = chunk.toString();
-        const trimmed = chunkStr.trimStart();
-        // Azure Pipelines task-lib command output
-        if (chunkStr.startsWith('[command]')) {
-            this.writeOutput(chunkStr, this.lineWriter);
-        }
-        // If we haven't started collecting JSON yet and this doesn't look like JSON
-        else if (!this.jsonString && !this.looksLikeJsonStart(trimmed)) {
-            this.messages.push(chunkStr);
-            this.writeOutput(chunkStr, this.lineWriter);
-        }
-        // Accumulate JSON
-        else {
-            this.jsonString += chunkStr;
-            // Don't write JSON to output (will be parsed and processed separately)
-        }
-        callback();
-    }
-    /**
-     * Detect whether a chunk can be the start of a valid JSON value.
-     */
-    looksLikeJsonStart(input) {
-        if (!input) {
-            return false;
-        }
-        return /^(\{|\[|"|-?\d|true\b|false\b|null\b)/.test(input);
-    }
-    /**
-     * Write output line by line (splits on newlines)
-     */
-    writeOutput(messages, writer) {
-        if (!messages) {
-            return;
-        }
-        // Split messages to invoke writer for each line
-        // This ensures proper line prefixing in logging systems
-        messages.split('\n').forEach((line) => {
-            if (line) {
-                writer(line);
-            }
-        });
-    }
-    /**
-     * Parse the accumulated JSON string
-     * @returns Parsed JSON object or undefined if parsing fails
-     */
-    parseJson() {
-        if (!this.jsonString) {
-            return undefined;
-        }
-        try {
-            return JSON.parse(this.jsonString);
-        }
-        catch (error) {
-            // If JSON parsing fails, log the error and return undefined
-            this.lineWriter(`Failed to parse JSON output: ${error}`);
-            return undefined;
-        }
-    }
-}
-
-/**
- * Manifest utilities for reading, writing, and manipulating extension manifests
- */
-/**
- * Resolve manifest file paths from root folder and glob patterns
- * @param rootFolder Root directory to search from
- * @param patterns Glob patterns to match (e.g., ["vss-extension.json", "*.json"])
- * @param platform Platform adapter for filesystem operations
- * @returns Array of resolved manifest file paths
- */
-async function resolveManifestPaths(rootFolder, patterns, platform) {
-    if (!patterns || patterns.length === 0) {
-        return [];
-    }
-    const matches = await platform.findMatch(rootFolder, patterns);
-    return matches;
-}
-/**
- * Read and parse a manifest file
- * @param manifestPath Path to manifest file
- * @param platform Platform adapter for filesystem operations
- * @returns Parsed manifest object
- */
-async function readManifest(manifestPath, platform) {
-    const content = await platform.readFile(manifestPath);
-    return JSON.parse(content);
-}
-/**
- * Resolve task manifest paths from extension manifest
- * Issue #188: Honor package path mappings when resolving task manifests
- *
- * @param extensionManifest Parsed extension manifest
- * @param extensionManifestPath Path to the extension manifest file
- * @param _platform Platform adapter for filesystem operations (reserved for future use)
- * @returns Array of task manifest file paths
- */
-function resolveTaskManifestPaths(extensionManifest, extensionManifestPath, _platform) {
-    // Get task contributions from manifest
-    const taskContributions = getTaskContributions(extensionManifest);
-    if (taskContributions.length === 0) {
-        return [];
-    }
-    const manifestDir = path__default.dirname(extensionManifestPath);
-    const taskPaths = [];
-    for (const contrib of taskContributions) {
-        const taskName = contrib.properties?.name;
-        if (!taskName) {
-            continue;
-        }
-        // Construct path to task.json
-        const taskManifestPath = path__default.join(manifestDir, taskName, 'task.json');
-        taskPaths.push(taskManifestPath);
-    }
-    return taskPaths;
-}
-/**
- * Get task contributions from extension manifest
- */
-function getTaskContributions(manifest) {
-    if (!manifest.contributions) {
-        return [];
-    }
-    return manifest.contributions.filter((c) => c.type === 'ms.vss-distributed-task.task' && c.properties && c.properties.name);
-}
-
-/**
- * Utilities for normalizing Azure DevOps organization identifiers.
- */
-/**
- * Normalize a single organization identifier.
- *
- * Supports:
- * - Plain organization names: ORG
- * - https://dev.azure.com/ORG
- * - https://ORG.visualstudio.com
- */
-function normalizeOrganizationIdentifier(input) {
-    const value = input.trim();
-    if (!value) {
-        throw new Error('Organization identifier cannot be empty');
-    }
-    const maybeUrl = /^https?:\/\//i.test(value);
-    if (!maybeUrl) {
-        return value;
-    }
-    let parsed;
-    try {
-        parsed = new URL(value);
-    }
-    catch {
-        throw new Error(`Invalid organization URL: ${value}. Supported formats are https://dev.azure.com/ORG and https://ORG.visualstudio.com`);
-    }
-    const host = parsed.hostname.toLowerCase();
-    if (host === 'dev.azure.com') {
-        const segments = parsed.pathname.split('/').filter(Boolean);
-        const org = segments[0];
-        if (!org) {
-            throw new Error(`Invalid organization URL: ${value}. Expected format https://dev.azure.com/ORG`);
-        }
-        return org;
-    }
-    if (host.endsWith('.visualstudio.com')) {
-        const org = parsed.hostname.split('.')[0];
-        if (!org) {
-            throw new Error(`Invalid organization URL: ${value}. Expected format https://ORG.visualstudio.com`);
-        }
-        return org;
-    }
-    throw new Error(`Unsupported organization URL: ${value}. Supported formats are https://dev.azure.com/ORG and https://ORG.visualstudio.com`);
-}
-/**
- * Normalize a list of organization identifiers while preserving order.
- */
-function normalizeOrganizationIdentifiers(values) {
-    return values.map((value) => normalizeOrganizationIdentifier(value));
-}
-/**
- * Normalize an Azure DevOps account identifier to a service URL.
- *
- * Supports:
- * - Plain organization names: ORG -> https://dev.azure.com/ORG
- * - Full URLs (including Azure DevOps Services and Server): returned as-is
- */
-function normalizeAccountToServiceUrl(input) {
-    const value = input.trim();
-    if (!value) {
-        throw new Error('Account identifier cannot be empty');
-    }
-    if (/^https?:\/\//i.test(value)) {
-        return value;
-    }
-    if (/\s/.test(value) || /[/\\]/.test(value)) {
-        throw new Error(`Invalid organization name: ${value}. Use a plain organization name like ORG or a full URL like https://dev.azure.com/ORG`);
-    }
-    return `https://dev.azure.com/${value}`;
-}
-/**
- * Normalize a list of account identifiers to service URLs while preserving order.
- */
-function normalizeAccountsToServiceUrls(values) {
-    return values.map((value) => normalizeAccountToServiceUrl(value));
-}
-
-/**
  * Manifest Reader - Base class for reading extension and task manifests
  *
  * Provides abstract interface for reading manifests from different sources
@@ -32598,6 +32368,236 @@ async function resolveExtensionIdentity(options, platform, operationName) {
 }
 
 /**
+ * JSON output stream parser for tfx CLI output
+ * Parses mixed output from tfx --json --debug-log-stream stderr
+ */
+/**
+ * Stream that separates tfx JSON output from debug messages
+ * The tfx CLI with --json flag outputs JSON to stdout but also emits
+ * debug messages and command echoes. This stream separates them.
+ */
+class JsonOutputStream extends Writable {
+    lineWriter;
+    /** Accumulated JSON string */
+    jsonString = '';
+    /** Non-JSON messages (debug output, warnings, etc.) */
+    messages = [];
+    /**
+     * @param lineWriter Function to write non-JSON lines (for logging)
+     */
+    constructor(lineWriter) {
+        super();
+        this.lineWriter = lineWriter;
+    }
+    /**
+     * Process a chunk of data from the stream
+     */
+    _write(chunk, _encoding, callback) {
+        const chunkStr = chunk.toString();
+        const trimmed = chunkStr.trimStart();
+        // Azure Pipelines task-lib command output
+        if (chunkStr.startsWith('[command]')) {
+            this.writeOutput(chunkStr, this.lineWriter);
+        }
+        // If we haven't started collecting JSON yet and this doesn't look like JSON
+        else if (!this.jsonString && !this.looksLikeJsonStart(trimmed)) {
+            this.messages.push(chunkStr);
+            this.writeOutput(chunkStr, this.lineWriter);
+        }
+        // Accumulate JSON
+        else {
+            this.jsonString += chunkStr;
+            // Don't write JSON to output (will be parsed and processed separately)
+        }
+        callback();
+    }
+    /**
+     * Detect whether a chunk can be the start of a valid JSON value.
+     */
+    looksLikeJsonStart(input) {
+        if (!input) {
+            return false;
+        }
+        return /^(\{|\[|"|-?\d|true\b|false\b|null\b)/.test(input);
+    }
+    /**
+     * Write output line by line (splits on newlines)
+     */
+    writeOutput(messages, writer) {
+        if (!messages) {
+            return;
+        }
+        // Split messages to invoke writer for each line
+        // This ensures proper line prefixing in logging systems
+        messages.split('\n').forEach((line) => {
+            if (line) {
+                writer(line);
+            }
+        });
+    }
+    /**
+     * Parse the accumulated JSON string
+     * @returns Parsed JSON object or undefined if parsing fails
+     */
+    parseJson() {
+        if (!this.jsonString) {
+            return undefined;
+        }
+        try {
+            return JSON.parse(this.jsonString);
+        }
+        catch (error) {
+            // If JSON parsing fails, log the error and return undefined
+            this.lineWriter(`Failed to parse JSON output: ${error}`);
+            return undefined;
+        }
+    }
+}
+
+/**
+ * Manifest utilities for reading, writing, and manipulating extension manifests
+ */
+/**
+ * Resolve manifest file paths from root folder and glob patterns
+ * @param rootFolder Root directory to search from
+ * @param patterns Glob patterns to match (e.g., ["vss-extension.json", "*.json"])
+ * @param platform Platform adapter for filesystem operations
+ * @returns Array of resolved manifest file paths
+ */
+async function resolveManifestPaths(rootFolder, patterns, platform) {
+    if (!patterns || patterns.length === 0) {
+        return [];
+    }
+    const matches = await platform.findMatch(rootFolder, patterns);
+    return matches;
+}
+/**
+ * Read and parse a manifest file
+ * @param manifestPath Path to manifest file
+ * @param platform Platform adapter for filesystem operations
+ * @returns Parsed manifest object
+ */
+async function readManifest(manifestPath, platform) {
+    const content = await platform.readFile(manifestPath);
+    return JSON.parse(content);
+}
+/**
+ * Resolve task manifest paths from extension manifest
+ * Issue #188: Honor package path mappings when resolving task manifests
+ *
+ * @param extensionManifest Parsed extension manifest
+ * @param extensionManifestPath Path to the extension manifest file
+ * @param _platform Platform adapter for filesystem operations (reserved for future use)
+ * @returns Array of task manifest file paths
+ */
+function resolveTaskManifestPaths(extensionManifest, extensionManifestPath, _platform) {
+    // Get task contributions from manifest
+    const taskContributions = getTaskContributions(extensionManifest);
+    if (taskContributions.length === 0) {
+        return [];
+    }
+    const manifestDir = path__default.dirname(extensionManifestPath);
+    const taskPaths = [];
+    for (const contrib of taskContributions) {
+        const taskName = contrib.properties?.name;
+        if (!taskName) {
+            continue;
+        }
+        // Construct path to task.json
+        const taskManifestPath = path__default.join(manifestDir, taskName, 'task.json');
+        taskPaths.push(taskManifestPath);
+    }
+    return taskPaths;
+}
+/**
+ * Get task contributions from extension manifest
+ */
+function getTaskContributions(manifest) {
+    if (!manifest.contributions) {
+        return [];
+    }
+    return manifest.contributions.filter((c) => c.type === 'ms.vss-distributed-task.task' && c.properties && c.properties.name);
+}
+
+/**
+ * Utilities for normalizing Azure DevOps organization identifiers.
+ */
+/**
+ * Normalize a single organization identifier.
+ *
+ * Supports:
+ * - Plain organization names: ORG
+ * - https://dev.azure.com/ORG
+ * - https://ORG.visualstudio.com
+ */
+function normalizeOrganizationIdentifier(input) {
+    const value = input.trim();
+    if (!value) {
+        throw new Error('Organization identifier cannot be empty');
+    }
+    const maybeUrl = /^https?:\/\//i.test(value);
+    if (!maybeUrl) {
+        return value;
+    }
+    let parsed;
+    try {
+        parsed = new URL(value);
+    }
+    catch {
+        throw new Error(`Invalid organization URL: ${value}. Supported formats are https://dev.azure.com/ORG and https://ORG.visualstudio.com`);
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'dev.azure.com') {
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        const org = segments[0];
+        if (!org) {
+            throw new Error(`Invalid organization URL: ${value}. Expected format https://dev.azure.com/ORG`);
+        }
+        return org;
+    }
+    if (host.endsWith('.visualstudio.com')) {
+        const org = parsed.hostname.split('.')[0];
+        if (!org) {
+            throw new Error(`Invalid organization URL: ${value}. Expected format https://ORG.visualstudio.com`);
+        }
+        return org;
+    }
+    throw new Error(`Unsupported organization URL: ${value}. Supported formats are https://dev.azure.com/ORG and https://ORG.visualstudio.com`);
+}
+/**
+ * Normalize a list of organization identifiers while preserving order.
+ */
+function normalizeOrganizationIdentifiers(values) {
+    return values.map((value) => normalizeOrganizationIdentifier(value));
+}
+/**
+ * Normalize an Azure DevOps account identifier to a service URL.
+ *
+ * Supports:
+ * - Plain organization names: ORG -> https://dev.azure.com/ORG
+ * - Full URLs (including Azure DevOps Services and Server): returned as-is
+ */
+function normalizeAccountToServiceUrl(input) {
+    const value = input.trim();
+    if (!value) {
+        throw new Error('Account identifier cannot be empty');
+    }
+    if (/^https?:\/\//i.test(value)) {
+        return value;
+    }
+    if (/\s/.test(value) || /[/\\]/.test(value)) {
+        throw new Error(`Invalid organization name: ${value}. Use a plain organization name like ORG or a full URL like https://dev.azure.com/ORG`);
+    }
+    return `https://dev.azure.com/${value}`;
+}
+/**
+ * Normalize a list of account identifiers to service URLs while preserving order.
+ */
+function normalizeAccountsToServiceUrls(values) {
+    return values.map((value) => normalizeAccountToServiceUrl(value));
+}
+
+/**
  * TfxManager - Manages tfx-cli installation, caching, and execution
  */
 class TextCaptureStream extends Writable {
@@ -32963,6 +32963,402 @@ class TfxManager {
         };
     }
 }
+
+/**
+ * Filesystem Manifest Writer - Write modified manifests to filesystem
+ *
+ * Writes extension and task manifests back to the filesystem and generates
+ * an overrides.json file for tfx to use during packaging.
+ */
+/**
+ * FilesystemManifestWriter - Write manifests to filesystem
+ *
+ * Writes modified extension and task manifests directly to filesystem files.
+ * Also generates an overrides.json file in the temp directory that tfx can
+ * use to override values during packaging without modifying source files.
+ *
+ * Example usage:
+ * ```typescript
+ * const reader = new FilesystemManifestReader({ rootFolder: './src', platform });
+ * const editor = ManifestEditor.fromReader(reader);
+ * editor.setVersion('2.0.0');
+ * await editor.updateAllTaskVersions('2.0.0', 'major');
+ *
+ * const writer = await editor.toWriter();
+ * await writer.writeToFilesystem();
+ * await writer.close();
+ *
+ * // Use writer.getOverridesPath() with tfx --overrides-file
+ * ```
+ */
+class FilesystemManifestWriter {
+    editor;
+    platform;
+    overridesPath = null;
+    constructor(editor, platform) {
+        this.editor = editor;
+        this.platform = platform;
+    }
+    /**
+     * Create a writer from an editor
+     * @param editor The editor with modifications
+     * @returns FilesystemManifestWriter instance
+     */
+    static fromEditor(editor) {
+        const reader = editor.getReader();
+        // Ensure reader is a FilesystemManifestReader
+        if (reader.constructor.name !== 'FilesystemManifestReader') {
+            throw new Error('FilesystemManifestWriter can only be used with FilesystemManifestReader');
+        }
+        // Get platform from reader (we need it for file operations)
+        const fsReader = reader;
+        const platform = fsReader.platform;
+        return new FilesystemManifestWriter(editor, platform);
+    }
+    /**
+     * Write modified manifests to the filesystem
+     *
+     * This updates task.json files directly and writes extension manifest changes.
+     * It also generates an overrides.json in the temp directory that can be passed
+     * to tfx with --overrides-file.
+     *
+     * @returns Promise that resolves when writing is complete
+     */
+    async writeToFilesystem(options) {
+        const reader = this.editor.getReader();
+        const rootFolder = reader.getRootFolder();
+        const manifestMods = this.editor.getManifestModifications();
+        const taskManifestMods = this.editor.getTaskManifestModifications();
+        const fileMods = this.editor.getModifications();
+        this.platform.debug('Writing manifests to filesystem...');
+        // Optional: synchronize extension manifest binary file entries
+        let synchronizedManifests = [];
+        if (this.editor.shouldSynchronizeBinaryFileEntries()) {
+            synchronizedManifests = await this.synchronizeBinaryFileEntries(reader, rootFolder);
+        }
+        // Step 1: Write task manifest modifications
+        if (taskManifestMods.size > 0) {
+            await this.writeTaskManifests(reader, rootFolder, taskManifestMods);
+        }
+        // Step 2: Write extension manifest modifications (if directly modifying source)
+        // Note: For package command, we typically use overrides.json instead
+        // But we support direct writes for other scenarios
+        if (Object.keys(manifestMods).length > 0 || synchronizedManifests.length > 0) {
+            await this.writeSynchronizedManifests(reader, manifestMods, synchronizedManifests);
+        }
+        // Step 3: Write any additional file modifications
+        for (const [filePath, mod] of fileMods) {
+            if (mod.type === 'modify' && mod.content) {
+                const absolutePath = path__default.isAbsolute(filePath) ? filePath : path__default.join(rootFolder, filePath);
+                this.platform.debug(`Writing file: ${absolutePath}`);
+                await writeFile$1(absolutePath, new Uint8Array(mod.content));
+            }
+        }
+        // Step 4: Generate overrides.json for extension manifest overrides
+        // This is used by tfx during packaging to override values without modifying source
+        await this.generateOverridesFile(manifestMods, options?.overridesFilePath);
+        this.platform.info('Manifests written to filesystem successfully');
+    }
+    /**
+     * Write task manifest modifications to filesystem
+     */
+    async writeTaskManifests(reader, rootFolder, taskManifestMods) {
+        const tasks = await reader.readTaskManifests();
+        // Get packagePath map to resolve actual source paths
+        const packagePathMap = (await reader.buildPackagePathMap());
+        for (const { path: taskPath, manifest } of tasks) {
+            const mods = taskManifestMods.get(taskPath);
+            if (mods) {
+                // Apply modifications
+                Object.assign(manifest, mods);
+                // Resolve actual source path using prefix matching (same logic as reader)
+                let actualPath = taskPath;
+                const normalizedTaskPath = taskPath.replace(/\\/g, '/');
+                // Try to find a matching packagePath prefix
+                for (const [pkgPath, sourcePath] of packagePathMap.entries()) {
+                    const normalizedPkgPath = pkgPath.replace(/\\/g, '/');
+                    // Check for exact match or prefix match (packagePath/subdir)
+                    if (normalizedTaskPath === normalizedPkgPath) {
+                        // Exact match: TaskName → sourcePath
+                        actualPath = sourcePath;
+                        break;
+                    }
+                    else if (normalizedTaskPath.startsWith(normalizedPkgPath + '/')) {
+                        // Prefix match: TaskName/v2 → sourcePath/v2
+                        const remainder = normalizedTaskPath.substring(normalizedPkgPath.length + 1);
+                        actualPath = path__default.join(sourcePath, remainder);
+                        break;
+                    }
+                }
+                this.platform.debug(`Writing task manifest: taskPath='${taskPath}', actualPath='${actualPath}'`);
+                // Resolve absolute path
+                const absoluteTaskPath = path__default.isAbsolute(actualPath)
+                    ? actualPath
+                    : path__default.join(rootFolder, actualPath);
+                const taskJsonPath = path__default.join(absoluteTaskPath, 'task.json');
+                this.platform.debug(`Writing to file: ${taskJsonPath}`);
+                const manifestJson = JSON.stringify(manifest, null, 2) + '\n';
+                await writeFile$1(taskJsonPath, manifestJson, 'utf-8');
+            }
+        }
+    }
+    /**
+     * Write extension manifest modifications to filesystem
+     */
+    async writeExtensionManifest(reader, manifestMods, baseManifest) {
+        const manifest = baseManifest ?? (await reader.readExtensionManifest());
+        Object.assign(manifest, manifestMods);
+        // Get manifest path from reader
+        const manifestPath = reader.getManifestPath();
+        if (!manifestPath) {
+            throw new Error('Extension manifest path not resolved');
+        }
+        this.platform.debug(`Writing extension manifest: ${manifestPath}`);
+        await this.writeManifestAtPath(manifestPath, manifest);
+    }
+    async writeSynchronizedManifests(reader, manifestMods, synchronizedManifests) {
+        const primaryManifestPath = reader.getManifestPath();
+        const synchronizedByPath = new Map(synchronizedManifests.map((item) => [item.manifestPath, item.manifest]));
+        // Apply explicit extension manifest modifications to primary manifest only.
+        if (Object.keys(manifestMods).length > 0) {
+            const primaryBaseManifest = primaryManifestPath
+                ? synchronizedByPath.get(primaryManifestPath)
+                : undefined;
+            await this.writeExtensionManifest(reader, manifestMods, primaryBaseManifest);
+            if (primaryManifestPath) {
+                synchronizedByPath.delete(primaryManifestPath);
+            }
+        }
+        // Write remaining synchronized manifests without extension-level overrides.
+        for (const [manifestPath, manifest] of synchronizedByPath) {
+            this.platform.debug(`Writing synchronized extension manifest: ${manifestPath}`);
+            await this.writeManifestAtPath(manifestPath, manifest);
+        }
+    }
+    async writeManifestAtPath(manifestPath, manifest) {
+        const manifestJson = JSON.stringify(manifest, null, 2) + '\n';
+        await writeFile$1(manifestPath, manifestJson, 'utf-8');
+    }
+    /**
+     * Synchronize extension manifest file entries for extensionless files.
+     *
+     * Behavior ported from the legacy manifest-fix workflow:
+     * 1) Remove all explicit application/octet-stream file entries
+     * 2) Re-scan manifest-referenced directories
+     * 3) Add extensionless files back as application/octet-stream
+     *
+     * packagePath mapping is preserved for added file entries.
+     */
+    async synchronizeBinaryFileEntries(reader, rootFolder) {
+        const allManifests = await reader.readAllExtensionManifests();
+        if (allManifests.length === 0) {
+            this.platform.debug('No extension manifest files array found; skipping binary file sync');
+            return [];
+        }
+        const changedManifests = [];
+        let totalRemovedCount = 0;
+        let totalAddedCount = 0;
+        for (const { path: manifestPath, manifest } of allManifests) {
+            const originalFiles = Array.isArray(manifest.files) ? manifest.files : [];
+            if (originalFiles.length === 0) {
+                continue;
+            }
+            const retainedFiles = originalFiles.filter((entry) => entry.contentType !== 'application/octet-stream');
+            const removedCount = originalFiles.length - retainedFiles.length;
+            totalRemovedCount += removedCount;
+            const scanRoots = await this.getManifestDirectoryScanRoots(rootFolder, retainedFiles);
+            const existingKeys = new Set();
+            for (const entry of retainedFiles) {
+                existingKeys.add(this.getManifestEntryKey(entry.path, entry.packagePath));
+            }
+            const addedEntries = [];
+            for (const scanRoot of scanRoots) {
+                const files = await this.collectFilesRecursive(scanRoot.absolutePath);
+                for (const absoluteFilePath of files) {
+                    const fileName = path__default.basename(absoluteFilePath);
+                    if (!this.isExtensionlessFileName(fileName)) {
+                        continue;
+                    }
+                    const relativeInsideRoot = this.toPosixPath(path__default.relative(scanRoot.absolutePath, absoluteFilePath));
+                    const filePath = this.joinManifestPath(scanRoot.manifestPathPrefix, relativeInsideRoot);
+                    const packagePath = scanRoot.packagePathPrefix
+                        ? this.joinManifestPath(scanRoot.packagePathPrefix, relativeInsideRoot)
+                        : undefined;
+                    const key = this.getManifestEntryKey(filePath, packagePath);
+                    if (existingKeys.has(key)) {
+                        continue;
+                    }
+                    existingKeys.add(key);
+                    addedEntries.push({
+                        path: filePath,
+                        packagePath,
+                        contentType: 'application/octet-stream',
+                    });
+                }
+            }
+            totalAddedCount += addedEntries.length;
+            if (removedCount > 0 || addedEntries.length > 0) {
+                manifest.files = [...retainedFiles, ...addedEntries];
+                changedManifests.push({ manifestPath, manifest });
+            }
+        }
+        if (changedManifests.length === 0) {
+            this.platform.debug('Binary file sync: no changes required');
+            return [];
+        }
+        this.platform.info(`Synchronized binary file entries in extension manifests (removed ${totalRemovedCount}, added ${totalAddedCount})`);
+        return changedManifests;
+    }
+    async getManifestDirectoryScanRoots(rootFolder, fileEntries) {
+        const roots = [];
+        for (const entry of fileEntries) {
+            if (!entry.path) {
+                continue;
+            }
+            const absolutePath = path__default.isAbsolute(entry.path)
+                ? entry.path
+                : path__default.join(rootFolder, entry.path.replace(/\//g, path__default.sep));
+            let stats;
+            try {
+                stats = await readdir$1(absolutePath, { withFileTypes: true });
+            }
+            catch {
+                continue;
+            }
+            // If directory is readable, we consider it a scan root
+            if (Array.isArray(stats)) {
+                roots.push({
+                    absolutePath,
+                    manifestPathPrefix: this.toPosixPath(entry.path),
+                    packagePathPrefix: entry.packagePath ? this.toPosixPath(entry.packagePath) : undefined,
+                });
+            }
+        }
+        return roots;
+    }
+    async collectFilesRecursive(directory) {
+        const files = [];
+        const entries = await readdir$1(directory, { withFileTypes: true });
+        for (const entry of entries) {
+            const absolutePath = path__default.join(directory, entry.name);
+            if (entry.isDirectory()) {
+                const nestedFiles = await this.collectFilesRecursive(absolutePath);
+                files.push(...nestedFiles);
+            }
+            else if (entry.isFile()) {
+                files.push(absolutePath);
+            }
+        }
+        return files;
+    }
+    isExtensionlessFileName(fileName) {
+        return !/\.[^.]+$/.test(fileName) || fileName.endsWith('.');
+    }
+    toPosixPath(inputPath) {
+        return inputPath.replace(/\\/g, '/').replace(/^\.\//, '');
+    }
+    joinManifestPath(basePath, relativePath) {
+        const normalizedBase = this.toPosixPath(basePath).replace(/\/$/, '');
+        const normalizedRelative = this.toPosixPath(relativePath).replace(/^\//, '');
+        if (!normalizedRelative) {
+            return normalizedBase;
+        }
+        return `${normalizedBase}/${normalizedRelative}`;
+    }
+    getManifestEntryKey(filePath, packagePath) {
+        const normalizedPath = this.toPosixPath(filePath);
+        const normalizedPackagePath = packagePath ? this.toPosixPath(packagePath) : '';
+        return `${normalizedPath}::${normalizedPackagePath}`;
+    }
+    /**
+     * Generate overrides.json file in temp directory
+     *
+     * This file can be passed to tfx with --overrides-file to override
+     * extension manifest values during packaging without modifying source files.
+     */
+    async generateOverridesFile(manifestMods, overridesFilePath) {
+        if (Object.keys(manifestMods).length === 0) {
+            this.platform.debug('No manifest modifications, skipping overrides.json generation');
+            return;
+        }
+        // Create overrides object with only the fields that should be overridden
+        const overrides = {};
+        if (manifestMods.publisher) {
+            overrides.publisher = manifestMods.publisher;
+        }
+        if (manifestMods.id) {
+            overrides.id = manifestMods.id;
+        }
+        if (manifestMods.version) {
+            overrides.version = manifestMods.version;
+        }
+        if (manifestMods.name) {
+            overrides.name = manifestMods.name;
+        }
+        if (manifestMods.description) {
+            overrides.description = manifestMods.description;
+        }
+        if (manifestMods.galleryFlags) {
+            overrides.galleryFlags = manifestMods.galleryFlags;
+        }
+        if (typeof manifestMods.public === 'boolean') {
+            overrides.public = manifestMods.public;
+        }
+        let resolvedOverridesPath = overridesFilePath;
+        if (!resolvedOverridesPath) {
+            const tempDir = this.platform.getTempDir();
+            await mkdir$1(tempDir, { recursive: true });
+            resolvedOverridesPath = path__default.join(tempDir, `overrides-${Date.now()}.json`);
+        }
+        else {
+            await mkdir$1(path__default.dirname(resolvedOverridesPath), { recursive: true });
+        }
+        let existingOverrides = {};
+        if (await this.platform.fileExists(resolvedOverridesPath)) {
+            try {
+                const existingContent = (await readFile(resolvedOverridesPath)).toString('utf8').trim();
+                if (existingContent) {
+                    existingOverrides = JSON.parse(existingContent);
+                }
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                const wrappedError = new Error(`Failed to read overrides file '${resolvedOverridesPath}': ${message}`);
+                wrappedError.cause = error;
+                throw wrappedError;
+            }
+        }
+        const mergedOverrides = {
+            ...existingOverrides,
+            ...overrides,
+        };
+        this.overridesPath = resolvedOverridesPath;
+        this.platform.debug(`Writing overrides file: ${this.overridesPath}`);
+        const overridesJson = JSON.stringify(mergedOverrides, null, 2) + '\n';
+        await writeFile$1(this.overridesPath, overridesJson, 'utf-8');
+        this.platform.info(`Generated overrides file: ${this.overridesPath}`);
+    }
+    /**
+     * Get the path to the generated overrides.json file
+     * This can be passed to tfx with --overrides-file
+     * @returns Path to overrides.json or null if not generated
+     */
+    getOverridesPath() {
+        return this.overridesPath;
+    }
+    /**
+     * Close and cleanup resources
+     */
+    async close() {
+        // Could clean up overrides file here, but we leave it for tfx to use
+        // Temp directory will be cleaned up by the build agent
+    }
+}
+
+var filesystemManifestWriter = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    FilesystemManifestWriter: FilesystemManifestWriter
+});
 
 var REGEX = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
@@ -40076,402 +40472,6 @@ class VsixWriter {
 var vsixWriter = /*#__PURE__*/Object.freeze({
     __proto__: null,
     VsixWriter: VsixWriter
-});
-
-/**
- * Filesystem Manifest Writer - Write modified manifests to filesystem
- *
- * Writes extension and task manifests back to the filesystem and generates
- * an overrides.json file for tfx to use during packaging.
- */
-/**
- * FilesystemManifestWriter - Write manifests to filesystem
- *
- * Writes modified extension and task manifests directly to filesystem files.
- * Also generates an overrides.json file in the temp directory that tfx can
- * use to override values during packaging without modifying source files.
- *
- * Example usage:
- * ```typescript
- * const reader = new FilesystemManifestReader({ rootFolder: './src', platform });
- * const editor = ManifestEditor.fromReader(reader);
- * editor.setVersion('2.0.0');
- * await editor.updateAllTaskVersions('2.0.0', 'major');
- *
- * const writer = await editor.toWriter();
- * await writer.writeToFilesystem();
- * await writer.close();
- *
- * // Use writer.getOverridesPath() with tfx --overrides-file
- * ```
- */
-class FilesystemManifestWriter {
-    editor;
-    platform;
-    overridesPath = null;
-    constructor(editor, platform) {
-        this.editor = editor;
-        this.platform = platform;
-    }
-    /**
-     * Create a writer from an editor
-     * @param editor The editor with modifications
-     * @returns FilesystemManifestWriter instance
-     */
-    static fromEditor(editor) {
-        const reader = editor.getReader();
-        // Ensure reader is a FilesystemManifestReader
-        if (reader.constructor.name !== 'FilesystemManifestReader') {
-            throw new Error('FilesystemManifestWriter can only be used with FilesystemManifestReader');
-        }
-        // Get platform from reader (we need it for file operations)
-        const fsReader = reader;
-        const platform = fsReader.platform;
-        return new FilesystemManifestWriter(editor, platform);
-    }
-    /**
-     * Write modified manifests to the filesystem
-     *
-     * This updates task.json files directly and writes extension manifest changes.
-     * It also generates an overrides.json in the temp directory that can be passed
-     * to tfx with --overrides-file.
-     *
-     * @returns Promise that resolves when writing is complete
-     */
-    async writeToFilesystem(options) {
-        const reader = this.editor.getReader();
-        const rootFolder = reader.getRootFolder();
-        const manifestMods = this.editor.getManifestModifications();
-        const taskManifestMods = this.editor.getTaskManifestModifications();
-        const fileMods = this.editor.getModifications();
-        this.platform.debug('Writing manifests to filesystem...');
-        // Optional: synchronize extension manifest binary file entries
-        let synchronizedManifests = [];
-        if (this.editor.shouldSynchronizeBinaryFileEntries()) {
-            synchronizedManifests = await this.synchronizeBinaryFileEntries(reader, rootFolder);
-        }
-        // Step 1: Write task manifest modifications
-        if (taskManifestMods.size > 0) {
-            await this.writeTaskManifests(reader, rootFolder, taskManifestMods);
-        }
-        // Step 2: Write extension manifest modifications (if directly modifying source)
-        // Note: For package command, we typically use overrides.json instead
-        // But we support direct writes for other scenarios
-        if (Object.keys(manifestMods).length > 0 || synchronizedManifests.length > 0) {
-            await this.writeSynchronizedManifests(reader, manifestMods, synchronizedManifests);
-        }
-        // Step 3: Write any additional file modifications
-        for (const [filePath, mod] of fileMods) {
-            if (mod.type === 'modify' && mod.content) {
-                const absolutePath = path__default.isAbsolute(filePath) ? filePath : path__default.join(rootFolder, filePath);
-                this.platform.debug(`Writing file: ${absolutePath}`);
-                await writeFile$1(absolutePath, new Uint8Array(mod.content));
-            }
-        }
-        // Step 4: Generate overrides.json for extension manifest overrides
-        // This is used by tfx during packaging to override values without modifying source
-        await this.generateOverridesFile(manifestMods, options?.overridesFilePath);
-        this.platform.info('Manifests written to filesystem successfully');
-    }
-    /**
-     * Write task manifest modifications to filesystem
-     */
-    async writeTaskManifests(reader, rootFolder, taskManifestMods) {
-        const tasks = await reader.readTaskManifests();
-        // Get packagePath map to resolve actual source paths
-        const packagePathMap = (await reader.buildPackagePathMap());
-        for (const { path: taskPath, manifest } of tasks) {
-            const mods = taskManifestMods.get(taskPath);
-            if (mods) {
-                // Apply modifications
-                Object.assign(manifest, mods);
-                // Resolve actual source path using prefix matching (same logic as reader)
-                let actualPath = taskPath;
-                const normalizedTaskPath = taskPath.replace(/\\/g, '/');
-                // Try to find a matching packagePath prefix
-                for (const [pkgPath, sourcePath] of packagePathMap.entries()) {
-                    const normalizedPkgPath = pkgPath.replace(/\\/g, '/');
-                    // Check for exact match or prefix match (packagePath/subdir)
-                    if (normalizedTaskPath === normalizedPkgPath) {
-                        // Exact match: TaskName → sourcePath
-                        actualPath = sourcePath;
-                        break;
-                    }
-                    else if (normalizedTaskPath.startsWith(normalizedPkgPath + '/')) {
-                        // Prefix match: TaskName/v2 → sourcePath/v2
-                        const remainder = normalizedTaskPath.substring(normalizedPkgPath.length + 1);
-                        actualPath = path__default.join(sourcePath, remainder);
-                        break;
-                    }
-                }
-                this.platform.debug(`Writing task manifest: taskPath='${taskPath}', actualPath='${actualPath}'`);
-                // Resolve absolute path
-                const absoluteTaskPath = path__default.isAbsolute(actualPath)
-                    ? actualPath
-                    : path__default.join(rootFolder, actualPath);
-                const taskJsonPath = path__default.join(absoluteTaskPath, 'task.json');
-                this.platform.debug(`Writing to file: ${taskJsonPath}`);
-                const manifestJson = JSON.stringify(manifest, null, 2) + '\n';
-                await writeFile$1(taskJsonPath, manifestJson, 'utf-8');
-            }
-        }
-    }
-    /**
-     * Write extension manifest modifications to filesystem
-     */
-    async writeExtensionManifest(reader, manifestMods, baseManifest) {
-        const manifest = baseManifest ?? (await reader.readExtensionManifest());
-        Object.assign(manifest, manifestMods);
-        // Get manifest path from reader
-        const manifestPath = reader.getManifestPath();
-        if (!manifestPath) {
-            throw new Error('Extension manifest path not resolved');
-        }
-        this.platform.debug(`Writing extension manifest: ${manifestPath}`);
-        await this.writeManifestAtPath(manifestPath, manifest);
-    }
-    async writeSynchronizedManifests(reader, manifestMods, synchronizedManifests) {
-        const primaryManifestPath = reader.getManifestPath();
-        const synchronizedByPath = new Map(synchronizedManifests.map((item) => [item.manifestPath, item.manifest]));
-        // Apply explicit extension manifest modifications to primary manifest only.
-        if (Object.keys(manifestMods).length > 0) {
-            const primaryBaseManifest = primaryManifestPath
-                ? synchronizedByPath.get(primaryManifestPath)
-                : undefined;
-            await this.writeExtensionManifest(reader, manifestMods, primaryBaseManifest);
-            if (primaryManifestPath) {
-                synchronizedByPath.delete(primaryManifestPath);
-            }
-        }
-        // Write remaining synchronized manifests without extension-level overrides.
-        for (const [manifestPath, manifest] of synchronizedByPath) {
-            this.platform.debug(`Writing synchronized extension manifest: ${manifestPath}`);
-            await this.writeManifestAtPath(manifestPath, manifest);
-        }
-    }
-    async writeManifestAtPath(manifestPath, manifest) {
-        const manifestJson = JSON.stringify(manifest, null, 2) + '\n';
-        await writeFile$1(manifestPath, manifestJson, 'utf-8');
-    }
-    /**
-     * Synchronize extension manifest file entries for extensionless files.
-     *
-     * Behavior ported from the legacy manifest-fix workflow:
-     * 1) Remove all explicit application/octet-stream file entries
-     * 2) Re-scan manifest-referenced directories
-     * 3) Add extensionless files back as application/octet-stream
-     *
-     * packagePath mapping is preserved for added file entries.
-     */
-    async synchronizeBinaryFileEntries(reader, rootFolder) {
-        const allManifests = await reader.readAllExtensionManifests();
-        if (allManifests.length === 0) {
-            this.platform.debug('No extension manifest files array found; skipping binary file sync');
-            return [];
-        }
-        const changedManifests = [];
-        let totalRemovedCount = 0;
-        let totalAddedCount = 0;
-        for (const { path: manifestPath, manifest } of allManifests) {
-            const originalFiles = Array.isArray(manifest.files) ? manifest.files : [];
-            if (originalFiles.length === 0) {
-                continue;
-            }
-            const retainedFiles = originalFiles.filter((entry) => entry.contentType !== 'application/octet-stream');
-            const removedCount = originalFiles.length - retainedFiles.length;
-            totalRemovedCount += removedCount;
-            const scanRoots = await this.getManifestDirectoryScanRoots(rootFolder, retainedFiles);
-            const existingKeys = new Set();
-            for (const entry of retainedFiles) {
-                existingKeys.add(this.getManifestEntryKey(entry.path, entry.packagePath));
-            }
-            const addedEntries = [];
-            for (const scanRoot of scanRoots) {
-                const files = await this.collectFilesRecursive(scanRoot.absolutePath);
-                for (const absoluteFilePath of files) {
-                    const fileName = path__default.basename(absoluteFilePath);
-                    if (!this.isExtensionlessFileName(fileName)) {
-                        continue;
-                    }
-                    const relativeInsideRoot = this.toPosixPath(path__default.relative(scanRoot.absolutePath, absoluteFilePath));
-                    const filePath = this.joinManifestPath(scanRoot.manifestPathPrefix, relativeInsideRoot);
-                    const packagePath = scanRoot.packagePathPrefix
-                        ? this.joinManifestPath(scanRoot.packagePathPrefix, relativeInsideRoot)
-                        : undefined;
-                    const key = this.getManifestEntryKey(filePath, packagePath);
-                    if (existingKeys.has(key)) {
-                        continue;
-                    }
-                    existingKeys.add(key);
-                    addedEntries.push({
-                        path: filePath,
-                        packagePath,
-                        contentType: 'application/octet-stream',
-                    });
-                }
-            }
-            totalAddedCount += addedEntries.length;
-            if (removedCount > 0 || addedEntries.length > 0) {
-                manifest.files = [...retainedFiles, ...addedEntries];
-                changedManifests.push({ manifestPath, manifest });
-            }
-        }
-        if (changedManifests.length === 0) {
-            this.platform.debug('Binary file sync: no changes required');
-            return [];
-        }
-        this.platform.info(`Synchronized binary file entries in extension manifests (removed ${totalRemovedCount}, added ${totalAddedCount})`);
-        return changedManifests;
-    }
-    async getManifestDirectoryScanRoots(rootFolder, fileEntries) {
-        const roots = [];
-        for (const entry of fileEntries) {
-            if (!entry.path) {
-                continue;
-            }
-            const absolutePath = path__default.isAbsolute(entry.path)
-                ? entry.path
-                : path__default.join(rootFolder, entry.path.replace(/\//g, path__default.sep));
-            let stats;
-            try {
-                stats = await readdir$1(absolutePath, { withFileTypes: true });
-            }
-            catch {
-                continue;
-            }
-            // If directory is readable, we consider it a scan root
-            if (Array.isArray(stats)) {
-                roots.push({
-                    absolutePath,
-                    manifestPathPrefix: this.toPosixPath(entry.path),
-                    packagePathPrefix: entry.packagePath ? this.toPosixPath(entry.packagePath) : undefined,
-                });
-            }
-        }
-        return roots;
-    }
-    async collectFilesRecursive(directory) {
-        const files = [];
-        const entries = await readdir$1(directory, { withFileTypes: true });
-        for (const entry of entries) {
-            const absolutePath = path__default.join(directory, entry.name);
-            if (entry.isDirectory()) {
-                const nestedFiles = await this.collectFilesRecursive(absolutePath);
-                files.push(...nestedFiles);
-            }
-            else if (entry.isFile()) {
-                files.push(absolutePath);
-            }
-        }
-        return files;
-    }
-    isExtensionlessFileName(fileName) {
-        return !/\.[^.]+$/.test(fileName) || fileName.endsWith('.');
-    }
-    toPosixPath(inputPath) {
-        return inputPath.replace(/\\/g, '/').replace(/^\.\//, '');
-    }
-    joinManifestPath(basePath, relativePath) {
-        const normalizedBase = this.toPosixPath(basePath).replace(/\/$/, '');
-        const normalizedRelative = this.toPosixPath(relativePath).replace(/^\//, '');
-        if (!normalizedRelative) {
-            return normalizedBase;
-        }
-        return `${normalizedBase}/${normalizedRelative}`;
-    }
-    getManifestEntryKey(filePath, packagePath) {
-        const normalizedPath = this.toPosixPath(filePath);
-        const normalizedPackagePath = packagePath ? this.toPosixPath(packagePath) : '';
-        return `${normalizedPath}::${normalizedPackagePath}`;
-    }
-    /**
-     * Generate overrides.json file in temp directory
-     *
-     * This file can be passed to tfx with --overrides-file to override
-     * extension manifest values during packaging without modifying source files.
-     */
-    async generateOverridesFile(manifestMods, overridesFilePath) {
-        if (Object.keys(manifestMods).length === 0) {
-            this.platform.debug('No manifest modifications, skipping overrides.json generation');
-            return;
-        }
-        // Create overrides object with only the fields that should be overridden
-        const overrides = {};
-        if (manifestMods.publisher) {
-            overrides.publisher = manifestMods.publisher;
-        }
-        if (manifestMods.id) {
-            overrides.id = manifestMods.id;
-        }
-        if (manifestMods.version) {
-            overrides.version = manifestMods.version;
-        }
-        if (manifestMods.name) {
-            overrides.name = manifestMods.name;
-        }
-        if (manifestMods.description) {
-            overrides.description = manifestMods.description;
-        }
-        if (manifestMods.galleryFlags) {
-            overrides.galleryFlags = manifestMods.galleryFlags;
-        }
-        if (typeof manifestMods.public === 'boolean') {
-            overrides.public = manifestMods.public;
-        }
-        let resolvedOverridesPath = overridesFilePath;
-        if (!resolvedOverridesPath) {
-            const tempDir = this.platform.getTempDir();
-            await mkdir$1(tempDir, { recursive: true });
-            resolvedOverridesPath = path__default.join(tempDir, `overrides-${Date.now()}.json`);
-        }
-        else {
-            await mkdir$1(path__default.dirname(resolvedOverridesPath), { recursive: true });
-        }
-        let existingOverrides = {};
-        if (await this.platform.fileExists(resolvedOverridesPath)) {
-            try {
-                const existingContent = (await readFile(resolvedOverridesPath)).toString('utf8').trim();
-                if (existingContent) {
-                    existingOverrides = JSON.parse(existingContent);
-                }
-            }
-            catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                const wrappedError = new Error(`Failed to read overrides file '${resolvedOverridesPath}': ${message}`);
-                wrappedError.cause = error;
-                throw wrappedError;
-            }
-        }
-        const mergedOverrides = {
-            ...existingOverrides,
-            ...overrides,
-        };
-        this.overridesPath = resolvedOverridesPath;
-        this.platform.debug(`Writing overrides file: ${this.overridesPath}`);
-        const overridesJson = JSON.stringify(mergedOverrides, null, 2) + '\n';
-        await writeFile$1(this.overridesPath, overridesJson, 'utf-8');
-        this.platform.info(`Generated overrides file: ${this.overridesPath}`);
-    }
-    /**
-     * Get the path to the generated overrides.json file
-     * This can be passed to tfx with --overrides-file
-     * @returns Path to overrides.json or null if not generated
-     */
-    getOverridesPath() {
-        return this.overridesPath;
-    }
-    /**
-     * Close and cleanup resources
-     */
-    async close() {
-        // Could clean up overrides file here, but we leave it for tfx to use
-        // Temp directory will be cleaned up by the build agent
-    }
-}
-
-var filesystemManifestWriter = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    FilesystemManifestWriter: FilesystemManifestWriter
 });
 
 /**
@@ -115512,6 +115512,8 @@ function requireWebApi () {
 
 var WebApiExports = requireWebApi();
 
+var TaskAgentApiBaseExports = requireTaskAgentApiBase();
+
 /**
  * Resolve expected tasks from various sources
  */
@@ -115547,7 +115549,9 @@ async function resolveExpectedTasks(options, platform) {
                                 const taskManifest = (await readManifest(taskPath, platform));
                                 if (taskManifest.name && taskManifest.version) {
                                     const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
-                                    const existing = expectedByTask.get(taskManifest.name) ?? { versions: new Set() };
+                                    const existing = expectedByTask.get(taskManifest.name) ?? {
+                                        versions: new Set(),
+                                    };
                                     existing.versions.add(version);
                                     if (taskManifest.id) {
                                         existing.id = taskManifest.id;
@@ -115642,141 +115646,160 @@ async function waitForInstallation(options, auth, platform) {
             let finalMissingTasks = [];
             let finalMissingVersions = [];
             let pollCount = 0;
+            // Track which versions are still pending; entries are removed as each version is confirmed
+            const pendingVersionsByTask = new Map();
+            for (const task of expectedTasks) {
+                if (task.versions.length > 0) {
+                    pendingVersionsByTask.set(task.name, new Set(task.versions));
+                }
+            }
+            // Track UUIDs discovered at runtime (supplements any provided in expectedTask.id)
+            const discoveredUuids = new Map();
+            for (const task of expectedTasks) {
+                if (task.id) {
+                    discoveredUuids.set(task.name, task.id);
+                }
+            }
+            // Collect "higher version installed" warnings; keyed by TaskName@version, emitted once after polling ends
+            const higherVersionWarnings = new Map();
             while (Date.now() < deadline && !found) {
                 pollCount++;
                 const remainingMs = deadline - Date.now();
                 const remainingMinutes = Math.ceil(remainingMs / 60_000);
-                platform.debug(`Poll attempt ${pollCount} (${remainingMinutes} minute(s) remaining)`);
+                platform.info(`Poll attempt ${pollCount} (${remainingMinutes} minute(s) remaining)`);
                 try {
-                    // Find tasks matching the extension
                     const installedTasks = [];
                     const missingTasks = [];
                     const missingVersions = [];
-                    let unrecoverable = false;
-                    // If we have expected tasks, check for them specifically
                     if (expectedTasks.length > 0) {
+                        // Determine which tasks still need UUID discovery
+                        const tasksNeedingDiscovery = expectedTasks.filter((t) => !discoveredUuids.has(t.name));
+                        // Fetch the all-tasks payload (highest version per task, no allVersions)
+                        // only when at least one task UUID is still unknown
+                        let allTasksPayload;
+                        if (tasksNeedingDiscovery.length > 0) {
+                            platform.debug(`Querying all task definitions to discover UUIDs for: ${tasksNeedingDiscovery.map((t) => t.name).join(', ')}`);
+                            allTasksPayload = (await taskAgentApi.getTaskDefinitions()) ?? [];
+                        }
                         for (const expectedTask of expectedTasks) {
-                            // Initial query: get task definitions (returns only highest version per task when no taskId)
-                            platform.debug(`Querying tasks to find ${expectedTask.name}`);
-                            const allTasks = await taskAgentApi.getTaskDefinitions();
-                            let installedTaskVersions = allTasks.filter((t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id && t.version);
-                            if (installedTaskVersions.length === 0) {
-                                // Task name not found at all
+                            const pendingVersions = pendingVersionsByTask.get(expectedTask.name);
+                            if (!pendingVersions || pendingVersions.size === 0) {
+                                continue; // already fully satisfied
+                            }
+                            // Resolve UUID — either already known or just discovered from the all-tasks payload
+                            let uuid = discoveredUuids.get(expectedTask.name);
+                            if (!uuid && allTasksPayload) {
+                                const found = allTasksPayload.find((t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id);
+                                if (found?.id) {
+                                    uuid = found.id;
+                                    discoveredUuids.set(expectedTask.name, uuid);
+                                    platform.debug(`Discovered UUID ${uuid} for task ${expectedTask.name}`);
+                                }
+                            }
+                            if (!uuid) {
+                                // Task not found in the all-tasks payload yet — still waiting
                                 missingTasks.push(expectedTask.name);
-                                for (const ver of expectedTask.versions) {
+                                for (const ver of pendingVersions) {
                                     missingVersions.push(`${expectedTask.name}@${ver}`);
                                 }
                                 continue;
                             }
-                            // Check each expected version
-                            for (const expectedVer of expectedTask.versions) {
+                            // Query all versions for this specific task via UUID
+                            platform.debug(`Querying all versions for task ${expectedTask.name} (UUID: ${uuid})`);
+                            // The concrete TaskAgentApi class drops the allVersions param when forwarding to super,
+                            // so we call the base class prototype directly to pass allVersions=true.
+                            const taskVersionsRaw = await TaskAgentApiBaseExports.TaskAgentApiBase.prototype.getTaskDefinitions.call(taskAgentApi, uuid, undefined, undefined, true);
+                            // API returns null when the task UUID is not (yet) found
+                            const taskVersions = taskVersionsRaw ?? [];
+                            for (const expectedVer of [...pendingVersions]) {
                                 const [expectedMajor, expectedMinor, expectedPatch] = expectedVer
                                     .split('.')
                                     .map(Number);
-                                // Check for exact match in initial results
-                                const exactMatch = installedTaskVersions.some((t) => t.version.major === expectedMajor &&
+                                const exactMatchTask = taskVersions.find((t) => t.version &&
+                                    t.version.major === expectedMajor &&
                                     t.version.minor === expectedMinor &&
                                     t.version.patch === expectedPatch);
-                                if (exactMatch) {
+                                if (exactMatchTask) {
+                                    // Validate contributionIdentifier when present — it must start with
+                                    // "{publisherId}.{extensionId}." to confirm the task belongs to our extension.
+                                    const expectedContribPrefix = `${identity.publisherId}.${identity.extensionId}.`;
+                                    if (exactMatchTask.contributionIdentifier &&
+                                        !exactMatchTask.contributionIdentifier
+                                            .toLowerCase()
+                                            .startsWith(expectedContribPrefix.toLowerCase())) {
+                                        platform.error(`Task ${expectedTask.name}@${expectedVer} version was found but its ` +
+                                            `contributionIdentifier '${exactMatchTask.contributionIdentifier}' does not match ` +
+                                            `expected extension '${expectedContribPrefix}*'. ` +
+                                            `This task belongs to a different extension.`);
+                                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                                        continue;
+                                    }
+                                    pendingVersions.delete(expectedVer);
+                                    platform.info(`✅ ${expectedTask.name}@${expectedVer} is now available`);
                                     continue;
                                 }
-                                // Check if a higher version exists for the same major version line
-                                const higherVersionForMajor = installedTaskVersions
-                                    .filter((t) => t.version.major === expectedMajor)
-                                    .filter((t) => {
+                                // Check if a higher minor/patch is already installed for the same major version line
+                                const higherInstalled = taskVersions
+                                    .filter((t) => t.version?.major === expectedMajor)
+                                    .some((t) => {
                                     if (t.version.minor > expectedMinor)
                                         return true;
                                     if (t.version.minor < expectedMinor)
                                         return false;
                                     return t.version.patch > expectedPatch;
-                                })
-                                    .sort((a, b) => {
-                                    if (a.version.minor !== b.version.minor)
-                                        return b.version.minor - a.version.minor;
-                                    return b.version.patch - a.version.patch;
                                 });
-                                if (higherVersionForMajor.length > 0) {
-                                    const highest = higherVersionForMajor[0];
+                                if (higherInstalled) {
+                                    const highest = taskVersions
+                                        .filter((t) => t.version?.major === expectedMajor)
+                                        .sort((a, b) => {
+                                        if (a.version.minor !== b.version.minor)
+                                            return b.version.minor - a.version.minor;
+                                        return b.version.patch - a.version.patch;
+                                    })[0];
                                     const highestVer = `${highest.version.major}.${highest.version.minor}.${highest.version.patch}`;
-                                    platform.warning(`Task ${expectedTask.name}@${expectedVer} was not found in the initial query, ` +
-                                        `but a higher version ${highestVer} is already installed for major version ${expectedMajor}. ` +
-                                        `Lower task versions won't appear in Azure DevOps without first uninstalling and reinstalling the extension.`);
-                                    // If we have the task UUID, re-query to get ALL versions for this task
-                                    if (expectedTask.id) {
-                                        platform.debug(`Re-querying task ${expectedTask.name} by UUID ${expectedTask.id} to check all versions`);
-                                        const allVersionsForTask = await taskAgentApi.getTaskDefinitions(expectedTask.id);
-                                        const exactMatchInAll = allVersionsForTask.some((t) => t.version &&
-                                            t.version.major === expectedMajor &&
-                                            t.version.minor === expectedMinor &&
-                                            t.version.patch === expectedPatch);
-                                        if (exactMatchInAll) {
-                                            platform.debug(`Found exact version ${expectedVer} for task ${expectedTask.name} via UUID query`);
-                                            // Update installedTaskVersions with all versions for reporting
-                                            installedTaskVersions = allVersionsForTask.filter((t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id && t.version);
-                                            continue;
-                                        }
-                                        // Exact version not found even with UUID query — keep polling
-                                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                                        platform.debug(`Version ${expectedVer} not yet available for task ${expectedTask.name} (UUID query confirmed)`);
-                                    }
-                                    else {
-                                        // No UUID available — we cannot verify specific versions, error out
-                                        unrecoverable = true;
-                                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                                        platform.error(`Cannot verify task ${expectedTask.name}@${expectedVer}: a higher version ${highestVer} is installed ` +
-                                            `and no task UUID is available to query all versions. ` +
-                                            `Provide the task source (vsix-file or manifest-file) so the task UUID can be used for verification.`);
-                                    }
+                                    const warnKey = `${expectedTask.name}@${expectedVer}`;
+                                    // Record warning once; keep polling — the exact version may still appear
+                                    higherVersionWarnings.set(warnKey, `Task ${expectedTask.name}@${expectedVer} was not found, ` +
+                                        `but a higher version ${highestVer} is already installed. ` +
+                                        `The requested version is lower than what is currently installed.`);
                                 }
-                                else {
-                                    // No version at all for this major line — still waiting
-                                    missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                                    platform.debug(`Missing version ${expectedVer} for task ${expectedTask.name}`);
-                                }
+                                // Version not yet present — keep polling
+                                missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                                platform.debug(`Version ${expectedVer} not yet available for task ${expectedTask.name}`);
                             }
-                            // Record all installed versions for reporting
-                            for (const installedTask of installedTaskVersions) {
+                            // Record installed versions for reporting
+                            for (const installedTask of taskVersions) {
+                                if (!installedTask.name || !installedTask.id || !installedTask.version)
+                                    continue;
                                 const installedVersion = `${installedTask.version.major}.${installedTask.version.minor}.${installedTask.version.patch}`;
-                                const matchesExpected = expectedTask.versions.includes(installedVersion);
                                 installedTasks.push({
                                     name: installedTask.name,
                                     id: installedTask.id,
                                     version: installedVersion,
                                     friendlyName: installedTask.friendlyName || installedTask.name,
-                                    matchesExpected,
+                                    matchesExpected: expectedTask.versions.includes(installedVersion),
                                 });
                             }
                         }
-                        // Break out of polling loop if unrecoverable
-                        if (unrecoverable) {
-                            finalInstalledTasks = installedTasks;
-                            finalMissingTasks = missingTasks;
-                            finalMissingVersions = missingVersions;
-                            break;
-                        }
-                        // Success if all tasks found and all required versions present
                         if (missingTasks.length === 0 && missingVersions.length === 0) {
                             found = true;
                             finalInstalledTasks = installedTasks;
                             finalMissingTasks = missingTasks;
                             finalMissingVersions = missingVersions;
-                            // Count unique task names and total expected versions
                             const uniqueTasks = new Set(expectedTasks.map((t) => t.name));
-                            const totalExpectedVersions = expectedTasks.reduce((sum, t) => {
-                                return sum + t.versions.length;
-                            }, 0);
+                            const totalExpectedVersions = expectedTasks.reduce((sum, t) => sum + t.versions.length, 0);
                             platform.info(`✓ All ${uniqueTasks.size} expected task(s) with ${totalExpectedVersions} version(s) found in ${accountUrl}`);
                         }
                         else if (missingTasks.length > 0) {
-                            platform.debug(`Missing ${missingTasks.length} task(s): ${missingTasks.join(', ')}`);
+                            platform.info(`Missing ${missingTasks.length} task(s): ${missingTasks.join(', ')}`);
                         }
                         else if (missingVersions.length > 0) {
-                            platform.debug(`Missing ${missingVersions.length} version(s): ${missingVersions.join(', ')}`);
+                            platform.info(`Missing ${missingVersions.length} version(s): ${missingVersions.join(', ')}`);
                         }
                     }
                     else {
-                        // No expected tasks - query all and collect
-                        const taskDefinitions = await taskAgentApi.getTaskDefinitions();
+                        // No expected tasks — query all and succeed on first non-empty response
+                        const taskDefinitions = (await taskAgentApi.getTaskDefinitions()) ?? [];
                         for (const task of taskDefinitions) {
                             if (task.name && task.id && task.version) {
                                 installedTasks.push({
@@ -115784,7 +115807,7 @@ async function waitForInstallation(options, auth, platform) {
                                     id: task.id,
                                     version: `${task.version.major}.${task.version.minor}.${task.version.patch}`,
                                     friendlyName: task.friendlyName || task.name,
-                                    matchesExpected: true, // No expectations, so all match
+                                    matchesExpected: true,
                                 });
                             }
                         }
@@ -115798,7 +115821,7 @@ async function waitForInstallation(options, auth, platform) {
                     }
                     if (!found && Date.now() < deadline) {
                         // Wait before next poll
-                        platform.debug(`Waiting ${pollingIntervalMs / 1000}s before next poll...`);
+                        platform.info(`Waiting ${pollingIntervalMs / 1000}s before next poll...`);
                         await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
                     }
                 }
@@ -115809,6 +115832,10 @@ async function waitForInstallation(options, auth, platform) {
                         await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
                     }
                 }
+            }
+            // Emit any higher-version warnings now that polling has finished
+            for (const msg of higherVersionWarnings.values()) {
+                platform.warning(msg);
             }
             if (found) {
                 accountResults.push({
@@ -115824,18 +115851,18 @@ async function waitForInstallation(options, auth, platform) {
                     ? `Timeout waiting for tasks. Last error: ${lastError.message}`
                     : `Timeout waiting for tasks after ${options.timeoutMinutes ?? 10} minutes`;
                 platform.warning(errorMsg);
-                // Calculate all missing versions for expected tasks
+                // Report only the versions that were never confirmed
                 const allMissingVersions = [];
-                for (const task of expectedTasks) {
-                    for (const ver of task.versions) {
-                        allMissingVersions.push(`${task.name}@${ver}`);
+                for (const [taskName, pending] of pendingVersionsByTask) {
+                    for (const ver of pending) {
+                        allMissingVersions.push(`${taskName}@${ver}`);
                     }
                 }
                 accountResults.push({
                     accountUrl,
                     available: false,
                     installedTasks: [],
-                    missingTasks: expectedTasks.map((t) => t.name),
+                    missingTasks: [...pendingVersionsByTask.keys()].filter((name) => (pendingVersionsByTask.get(name)?.size ?? 0) > 0),
                     missingVersions: allMissingVersions,
                     error: errorMsg,
                 });
