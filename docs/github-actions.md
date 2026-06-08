@@ -179,9 +179,26 @@ Resolves the proposed extension version from one or more sources. The highest va
 - Optional:
   - `publisher-id` (if omitted, inferred from `vsix-file` when provided)
   - `extension-id` (if omitted, inferred from `vsix-file` when provided)
-  - one of `expected-tasks`, `manifest-file`, `vsix-file`
+  - one of:
+    - `expected-tasks` (JSON — see format below)
+    - `manifest-file` (task UUID read automatically from manifests)
+    - `vsix-file` (task UUID read automatically from VSIX)
   - `working-directory` when `manifest-file` points to manifests under a subfolder
   - `timeout-minutes`, `polling-interval-seconds`
+
+#### `expected-tasks` format
+
+```json
+[
+  {
+    "name": "TaskName",
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "versions": ["1.0.0", "2.0.0"]
+  }
+]
+```
+
+The `id` (task UUID from `task.json`) is optional but strongly recommended. When Azure DevOps already has a higher version of a task installed for the same major version line, the API only returns that higher version by default. Providing `id` allows the action to re-query by UUID to check all installed versions. Without `id`, the action errors immediately when a higher version is detected rather than polling indefinitely.
 
 ## Working directory for manifest-based operations
 

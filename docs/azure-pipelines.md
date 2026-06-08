@@ -206,12 +206,26 @@ Verifies tasks are available after install.
   - `accounts`
 - Optional:
   - task expectations via one of:
-    - `expectedTasks` (JSON)
-    - `manifestFile`
-    - `vsixFile`
+    - `expectedTasks` (JSON — see format below)
+    - `manifestFile` (task UUID read automatically from manifests)
+    - `vsixFile` (task UUID read automatically from VSIX)
   - `workingDirectory` when `manifestFile` points to manifests under a subfolder
   - `timeoutMinutes`, `pollingIntervalSeconds`
   - `tfxVersion`
+
+#### `expectedTasks` format
+
+```json
+[
+  {
+    "name": "TaskName",
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "versions": ["1.0.0", "2.0.0"]
+  }
+]
+```
+
+The `id` (task UUID from `task.json`) is optional but strongly recommended. When Azure DevOps already has a higher version of a task installed for the same major version line, the API only returns that higher version by default. Providing `id` allows the action to re-query by UUID to check all installed versions. Without `id`, the action errors immediately when a higher version is detected rather than polling indefinitely.
 
 ## Working directory for manifest-based operations
 

@@ -58,10 +58,12 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
     accounts: 'myorg'
     expected-tasks: |
       [
-        {"name": "MyTask", "versions": ["1.0.0", "2.0.0"]},
-        {"name": "AnotherTask", "versions": ["1.5.0"]}
+        {"name": "MyTask", "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "versions": ["1.0.0", "2.0.0"]},
+        {"name": "AnotherTask", "id": "ffffffff-0000-1111-2222-333333333333", "versions": ["1.5.0"]}
       ]
 ```
+
+The `id` (task UUID) is optional when using `expected-tasks` directly, but strongly recommended. See [Expected Tasks Format](#expected-tasks-format) for details.
 
 ### Verify Multiple Accounts
 
@@ -220,12 +222,24 @@ When using `expected-tasks`, provide a JSON array:
 [
   {
     "name": "TaskName",
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "versions": ["1.0.0", "2.0.0"]
   }
 ]
 ```
 
 Each task can have multiple versions. The verification succeeds if ALL specified versions are found.
+
+### `id` field (task UUID)
+
+The `id` field is the task's UUID from `task.json` and is optional but strongly recommended.
+
+The Azure DevOps task API normally returns only the **highest installed version** per task. If you publish a lower version than one already installed (for example rolling back from `2.0.0` to `1.0.4`), the initial query will not show the older version.
+
+- **With `id`**: when a higher version for the same major is detected, the action re-queries by UUID to retrieve **all installed versions** and checks for the exact expected version. Polling continues until found or timeout.
+- **Without `id`**: when a higher version is detected, the action errors immediately — it cannot verify whether the specific older version is installed without the UUID.
+
+When using `manifest-file` or `vsix-file` as the task source, the UUID is read automatically from the task manifests — no manual `id` input is needed.
 
 ## GitHub Marketplace sample
 
