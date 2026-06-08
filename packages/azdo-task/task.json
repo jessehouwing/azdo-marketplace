@@ -303,7 +303,7 @@
       "type": "multiLine",
       "label": "Expected Tasks (JSON)",
       "required": false,
-      "helpMarkDown": "**Expected tasks as JSON array** - manually specify tasks to verify.\n\n**Format**: Array of objects with `name` and `versions` properties\n\n**Example**:\n```json\n[\n  {\"name\": \"MyTask\", \"versions\": [\"1.0.0\", \"1.0.1\"]},\n  {\"name\": \"AnotherTask\", \"versions\": [\"2.0.0\"]}\n]\n```\n\n**Note**: Use this OR auto-discovery options (manifestFile/vsixFile), not both",
+      "helpMarkDown": "**Expected tasks as JSON array** - manually specify tasks to verify.\n\n**Format**: Array of objects with `name`, optional `id` (task UUID), and `versions` properties\n\n**Example**:\n```json\n[\n  {\"name\": \"MyTask\", \"id\": \"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\", \"versions\": [\"1.0.0\", \"1.0.1\"]},\n  {\"name\": \"AnotherTask\", \"id\": \"ffffffff-0000-1111-2222-333333333333\", \"versions\": [\"2.0.0\"]}\n]\n```\n\nThe `id` field (task UUID from task.json) is optional but strongly recommended. When a higher version is already installed, the API only returns that version. With `id`, the task re-queries by UUID to find all versions and continues polling. Without `id`, it errors immediately when a higher version is detected. When using manifestFile/vsixFile, the UUID is read automatically.\n\n**Note**: Use this OR auto-discovery options (manifestFile/vsixFile), not both",
       "visibleRule": "operation = waitForInstallation"
     },
     {

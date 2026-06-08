@@ -130,7 +130,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 
 #### Wait For Installation
 
-- `expected-tasks`: Provides task/version expectations to verify.
+- `expected-tasks`: Provides task/version expectations to verify as a JSON array of `{ name, id?, versions }` objects. The optional `id` (task UUID from `task.json`) enables per-UUID querying when a higher version is already installed — without it the action will error if a higher version is detected.
 
 ### Main action outputs
 

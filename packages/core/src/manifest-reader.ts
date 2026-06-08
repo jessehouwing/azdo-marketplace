@@ -85,6 +85,7 @@ export interface ManifestMetadata {
  */
 export interface TaskInfo {
   name: string;
+  id: string;
   friendlyName: string;
   version: string;
   path: string;
@@ -175,6 +176,7 @@ export abstract class ManifestReader {
     const tasks = await this.readTaskManifests();
     return tasks.map(({ path, manifest }) => ({
       name: manifest.name,
+      id: manifest.id,
       friendlyName: manifest.friendlyName,
       version: `${manifest.version.Major}.${manifest.version.Minor}.${manifest.version.Patch}`,
       path,

@@ -264,12 +264,14 @@ describe('VsixReader', () => {
       expect(tasks.length).toBe(2);
       expect(tasks).toContainEqual({
         name: 'PublishExtension',
+        id: '11111111-1111-1111-1111-111111111111',
         friendlyName: 'Publish Extension',
         version: '6.0.0',
         path: 'PublishTask',
       });
       expect(tasks).toContainEqual({
         name: 'PackageExtension',
+        id: '22222222-2222-2222-2222-222222222222',
         friendlyName: 'Package Extension',
         version: '6.0.0',
         path: 'PackageTask',

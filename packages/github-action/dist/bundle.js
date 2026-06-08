@@ -30315,6 +30315,7 @@ class ManifestReader {
         const tasks = await this.readTaskManifests();
         return tasks.map(({ path, manifest }) => ({
             name: manifest.name,
+            id: manifest.id,
             friendlyName: manifest.friendlyName,
             version: `${manifest.version.Major}.${manifest.version.Minor}.${manifest.version.Patch}`,
             path,
@@ -31055,6 +31056,11 @@ function requireYauzl () {
 	yauzl$1.fromFd = fromFd;
 	yauzl$1.fromBuffer = fromBuffer;
 	yauzl$1.fromRandomAccessReader = fromRandomAccessReader;
+	yauzl$1.openPromise = openPromise;
+	yauzl$1.fromFdPromise = fromFdPromise;
+	yauzl$1.fromBufferPromise = fromBufferPromise;
+	yauzl$1.fromRandomAccessReaderPromise = fromRandomAccessReaderPromise;
+
 	yauzl$1.dosDateTimeToDate = dosDateTimeToDate;
 	yauzl$1.getFileNameLowLevel = getFileNameLowLevel;
 	yauzl$1.validateFileName = validateFileName;
@@ -31063,6 +31069,39 @@ function requireYauzl () {
 	yauzl$1.Entry = Entry;
 	yauzl$1.LocalFileHeader = LocalFileHeader;
 	yauzl$1.RandomAccessReader = RandomAccessReader;
+
+	function openPromise(path, options) {
+	  return new Promise((resolve, reject) => {
+	    open(path, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
+	function fromFdPromise(fd, options) {
+	  return new Promise((resolve, reject) => {
+	    fromFd(fd, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
+	function fromBufferPromise(buffer, options) {
+	  return new Promise((resolve, reject) => {
+	    fromBuffer(buffer, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
+	function fromRandomAccessReaderPromise(reader, totalSize, options) {
+	  return new Promise((resolve, reject) => {
+	    fromRandomAccessReader(reader, totalSize, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
 
 	function open(path, options, callback) {
 	  if (typeof options === "function") {
@@ -31258,6 +31297,7 @@ function requireYauzl () {
 	  self.strictFileNames = !!strictFileNames;
 	  self.isOpen = true;
 	  self.emittedError = false;
+	  self.hasEachEntryBeenCalled = false;
 
 	  if (!self.lazyEntries) self._readEntry();
 	}
@@ -31428,6 +31468,68 @@ function requireYauzl () {
 	      if (!self.lazyEntries) self._readEntry();
 	    });
 	  });
+	};
+
+	ZipFile.prototype.eachEntry = function() {
+	  const self = this;
+	  if (!self.lazyEntries) throw new Error("eachEntry() requires lazyEntries: true");
+	  if (self.hasEachEntryBeenCalled) throw new Error("eachEntry() must only be called once per ZipFile");
+	  self.hasEachEntryBeenCalled = true;
+
+	  let pendingResolveReject = null;
+	  self.on("entry", onEntry);
+	  self.on("end", onEnd);
+	  self.on("error", onError);
+	  function cleanup() {
+	    self.removeListener("entry", onEntry);
+	    self.removeListener("end", onEnd);
+	    self.removeListener("error", onError);
+	    if (self.autoClose) self.close();
+	  }
+
+	  function onEntry(entry) {
+	    let {resolve} = pendingResolveReject;
+	    pendingResolveReject = null;
+	    resolve({value: entry});
+	  }
+	  function onEnd() {
+	    let {resolve} = pendingResolveReject;
+	    pendingResolveReject = null;
+	    cleanup();
+	    resolve({done: true});
+	  }
+	  function onError(err) {
+	    let {reject} = pendingResolveReject;
+	    pendingResolveReject = null;
+	    cleanup();
+	    reject(err);
+	  }
+
+	  return {
+	    [Symbol.asyncIterator]() {
+	      // Called once by `for await...of`.
+	      return this;
+	    },
+	    next() {
+	      // Called on each iteration in a `for await...of`.
+	      const promise = new Promise((resolve, reject) => {
+	        if (pendingResolveReject != null) throw new Error("next() called before previous Promise was resolved.");
+	        pendingResolveReject = {resolve, reject};
+	      });
+	      self.readEntry();
+	      return promise;
+	    },
+	    return(value) {
+	      // Called when breaking, returning, throwing out of a `for await...of`.
+	      cleanup();
+	      return Promise.resolve({done: true, value});
+	    },
+	    throw(value) {
+	      // Almost never called. Something about `yield*` maybe?
+	      cleanup();
+	      return Promise.reject(value);
+	    },
+	  };
 	};
 
 	ZipFile.prototype.openReadStream = function(entry, options, callback) {
@@ -31643,6 +31745,31 @@ function requireYauzl () {
 	    } finally {
 	      self.reader.unref();
 	    }
+	  });
+	};
+
+	ZipFile.prototype.openReadStreamPromise = function(entry, options) {
+	  return new Promise((resolve, reject) => {
+	    this.openReadStream(entry, options, function(err, readStream) {
+	      if (err) return reject(err);
+	      resolve(readStream);
+	    });
+	  });
+	};
+	ZipFile.prototype.openReadStreamLowLevelPromise = function(fileDataStart, compressedSize, relativeStart, relativeEnd, decompress, uncompressedSize) {
+	  return new Promise((resolve, reject) => {
+	    this.openReadStream(fileDataStart, compressedSize, relativeStart, relativeEnd, decompress, uncompressedSize, function(err, readStream) {
+	      if (err) return reject(err);
+	      resolve(readStream);
+	    });
+	  });
+	};
+	ZipFile.prototype.readLocalFileHeaderPromise = function(entry, options) {
+	  return new Promise((resolve, reject) => {
+	    this.readLocalFileHeader(entry, options, function(err, localFileHeader) {
+	      if (err) return reject(err);
+	      resolve(localFileHeader);
+	    });
 	  });
 	};
 
@@ -115420,8 +115547,11 @@ async function resolveExpectedTasks(options, platform) {
                                 const taskManifest = (await readManifest(taskPath, platform));
                                 if (taskManifest.name && taskManifest.version) {
                                     const version = `${taskManifest.version.Major}.${taskManifest.version.Minor}.${taskManifest.version.Patch}`;
-                                    const existing = expectedByTask.get(taskManifest.name) ?? new Set();
-                                    existing.add(version);
+                                    const existing = expectedByTask.get(taskManifest.name) ?? { versions: new Set() };
+                                    existing.versions.add(version);
+                                    if (taskManifest.id) {
+                                        existing.id = taskManifest.id;
+                                    }
                                     expectedByTask.set(taskManifest.name, existing);
                                     platform.debug(`Found task ${taskManifest.name} v${version}`);
                                 }
@@ -115437,8 +115567,9 @@ async function resolveExpectedTasks(options, platform) {
                         platform.warning(`Failed to read manifest ${manifestFile}: ${errorMessage}`);
                     }
                 }
-                const tasks = [...expectedByTask.entries()].map(([name, versions]) => ({
+                const tasks = [...expectedByTask.entries()].map(([name, { id, versions }]) => ({
                     name,
+                    id,
                     versions: [...versions],
                 }));
                 if (tasks.length > 0) {
@@ -115461,6 +115592,7 @@ async function resolveExpectedTasks(options, platform) {
                 const tasksInfo = await reader.getTasksInfo();
                 const tasks = tasksInfo.map((task) => ({
                     name: task.name,
+                    id: task.id,
                     versions: [task.version],
                 }));
                 platform.debug(`Resolved ${tasks.length} tasks from VSIX`);
@@ -115516,29 +115648,95 @@ async function waitForInstallation(options, auth, platform) {
                 const remainingMinutes = Math.ceil(remainingMs / 60_000);
                 platform.debug(`Poll attempt ${pollCount} (${remainingMinutes} minute(s) remaining)`);
                 try {
-                    const taskDefinitions = await taskAgentApi.getTaskDefinitions();
                     // Find tasks matching the extension
                     const installedTasks = [];
                     const missingTasks = [];
                     const missingVersions = [];
+                    let unrecoverable = false;
                     // If we have expected tasks, check for them specifically
                     if (expectedTasks.length > 0) {
                         for (const expectedTask of expectedTasks) {
-                            // Find all installed versions of this task
-                            const installedTaskVersions = taskDefinitions.filter((t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id && t.version);
+                            // Initial query: get task definitions (returns only highest version per task when no taskId)
+                            platform.debug(`Querying tasks to find ${expectedTask.name}`);
+                            const allTasks = await taskAgentApi.getTaskDefinitions();
+                            let installedTaskVersions = allTasks.filter((t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id && t.version);
                             if (installedTaskVersions.length === 0) {
                                 // Task name not found at all
                                 missingTasks.push(expectedTask.name);
-                                // Also track specific versions that are missing
                                 for (const ver of expectedTask.versions) {
                                     missingVersions.push(`${expectedTask.name}@${ver}`);
                                 }
                                 continue;
                             }
-                            // Check each installed version of this task
+                            // Check each expected version
+                            for (const expectedVer of expectedTask.versions) {
+                                const [expectedMajor, expectedMinor, expectedPatch] = expectedVer
+                                    .split('.')
+                                    .map(Number);
+                                // Check for exact match in initial results
+                                const exactMatch = installedTaskVersions.some((t) => t.version.major === expectedMajor &&
+                                    t.version.minor === expectedMinor &&
+                                    t.version.patch === expectedPatch);
+                                if (exactMatch) {
+                                    continue;
+                                }
+                                // Check if a higher version exists for the same major version line
+                                const higherVersionForMajor = installedTaskVersions
+                                    .filter((t) => t.version.major === expectedMajor)
+                                    .filter((t) => {
+                                    if (t.version.minor > expectedMinor)
+                                        return true;
+                                    if (t.version.minor < expectedMinor)
+                                        return false;
+                                    return t.version.patch > expectedPatch;
+                                })
+                                    .sort((a, b) => {
+                                    if (a.version.minor !== b.version.minor)
+                                        return b.version.minor - a.version.minor;
+                                    return b.version.patch - a.version.patch;
+                                });
+                                if (higherVersionForMajor.length > 0) {
+                                    const highest = higherVersionForMajor[0];
+                                    const highestVer = `${highest.version.major}.${highest.version.minor}.${highest.version.patch}`;
+                                    platform.warning(`Task ${expectedTask.name}@${expectedVer} was not found in the initial query, ` +
+                                        `but a higher version ${highestVer} is already installed for major version ${expectedMajor}. ` +
+                                        `Lower task versions won't appear in Azure DevOps without first uninstalling and reinstalling the extension.`);
+                                    // If we have the task UUID, re-query to get ALL versions for this task
+                                    if (expectedTask.id) {
+                                        platform.debug(`Re-querying task ${expectedTask.name} by UUID ${expectedTask.id} to check all versions`);
+                                        const allVersionsForTask = await taskAgentApi.getTaskDefinitions(expectedTask.id);
+                                        const exactMatchInAll = allVersionsForTask.some((t) => t.version &&
+                                            t.version.major === expectedMajor &&
+                                            t.version.minor === expectedMinor &&
+                                            t.version.patch === expectedPatch);
+                                        if (exactMatchInAll) {
+                                            platform.debug(`Found exact version ${expectedVer} for task ${expectedTask.name} via UUID query`);
+                                            // Update installedTaskVersions with all versions for reporting
+                                            installedTaskVersions = allVersionsForTask.filter((t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id && t.version);
+                                            continue;
+                                        }
+                                        // Exact version not found even with UUID query — keep polling
+                                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                                        platform.debug(`Version ${expectedVer} not yet available for task ${expectedTask.name} (UUID query confirmed)`);
+                                    }
+                                    else {
+                                        // No UUID available — we cannot verify specific versions, error out
+                                        unrecoverable = true;
+                                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                                        platform.error(`Cannot verify task ${expectedTask.name}@${expectedVer}: a higher version ${highestVer} is installed ` +
+                                            `and no task UUID is available to query all versions. ` +
+                                            `Provide the task source (vsix-file or manifest-file) so the task UUID can be used for verification.`);
+                                    }
+                                }
+                                else {
+                                    // No version at all for this major line — still waiting
+                                    missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                                    platform.debug(`Missing version ${expectedVer} for task ${expectedTask.name}`);
+                                }
+                            }
+                            // Record all installed versions for reporting
                             for (const installedTask of installedTaskVersions) {
                                 const installedVersion = `${installedTask.version.major}.${installedTask.version.minor}.${installedTask.version.patch}`;
-                                // Check if this version matches any expected version
                                 const matchesExpected = expectedTask.versions.includes(installedVersion);
                                 installedTasks.push({
                                     name: installedTask.name,
@@ -115548,14 +115746,13 @@ async function waitForInstallation(options, auth, platform) {
                                     matchesExpected,
                                 });
                             }
-                            // Check if all required versions are present
-                            const installedVersionStrings = installedTaskVersions.map((t) => `${t.version.major}.${t.version.minor}.${t.version.patch}`);
-                            for (const expectedVer of expectedTask.versions) {
-                                if (!installedVersionStrings.includes(expectedVer)) {
-                                    missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                                    platform.debug(`Missing version ${expectedVer} for task ${expectedTask.name}`);
-                                }
-                            }
+                        }
+                        // Break out of polling loop if unrecoverable
+                        if (unrecoverable) {
+                            finalInstalledTasks = installedTasks;
+                            finalMissingTasks = missingTasks;
+                            finalMissingVersions = missingVersions;
+                            break;
                         }
                         // Success if all tasks found and all required versions present
                         if (missingTasks.length === 0 && missingVersions.length === 0) {
@@ -115578,7 +115775,8 @@ async function waitForInstallation(options, auth, platform) {
                         }
                     }
                     else {
-                        // No expected tasks - collect all tasks
+                        // No expected tasks - query all and collect
+                        const taskDefinitions = await taskAgentApi.getTaskDefinitions();
                         for (const task of taskDefinitions) {
                             if (task.name && task.id && task.version) {
                                 installedTasks.push({

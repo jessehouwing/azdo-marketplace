@@ -145,15 +145,21 @@ inputs:
       Required for: none.
       Default: none
 
-      **Format:** Array of objects with `name` and `versions` properties
+      **Format:** Array of objects with `name`, optional `id` (task UUID), and `versions` properties
 
       **Example:**
       ```json
       [
-        {"name": "MyTask", "versions": ["1.0.0", "1.0.1"]},
-        {"name": "AnotherTask", "versions": ["2.0.0"]}
+        {"name": "MyTask", "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "versions": ["1.0.0", "1.0.1"]},
+        {"name": "AnotherTask", "id": "ffffffff-0000-1111-2222-333333333333", "versions": ["2.0.0"]}
       ]
       ```
+
+      The `id` field (task UUID from task.json) is optional but strongly recommended.
+      When a higher version is already installed, the API only returns that higher version.
+      - With `id`: re-queries by UUID to check all installed versions and continues polling.
+      - Without `id`: errors immediately when a higher version is detected.
+      When using manifest-file or vsix-file, the UUID is read automatically.
 
       **Note:** Use this OR auto-discovery options (manifest-file/vsix-file), not both
     required: false
