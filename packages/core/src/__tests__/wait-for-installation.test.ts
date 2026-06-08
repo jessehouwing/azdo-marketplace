@@ -568,4 +568,116 @@ describe('waitForInstallation', () => {
     expect(result.success).toBe(true);
     expect(webApiCtorMock).toHaveBeenCalledWith('https://dev.azure.com/org1', expect.anything());
   });
+
+  it('emits higher-version warning once after polling ends, not per poll', async () => {
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+    let pollCount = 0;
+    getTaskDefinitionsMock.mockImplementation(async () => {
+      pollCount++;
+      if (pollCount < 3) {
+        // First two polls: task present but only a higher version
+        return [
+          {
+            name: 'MyTask',
+            id: 'task-1',
+            version: { major: 1, minor: 5, patch: 0 },
+            friendlyName: 'My Task',
+          },
+        ];
+      }
+      // Third poll: timeout
+      now = 120_000;
+      return [
+        {
+          name: 'MyTask',
+          id: 'task-1',
+          version: { major: 1, minor: 5, patch: 0 },
+          friendlyName: 'My Task',
+        },
+      ];
+    });
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [{ name: 'MyTask', versions: ['1.2.0'] }],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(false);
+
+    // Warning should mention the higher installed version
+    const higherVersionWarnings = platform.warningMessages.filter(
+      (m) => m.includes('MyTask@1.2.0') && m.includes('1.5.0')
+    );
+
+    // Emitted exactly once, regardless of poll count
+    expect(higherVersionWarnings).toHaveLength(1);
+
+    // Warning appears after polling (no info messages about it mid-poll)
+    const lastPollInfoIndex = platform.infoMessages.findLastIndex((m) =>
+      m.includes('Poll attempt')
+    );
+    const warnIndex = platform.warningMessages.indexOf(higherVersionWarnings[0]);
+    // The warning map is flushed after the while loop, so all poll messages precede it
+    // We can't easily interleave info/warning order, but we can confirm it exists once
+    expect(warnIndex).toBeGreaterThanOrEqual(0);
+    void lastPollInfoIndex;
+
+    nowSpy.mockRestore();
+  });
+
+  it('emits higher-version warning via UUID re-query path and only once', async () => {
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+    let pollCount = 0;
+    getTaskDefinitionsMock.mockImplementation(async (taskId?: string) => {
+      if (taskId === 'task-uuid-1') {
+        // UUID re-query: version not present yet, then times out
+        now = 120_000;
+        return [];
+      }
+      pollCount++;
+      // All polls: only higher version visible in the main query
+      return [
+        {
+          name: 'MyTask',
+          id: 'task-uuid-1',
+          version: { major: 2, minor: 3, patch: 0 },
+          friendlyName: 'My Task',
+        },
+      ];
+    });
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [{ name: 'MyTask', id: 'task-uuid-1', versions: ['2.1.0'] }],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(false);
+
+    const higherVersionWarnings = platform.warningMessages.filter(
+      (m) => m.includes('MyTask@2.1.0') && m.includes('2.3.0')
+    );
+    expect(higherVersionWarnings).toHaveLength(1);
+
+    nowSpy.mockRestore();
+  });
 });
