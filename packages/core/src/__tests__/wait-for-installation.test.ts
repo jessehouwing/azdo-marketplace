@@ -803,4 +803,89 @@ describe('waitForInstallation', () => {
     expect(result.success).toBe(true);
     expect(platform.errorMessages).toHaveLength(0);
   });
+
+  it('tracks both versions independently when two tasks share the same name and UUID', async () => {
+    // Real-world case: an extension ships two major versions of the same task
+    // (e.g. MsBuildHelperTask v0 and v1). Both entries have the same name and
+    // same UUID. The old Map<string, ...> implementation keyed by name caused
+    // the second entry to silently overwrite the first, so one version was never
+    // checked and the function returned success prematurely.
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+    taskAgentApiBaseGetTaskDefinitionsMock.mockImplementation(async () => {
+      now = 120_000; // expire after first poll
+      return [
+        {
+          name: 'MsBuildHelperTask',
+          id: 'shared-uuid',
+          version: { major: 1, minor: 5, patch: 10 },
+          friendlyName: 'MSBuild Helper Task',
+        },
+        // v0 is NOT returned — simulates it not yet being installed
+      ];
+    });
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [
+          { name: 'MsBuildHelperTask', id: 'shared-uuid', versions: ['0.5.10'] },
+          { name: 'MsBuildHelperTask', id: 'shared-uuid', versions: ['1.5.10'] },
+        ],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    // v1.5.10 is found but v0.5.10 is not — should NOT be success
+    expect(result.success).toBe(false);
+    expect(result.accountResults[0].missingVersions).toContain('MsBuildHelperTask@0.5.10');
+    expect(result.accountResults[0].missingVersions).not.toContain('MsBuildHelperTask@1.5.10');
+
+    nowSpy.mockRestore();
+  });
+
+  it('succeeds when both versions of a same-name same-UUID task are installed', async () => {
+    // Counterpart to the regression test above: both versions are present.
+    taskAgentApiBaseGetTaskDefinitionsMock.mockResolvedValue([
+      {
+        name: 'MsBuildHelperTask',
+        id: 'shared-uuid',
+        version: { major: 0, minor: 5, patch: 10 },
+        friendlyName: 'MSBuild Helper Task',
+      },
+      {
+        name: 'MsBuildHelperTask',
+        id: 'shared-uuid',
+        version: { major: 1, minor: 5, patch: 10 },
+        friendlyName: 'MSBuild Helper Task',
+      },
+    ]);
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [
+          { name: 'MsBuildHelperTask', id: 'shared-uuid', versions: ['0.5.10'] },
+          { name: 'MsBuildHelperTask', id: 'shared-uuid', versions: ['1.5.10'] },
+        ],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.accountResults[0].missingVersions).toEqual([]);
+    expect(platform.infoMessages.some((m) => m.includes('✅ MsBuildHelperTask@0.5.10'))).toBe(true);
+    expect(platform.infoMessages.some((m) => m.includes('✅ MsBuildHelperTask@1.5.10'))).toBe(true);
+  });
 });

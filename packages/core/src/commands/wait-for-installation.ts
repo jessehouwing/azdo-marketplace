@@ -213,19 +213,20 @@ export async function waitForInstallation(
       let finalMissingVersions: string[] = [];
       let pollCount = 0;
 
-      // Track which versions are still pending; entries are removed as each version is confirmed
-      const pendingVersionsByTask = new Map<string, Set<string>>();
+      // Track which versions are still pending per task entry (keyed by object reference so that
+      // multi-version extensions with the same task name but different UUIDs are tracked separately)
+      const pendingVersionsByTask = new Map<ExpectedTask, Set<string>>();
       for (const task of expectedTasks) {
         if (task.versions.length > 0) {
-          pendingVersionsByTask.set(task.name, new Set(task.versions));
+          pendingVersionsByTask.set(task, new Set(task.versions));
         }
       }
 
-      // Track UUIDs discovered at runtime (supplements any provided in expectedTask.id)
-      const discoveredUuids = new Map<string, string>();
+      // Track UUIDs discovered at runtime (keyed by object reference for the same reason)
+      const discoveredUuids = new Map<ExpectedTask, string>();
       for (const task of expectedTasks) {
         if (task.id) {
-          discoveredUuids.set(task.name, task.id);
+          discoveredUuids.set(task, task.id);
         }
       }
 
@@ -246,7 +247,7 @@ export async function waitForInstallation(
 
           if (expectedTasks.length > 0) {
             // Determine which tasks still need UUID discovery
-            const tasksNeedingDiscovery = expectedTasks.filter((t) => !discoveredUuids.has(t.name));
+            const tasksNeedingDiscovery = expectedTasks.filter((t) => !discoveredUuids.has(t));
 
             // Fetch the all-tasks payload (highest version per task, no allVersions)
             // only when at least one task UUID is still unknown
@@ -259,20 +260,20 @@ export async function waitForInstallation(
             }
 
             for (const expectedTask of expectedTasks) {
-              const pendingVersions = pendingVersionsByTask.get(expectedTask.name);
+              const pendingVersions = pendingVersionsByTask.get(expectedTask);
               if (!pendingVersions || pendingVersions.size === 0) {
                 continue; // already fully satisfied
               }
 
               // Resolve UUID — either already known or just discovered from the all-tasks payload
-              let uuid = discoveredUuids.get(expectedTask.name);
+              let uuid = discoveredUuids.get(expectedTask);
               if (!uuid && allTasksPayload) {
                 const found = allTasksPayload.find(
                   (t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id
                 );
                 if (found?.id) {
                   uuid = found.id;
-                  discoveredUuids.set(expectedTask.name, uuid);
+                  discoveredUuids.set(expectedTask, uuid);
                   platform.debug(`Discovered UUID ${uuid} for task ${expectedTask.name}`);
                 }
               }
@@ -473,9 +474,9 @@ export async function waitForInstallation(
 
         // Report only the versions that were never confirmed
         const allMissingVersions: string[] = [];
-        for (const [taskName, pending] of pendingVersionsByTask) {
+        for (const [task, pending] of pendingVersionsByTask) {
           for (const ver of pending) {
-            allMissingVersions.push(`${taskName}@${ver}`);
+            allMissingVersions.push(`${task.name}@${ver}`);
           }
         }
 
@@ -483,9 +484,13 @@ export async function waitForInstallation(
           accountUrl,
           available: false,
           installedTasks: [],
-          missingTasks: [...pendingVersionsByTask.keys()].filter(
-            (name) => (pendingVersionsByTask.get(name)?.size ?? 0) > 0
-          ),
+          missingTasks: [
+            ...new Set(
+              [...pendingVersionsByTask.entries()]
+                .filter(([, pending]) => pending.size > 0)
+                .map(([task]) => task.name)
+            ),
+          ],
           missingVersions: allMissingVersions,
           error: errorMsg,
         });
