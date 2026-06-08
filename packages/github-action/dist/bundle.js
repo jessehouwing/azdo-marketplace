@@ -31055,6 +31055,11 @@ function requireYauzl () {
 	yauzl$1.fromFd = fromFd;
 	yauzl$1.fromBuffer = fromBuffer;
 	yauzl$1.fromRandomAccessReader = fromRandomAccessReader;
+	yauzl$1.openPromise = openPromise;
+	yauzl$1.fromFdPromise = fromFdPromise;
+	yauzl$1.fromBufferPromise = fromBufferPromise;
+	yauzl$1.fromRandomAccessReaderPromise = fromRandomAccessReaderPromise;
+
 	yauzl$1.dosDateTimeToDate = dosDateTimeToDate;
 	yauzl$1.getFileNameLowLevel = getFileNameLowLevel;
 	yauzl$1.validateFileName = validateFileName;
@@ -31063,6 +31068,39 @@ function requireYauzl () {
 	yauzl$1.Entry = Entry;
 	yauzl$1.LocalFileHeader = LocalFileHeader;
 	yauzl$1.RandomAccessReader = RandomAccessReader;
+
+	function openPromise(path, options) {
+	  return new Promise((resolve, reject) => {
+	    open(path, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
+	function fromFdPromise(fd, options) {
+	  return new Promise((resolve, reject) => {
+	    fromFd(fd, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
+	function fromBufferPromise(buffer, options) {
+	  return new Promise((resolve, reject) => {
+	    fromBuffer(buffer, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
+	function fromRandomAccessReaderPromise(reader, totalSize, options) {
+	  return new Promise((resolve, reject) => {
+	    fromRandomAccessReader(reader, totalSize, {...options, lazyEntries: true}, function(err, zipfile) {
+	      if (err) return reject(err);
+	      resolve(zipfile);
+	    });
+	  });
+	}
 
 	function open(path, options, callback) {
 	  if (typeof options === "function") {
@@ -31258,6 +31296,7 @@ function requireYauzl () {
 	  self.strictFileNames = !!strictFileNames;
 	  self.isOpen = true;
 	  self.emittedError = false;
+	  self.hasEachEntryBeenCalled = false;
 
 	  if (!self.lazyEntries) self._readEntry();
 	}
@@ -31428,6 +31467,68 @@ function requireYauzl () {
 	      if (!self.lazyEntries) self._readEntry();
 	    });
 	  });
+	};
+
+	ZipFile.prototype.eachEntry = function() {
+	  const self = this;
+	  if (!self.lazyEntries) throw new Error("eachEntry() requires lazyEntries: true");
+	  if (self.hasEachEntryBeenCalled) throw new Error("eachEntry() must only be called once per ZipFile");
+	  self.hasEachEntryBeenCalled = true;
+
+	  let pendingResolveReject = null;
+	  self.on("entry", onEntry);
+	  self.on("end", onEnd);
+	  self.on("error", onError);
+	  function cleanup() {
+	    self.removeListener("entry", onEntry);
+	    self.removeListener("end", onEnd);
+	    self.removeListener("error", onError);
+	    if (self.autoClose) self.close();
+	  }
+
+	  function onEntry(entry) {
+	    let {resolve} = pendingResolveReject;
+	    pendingResolveReject = null;
+	    resolve({value: entry});
+	  }
+	  function onEnd() {
+	    let {resolve} = pendingResolveReject;
+	    pendingResolveReject = null;
+	    cleanup();
+	    resolve({done: true});
+	  }
+	  function onError(err) {
+	    let {reject} = pendingResolveReject;
+	    pendingResolveReject = null;
+	    cleanup();
+	    reject(err);
+	  }
+
+	  return {
+	    [Symbol.asyncIterator]() {
+	      // Called once by `for await...of`.
+	      return this;
+	    },
+	    next() {
+	      // Called on each iteration in a `for await...of`.
+	      const promise = new Promise((resolve, reject) => {
+	        if (pendingResolveReject != null) throw new Error("next() called before previous Promise was resolved.");
+	        pendingResolveReject = {resolve, reject};
+	      });
+	      self.readEntry();
+	      return promise;
+	    },
+	    return(value) {
+	      // Called when breaking, returning, throwing out of a `for await...of`.
+	      cleanup();
+	      return Promise.resolve({done: true, value});
+	    },
+	    throw(value) {
+	      // Almost never called. Something about `yield*` maybe?
+	      cleanup();
+	      return Promise.reject(value);
+	    },
+	  };
 	};
 
 	ZipFile.prototype.openReadStream = function(entry, options, callback) {
@@ -31643,6 +31744,31 @@ function requireYauzl () {
 	    } finally {
 	      self.reader.unref();
 	    }
+	  });
+	};
+
+	ZipFile.prototype.openReadStreamPromise = function(entry, options) {
+	  return new Promise((resolve, reject) => {
+	    this.openReadStream(entry, options, function(err, readStream) {
+	      if (err) return reject(err);
+	      resolve(readStream);
+	    });
+	  });
+	};
+	ZipFile.prototype.openReadStreamLowLevelPromise = function(fileDataStart, compressedSize, relativeStart, relativeEnd, decompress, uncompressedSize) {
+	  return new Promise((resolve, reject) => {
+	    this.openReadStream(fileDataStart, compressedSize, relativeStart, relativeEnd, decompress, uncompressedSize, function(err, readStream) {
+	      if (err) return reject(err);
+	      resolve(readStream);
+	    });
+	  });
+	};
+	ZipFile.prototype.readLocalFileHeaderPromise = function(entry, options) {
+	  return new Promise((resolve, reject) => {
+	    this.readLocalFileHeader(entry, options, function(err, localFileHeader) {
+	      if (err) return reject(err);
+	      resolve(localFileHeader);
+	    });
 	  });
 	};
 
@@ -115485,15 +115611,18 @@ async function resolveExpectedTasks(options, platform) {
 async function waitForInstallation(options, auth, platform) {
     const identity = await resolveExtensionIdentity(options, platform, 'wait-for-installation');
     const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
-    const timeoutMs = (options.timeoutMinutes ?? 10) * 60_000;
-    const pollingIntervalMs = (options.pollingIntervalSeconds ?? 30) * 1000;
+    const timeoutMinutes = options.timeoutMinutes ?? 10;
+    const pollingIntervalSeconds = options.pollingIntervalSeconds ?? 30;
+    const timeoutMs = timeoutMinutes * 60_000;
+    const pollingIntervalMs = pollingIntervalSeconds * 1000;
+    const maxAttempts = Math.max(1, Math.ceil((timeoutMinutes * 60) / pollingIntervalSeconds));
     platform.debug(`Verifying installation of ${identity.publisherId}.${identity.extensionId} in ${accountUrls.length} account(s)`);
     // Resolve expected tasks with versions
     const expectedTasks = await resolveExpectedTasks(options, platform);
     const accountResults = [];
     for (const accountUrl of accountUrls) {
         platform.debug(`Checking account: ${accountUrl}`);
-        platform.info(`Polling for task availability (timeout: ${options.timeoutMinutes ?? 10} minutes, interval: ${options.pollingIntervalSeconds ?? 30} seconds)`);
+        platform.info(`Polling for task availability in ${accountUrl} (timeout: ${timeoutMinutes} minutes, interval: ${pollingIntervalSeconds} seconds)`);
         try {
             // Create Azure DevOps API connection
             if (!auth.token) {
@@ -115512,9 +115641,7 @@ async function waitForInstallation(options, auth, platform) {
             let pollCount = 0;
             while (Date.now() < deadline && !found) {
                 pollCount++;
-                const remainingMs = deadline - Date.now();
-                const remainingMinutes = Math.ceil(remainingMs / 60_000);
-                platform.debug(`Poll attempt ${pollCount} (${remainingMinutes} minute(s) remaining)`);
+                platform.info(`Installation attempt ${pollCount}/${maxAttempts}...`);
                 try {
                     const taskDefinitions = await taskAgentApi.getTaskDefinitions();
                     // Find tasks matching the extension
@@ -115600,13 +115727,14 @@ async function waitForInstallation(options, auth, platform) {
                     }
                     if (!found && Date.now() < deadline) {
                         // Wait before next poll
+                        platform.info('⏳ Tasks not yet available, retrying...');
                         platform.debug(`Waiting ${pollingIntervalMs / 1000}s before next poll...`);
                         await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
                     }
                 }
                 catch (error) {
                     lastError = error instanceof Error ? error : new Error(String(error));
-                    platform.debug(`Error polling for tasks: ${lastError.message}. Retrying...`);
+                    platform.info(`⏳ Error polling for tasks: ${lastError.message}. Retrying...`);
                     if (Date.now() < deadline) {
                         await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
                     }

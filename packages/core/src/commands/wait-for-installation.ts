@@ -166,8 +166,11 @@ export async function waitForInstallation(
   const identity = await resolveExtensionIdentity(options, platform, 'wait-for-installation');
   const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
 
-  const timeoutMs = (options.timeoutMinutes ?? 10) * 60_000;
-  const pollingIntervalMs = (options.pollingIntervalSeconds ?? 30) * 1000;
+  const timeoutMinutes = options.timeoutMinutes ?? 10;
+  const pollingIntervalSeconds = options.pollingIntervalSeconds ?? 30;
+  const timeoutMs = timeoutMinutes * 60_000;
+  const pollingIntervalMs = pollingIntervalSeconds * 1000;
+  const maxAttempts = Math.max(1, Math.ceil((timeoutMinutes * 60) / pollingIntervalSeconds));
 
   platform.debug(
     `Verifying installation of ${identity.publisherId}.${identity.extensionId} in ${accountUrls.length} account(s)`
@@ -181,7 +184,7 @@ export async function waitForInstallation(
   for (const accountUrl of accountUrls) {
     platform.debug(`Checking account: ${accountUrl}`);
     platform.info(
-      `Polling for task availability (timeout: ${options.timeoutMinutes ?? 10} minutes, interval: ${options.pollingIntervalSeconds ?? 30} seconds)`
+      `Polling for task availability in ${accountUrl} (timeout: ${timeoutMinutes} minutes, interval: ${pollingIntervalSeconds} seconds)`
     );
 
     try {
@@ -205,10 +208,8 @@ export async function waitForInstallation(
 
       while (Date.now() < deadline && !found) {
         pollCount++;
-        const remainingMs = deadline - Date.now();
-        const remainingMinutes = Math.ceil(remainingMs / 60_000);
 
-        platform.debug(`Poll attempt ${pollCount} (${remainingMinutes} minute(s) remaining)`);
+        platform.info(`Installation attempt ${pollCount}/${maxAttempts}...`);
 
         try {
           const taskDefinitions: TaskDefinition[] = await taskAgentApi.getTaskDefinitions();
@@ -316,12 +317,13 @@ export async function waitForInstallation(
 
           if (!found && Date.now() < deadline) {
             // Wait before next poll
+            platform.info('⏳ Tasks not yet available, retrying...');
             platform.debug(`Waiting ${pollingIntervalMs / 1000}s before next poll...`);
             await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
           }
         } catch (error: unknown) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          platform.debug(`Error polling for tasks: ${lastError.message}. Retrying...`);
+          platform.info(`⏳ Error polling for tasks: ${lastError.message}. Retrying...`);
 
           if (Date.now() < deadline) {
             await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
