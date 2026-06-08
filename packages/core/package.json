@@ -25,6 +25,6 @@
     "uuid": "^14.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.12.4"
+    "@types/node": "^24.13.1"
   }
 }
