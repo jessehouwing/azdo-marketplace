@@ -255,7 +255,7 @@ export async function waitForInstallation(
               platform.debug(
                 `Querying all task definitions to discover UUIDs for: ${tasksNeedingDiscovery.map((t) => t.name).join(', ')}`
               );
-              allTasksPayload = await taskAgentApi.getTaskDefinitions();
+              allTasksPayload = (await taskAgentApi.getTaskDefinitions()) ?? [];
             }
 
             for (const expectedTask of expectedTasks) {
@@ -290,7 +290,7 @@ export async function waitForInstallation(
               platform.debug(`Querying all versions for task ${expectedTask.name} (UUID: ${uuid})`);
               // The concrete TaskAgentApi class drops the allVersions param when forwarding to super,
               // so we call the base class prototype directly to pass allVersions=true.
-              const taskVersions: TaskDefinition[] =
+              const taskVersionsRaw: TaskDefinition[] | null =
                 await TaskAgentApiBase.prototype.getTaskDefinitions.call(
                   taskAgentApi,
                   uuid,
@@ -298,6 +298,8 @@ export async function waitForInstallation(
                   undefined,
                   true
                 );
+              // API returns null when the task UUID is not (yet) found
+              const taskVersions: TaskDefinition[] = taskVersionsRaw ?? [];
 
               for (const expectedVer of [...pendingVersions]) {
                 const [expectedMajor, expectedMinor, expectedPatch] = expectedVer
@@ -410,7 +412,7 @@ export async function waitForInstallation(
             }
           } else {
             // No expected tasks — query all and succeed on first non-empty response
-            const taskDefinitions = await taskAgentApi.getTaskDefinitions();
+            const taskDefinitions = (await taskAgentApi.getTaskDefinitions()) ?? [];
             for (const task of taskDefinitions) {
               if (task.name && task.id && task.version) {
                 installedTasks.push({
