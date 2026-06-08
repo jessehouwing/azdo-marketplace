@@ -80,7 +80,7 @@ jobs:
           "minor=$minor" >> $env:GITHUB_OUTPUT
           "patch=$patch" >> $env:GITHUB_OUTPUT
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
         with:
           ref: main
           fetch-depth: 0
@@ -208,7 +208,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           sparse-checkout: |
@@ -220,7 +220,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Validate documentation action versions
-        uses: jessehouwing/actions-example-checker@e3da7e6d7f20cae310f6ea57fb3d776320a7d13f # v0.0.10
+        uses: jessehouwing/actions-example-checker@eb2c287585cd48847abc0d3012e861918793561f # v0.0.11
         with:
           version: v${{ needs.prepare-release.outputs.version }}
 
@@ -241,7 +241,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
 
@@ -509,7 +509,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
 
@@ -559,7 +559,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           fetch-depth: 0
@@ -649,7 +649,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           fetch-depth: 0
