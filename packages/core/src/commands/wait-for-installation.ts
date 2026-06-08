@@ -1,5 +1,6 @@
 import { WebApi, getPersonalAccessTokenHandler } from 'azure-devops-node-api';
 import type { ITaskAgentApi } from 'azure-devops-node-api/TaskAgentApi.js';
+import { TaskAgentApiBase } from 'azure-devops-node-api/TaskAgentApiBase.js';
 import type { TaskDefinition } from 'azure-devops-node-api/interfaces/TaskAgentInterfaces.js';
 import { cwd } from 'process';
 import type { AuthCredentials } from '../auth.js';
@@ -220,7 +221,15 @@ export async function waitForInstallation(
         }
       }
 
-      // Collect "higher version already installed" warnings; emitted once after polling ends
+      // Track UUIDs discovered at runtime (supplements any provided in expectedTask.id)
+      const discoveredUuids = new Map<string, string>();
+      for (const task of expectedTasks) {
+        if (task.id) {
+          discoveredUuids.set(task.name, task.id);
+        }
+      }
+
+      // Collect "higher version installed" warnings; keyed by TaskName@version, emitted once after polling ends
       const higherVersionWarnings = new Map<string, string>();
 
       while (Date.now() < deadline && !found) {
@@ -231,171 +240,145 @@ export async function waitForInstallation(
         platform.info(`Poll attempt ${pollCount} (${remainingMinutes} minute(s) remaining)`);
 
         try {
-          // Find tasks matching the extension
           const installedTasks: InstalledTask[] = [];
           const missingTasks: string[] = [];
           const missingVersions: string[] = [];
-          let unrecoverable = false;
 
-          // If we have expected tasks, check for them specifically
           if (expectedTasks.length > 0) {
-            // Fetch all task definitions once per poll (avoids downloading the full payload per task)
-            platform.debug(`Querying all task definitions`);
-            const allTasks: TaskDefinition[] = await taskAgentApi.getTaskDefinitions();
+            // Determine which tasks still need UUID discovery
+            const tasksNeedingDiscovery = expectedTasks.filter((t) => !discoveredUuids.has(t.name));
+
+            // Fetch the all-tasks payload (highest version per task, no allVersions)
+            // only when at least one task UUID is still unknown
+            let allTasksPayload: TaskDefinition[] | undefined;
+            if (tasksNeedingDiscovery.length > 0) {
+              platform.debug(
+                `Querying all task definitions to discover UUIDs for: ${tasksNeedingDiscovery.map((t) => t.name).join(', ')}`
+              );
+              allTasksPayload = await taskAgentApi.getTaskDefinitions();
+            }
 
             for (const expectedTask of expectedTasks) {
               const pendingVersions = pendingVersionsByTask.get(expectedTask.name);
-              let installedTaskVersions = allTasks.filter(
-                (t) =>
-                  t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id && t.version
-              );
+              if (!pendingVersions || pendingVersions.size === 0) {
+                continue; // already fully satisfied
+              }
 
-              if (pendingVersions && pendingVersions.size > 0) {
-                if (installedTaskVersions.length === 0) {
-                  // Task name not found at all
-                  missingTasks.push(expectedTask.name);
-                  for (const ver of pendingVersions) {
-                    missingVersions.push(`${expectedTask.name}@${ver}`);
-                  }
-                } else {
-                  // Check each still-pending version
-                  for (const expectedVer of [...pendingVersions]) {
-                    const [expectedMajor, expectedMinor, expectedPatch] = expectedVer
-                      .split('.')
-                      .map(Number);
-
-                    // Check for exact match in initial results
-                    const exactMatch = installedTaskVersions.some(
-                      (t) =>
-                        t.version.major === expectedMajor &&
-                        t.version.minor === expectedMinor &&
-                        t.version.patch === expectedPatch
-                    );
-
-                    if (exactMatch) {
-                      pendingVersions.delete(expectedVer);
-                      platform.info(`✅ ${expectedTask.name}@${expectedVer} is now available`);
-                      continue;
-                    }
-
-                    // Check if a higher version exists for the same major version line
-                    const higherVersionForMajor = installedTaskVersions
-                      .filter((t) => t.version.major === expectedMajor)
-                      .filter((t) => {
-                        if (t.version.minor > expectedMinor) return true;
-                        if (t.version.minor < expectedMinor) return false;
-                        return t.version.patch > expectedPatch;
-                      })
-                      .sort((a, b) => {
-                        if (a.version.minor !== b.version.minor)
-                          return b.version.minor - a.version.minor;
-                        return b.version.patch - a.version.patch;
-                      });
-
-                    if (higherVersionForMajor.length > 0) {
-                      const highest = higherVersionForMajor[0];
-                      const highestVer = `${highest.version.major}.${highest.version.minor}.${highest.version.patch}`;
-                      const warnKey = `${expectedTask.name}@${expectedVer}`;
-
-                      // Record the warning; it will be emitted once after polling completes
-                      higherVersionWarnings.set(
-                        warnKey,
-                        `Task ${expectedTask.name}@${expectedVer} was not found, ` +
-                          `but a higher version ${highestVer} is already installed for major version ${expectedMajor}. ` +
-                          `Lower task versions won't appear in Azure DevOps without first uninstalling and reinstalling the extension.`
-                      );
-
-                      // If we have the task UUID, re-query to get ALL versions for this task
-                      if (expectedTask.id) {
-                        platform.debug(
-                          `Re-querying task ${expectedTask.name} by UUID ${expectedTask.id} to check all versions`
-                        );
-                        const allVersionsForTask: TaskDefinition[] =
-                          await taskAgentApi.getTaskDefinitions(expectedTask.id);
-
-                        const exactMatchInAll = allVersionsForTask.some(
-                          (t) =>
-                            t.version &&
-                            t.version.major === expectedMajor &&
-                            t.version.minor === expectedMinor &&
-                            t.version.patch === expectedPatch
-                        );
-
-                        if (exactMatchInAll) {
-                          pendingVersions.delete(expectedVer);
-                          platform.info(`✅ ${expectedTask.name}@${expectedVer} is now available`);
-                          // Update installedTaskVersions with all versions for reporting
-                          installedTaskVersions = allVersionsForTask.filter(
-                            (t) =>
-                              t.name?.toLowerCase() === expectedTask.name.toLowerCase() &&
-                              t.id &&
-                              t.version
-                          );
-                          continue;
-                        }
-
-                        // Exact version not found even with UUID query — keep polling
-                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                        platform.debug(
-                          `Version ${expectedVer} not yet available for task ${expectedTask.name} (UUID query confirmed)`
-                        );
-                      } else {
-                        // No UUID available — we cannot verify specific versions, error out
-                        unrecoverable = true;
-                        missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                        platform.error(
-                          `Cannot verify task ${expectedTask.name}@${expectedVer}: a higher version ${highestVer} is installed ` +
-                            `and no task UUID is available to query all versions. ` +
-                            `Provide the task source (vsix-file or manifest-file) so the task UUID can be used for verification.`
-                        );
-                      }
-                    } else {
-                      // No version at all for this major line — still waiting
-                      missingVersions.push(`${expectedTask.name}@${expectedVer}`);
-                      platform.debug(
-                        `Missing version ${expectedVer} for task ${expectedTask.name}`
-                      );
-                    }
-                  }
+              // Resolve UUID — either already known or just discovered from the all-tasks payload
+              let uuid = discoveredUuids.get(expectedTask.name);
+              if (!uuid && allTasksPayload) {
+                const found = allTasksPayload.find(
+                  (t) => t.name?.toLowerCase() === expectedTask.name.toLowerCase() && t.id
+                );
+                if (found?.id) {
+                  uuid = found.id;
+                  discoveredUuids.set(expectedTask.name, uuid);
+                  platform.debug(`Discovered UUID ${uuid} for task ${expectedTask.name}`);
                 }
               }
 
-              // Record all installed versions for reporting
-              for (const installedTask of installedTaskVersions) {
-                const installedVersion = `${installedTask.version.major}.${installedTask.version.minor}.${installedTask.version.patch}`;
-                const matchesExpected = expectedTask.versions.includes(installedVersion);
+              if (!uuid) {
+                // Task not found in the all-tasks payload yet — still waiting
+                missingTasks.push(expectedTask.name);
+                for (const ver of pendingVersions) {
+                  missingVersions.push(`${expectedTask.name}@${ver}`);
+                }
+                continue;
+              }
 
+              // Query all versions for this specific task via UUID
+              platform.debug(`Querying all versions for task ${expectedTask.name} (UUID: ${uuid})`);
+              // The concrete TaskAgentApi class drops the allVersions param when forwarding to super,
+              // so we call the base class prototype directly to pass allVersions=true.
+              const taskVersions: TaskDefinition[] =
+                await TaskAgentApiBase.prototype.getTaskDefinitions.call(
+                  taskAgentApi,
+                  uuid,
+                  undefined,
+                  undefined,
+                  true
+                );
+
+              for (const expectedVer of [...pendingVersions]) {
+                const [expectedMajor, expectedMinor, expectedPatch] = expectedVer
+                  .split('.')
+                  .map(Number);
+
+                const exactMatch = taskVersions.some(
+                  (t) =>
+                    t.version &&
+                    t.version.major === expectedMajor &&
+                    t.version.minor === expectedMinor &&
+                    t.version.patch === expectedPatch
+                );
+
+                if (exactMatch) {
+                  pendingVersions.delete(expectedVer);
+                  platform.info(`✅ ${expectedTask.name}@${expectedVer} is now available`);
+                  continue;
+                }
+
+                // Check if a higher minor/patch is already installed for the same major version line
+                const higherInstalled = taskVersions
+                  .filter((t) => t.version?.major === expectedMajor)
+                  .some((t) => {
+                    if (t.version.minor > expectedMinor) return true;
+                    if (t.version.minor < expectedMinor) return false;
+                    return t.version.patch > expectedPatch;
+                  });
+
+                if (higherInstalled) {
+                  const highest = taskVersions
+                    .filter((t) => t.version?.major === expectedMajor)
+                    .sort((a, b) => {
+                      if (a.version.minor !== b.version.minor)
+                        return b.version.minor - a.version.minor;
+                      return b.version.patch - a.version.patch;
+                    })[0];
+                  const highestVer = `${highest.version.major}.${highest.version.minor}.${highest.version.patch}`;
+                  const warnKey = `${expectedTask.name}@${expectedVer}`;
+
+                  // Record warning once; keep polling — the exact version may still appear
+                  higherVersionWarnings.set(
+                    warnKey,
+                    `Task ${expectedTask.name}@${expectedVer} was not found, ` +
+                      `but a higher version ${highestVer} is already installed. ` +
+                      `The requested version is lower than what is currently installed.`
+                  );
+                }
+
+                // Version not yet present — keep polling
+                missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                platform.debug(
+                  `Version ${expectedVer} not yet available for task ${expectedTask.name}`
+                );
+              }
+
+              // Record installed versions for reporting
+              for (const installedTask of taskVersions) {
+                if (!installedTask.name || !installedTask.id || !installedTask.version) continue;
+                const installedVersion = `${installedTask.version.major}.${installedTask.version.minor}.${installedTask.version.patch}`;
                 installedTasks.push({
                   name: installedTask.name,
                   id: installedTask.id,
                   version: installedVersion,
                   friendlyName: installedTask.friendlyName || installedTask.name,
-                  matchesExpected,
+                  matchesExpected: expectedTask.versions.includes(installedVersion),
                 });
               }
             }
 
-            // Break out of polling loop if unrecoverable
-            if (unrecoverable) {
-              finalInstalledTasks = installedTasks;
-              finalMissingTasks = missingTasks;
-              finalMissingVersions = missingVersions;
-              break;
-            }
-
-            // Success if all tasks found and all required versions present
             if (missingTasks.length === 0 && missingVersions.length === 0) {
               found = true;
               finalInstalledTasks = installedTasks;
               finalMissingTasks = missingTasks;
               finalMissingVersions = missingVersions;
 
-              // Count unique task names and total expected versions
               const uniqueTasks = new Set(expectedTasks.map((t) => t.name));
-              const totalExpectedVersions = expectedTasks.reduce((sum, t) => {
-                return sum + t.versions.length;
-              }, 0);
-
+              const totalExpectedVersions = expectedTasks.reduce(
+                (sum, t) => sum + t.versions.length,
+                0
+              );
               platform.info(
                 `✓ All ${uniqueTasks.size} expected task(s) with ${totalExpectedVersions} version(s) found in ${accountUrl}`
               );
@@ -407,7 +390,7 @@ export async function waitForInstallation(
               );
             }
           } else {
-            // No expected tasks - query all and collect
+            // No expected tasks — query all and succeed on first non-empty response
             const taskDefinitions = await taskAgentApi.getTaskDefinitions();
             for (const task of taskDefinitions) {
               if (task.name && task.id && task.version) {
@@ -416,7 +399,7 @@ export async function waitForInstallation(
                   id: task.id,
                   version: `${task.version.major}.${task.version.minor}.${task.version.patch}`,
                   friendlyName: task.friendlyName || task.name,
-                  matchesExpected: true, // No expectations, so all match
+                  matchesExpected: true,
                 });
               }
             }
