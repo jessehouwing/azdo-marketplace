@@ -704,4 +704,103 @@ describe('waitForInstallation', () => {
 
     nowSpy.mockRestore();
   });
+
+  it('errors when version is found but contributionIdentifier belongs to a different extension', async () => {
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+    taskAgentApiBaseGetTaskDefinitionsMock.mockImplementation(async () => {
+      now = 120_000; // expire after first poll
+      return [
+        {
+          name: 'MyTask',
+          id: 'task-uuid-1',
+          version: { major: 1, minor: 0, patch: 0 },
+          friendlyName: 'My Task',
+          // contributionIdentifier points to a different publisher/extension
+          contributionIdentifier: 'other-publisher.other-extension.some-task',
+          contributionVersion: '1.0.0',
+        },
+      ];
+    });
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [{ name: 'MyTask', id: 'task-uuid-1', versions: ['1.0.0'] }],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.accountResults[0].missingVersions).toContain('MyTask@1.0.0');
+    expect(platform.errorMessages.some((m) => m.includes('other-publisher.other-extension'))).toBe(
+      true
+    );
+    expect(platform.errorMessages.some((m) => m.includes('pub.ext.'))).toBe(true);
+
+    nowSpy.mockRestore();
+  });
+
+  it('accepts version when contributionIdentifier matches expected extension', async () => {
+    taskAgentApiBaseGetTaskDefinitionsMock.mockResolvedValue([
+      {
+        name: 'MyTask',
+        id: 'task-uuid-1',
+        version: { major: 1, minor: 0, patch: 0 },
+        friendlyName: 'My Task',
+        contributionIdentifier: 'pub.ext.some-task-contribution',
+        contributionVersion: '1.0.0',
+      },
+    ]);
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [{ name: 'MyTask', id: 'task-uuid-1', versions: ['1.0.0'] }],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(true);
+    expect(platform.infoMessages.some((m) => m.includes('✅ MyTask@1.0.0'))).toBe(true);
+  });
+
+  it('accepts version when contributionIdentifier is absent', async () => {
+    taskAgentApiBaseGetTaskDefinitionsMock.mockResolvedValue([
+      {
+        name: 'MyTask',
+        id: 'task-uuid-1',
+        version: { major: 1, minor: 0, patch: 0 },
+        friendlyName: 'My Task',
+        // no contributionIdentifier — older tasks may not have this field
+      },
+    ]);
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [{ name: 'MyTask', id: 'task-uuid-1', versions: ['1.0.0'] }],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(true);
+    expect(platform.errorMessages).toHaveLength(0);
+  });
 });

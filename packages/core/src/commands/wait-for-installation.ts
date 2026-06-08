@@ -304,7 +304,7 @@ export async function waitForInstallation(
                   .split('.')
                   .map(Number);
 
-                const exactMatch = taskVersions.some(
+                const exactMatchTask = taskVersions.find(
                   (t) =>
                     t.version &&
                     t.version.major === expectedMajor &&
@@ -312,7 +312,26 @@ export async function waitForInstallation(
                     t.version.patch === expectedPatch
                 );
 
-                if (exactMatch) {
+                if (exactMatchTask) {
+                  // Validate contributionIdentifier when present — it must start with
+                  // "{publisherId}.{extensionId}." to confirm the task belongs to our extension.
+                  const expectedContribPrefix = `${identity.publisherId}.${identity.extensionId}.`;
+                  if (
+                    exactMatchTask.contributionIdentifier &&
+                    !exactMatchTask.contributionIdentifier
+                      .toLowerCase()
+                      .startsWith(expectedContribPrefix.toLowerCase())
+                  ) {
+                    platform.error(
+                      `Task ${expectedTask.name}@${expectedVer} version was found but its ` +
+                        `contributionIdentifier '${exactMatchTask.contributionIdentifier}' does not match ` +
+                        `expected extension '${expectedContribPrefix}*'. ` +
+                        `This task belongs to a different extension.`
+                    );
+                    missingVersions.push(`${expectedTask.name}@${expectedVer}`);
+                    continue;
+                  }
+
                   pendingVersions.delete(expectedVer);
                   platform.info(`✅ ${expectedTask.name}@${expectedVer} is now available`);
                   continue;
