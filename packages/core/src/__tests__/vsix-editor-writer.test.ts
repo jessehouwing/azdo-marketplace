@@ -500,4 +500,136 @@ describe('VsixWriter', () => {
 
     await outputReader.close();
   });
+
+  it('should update GalleryFlags in extension.vsixmanifest when only visibility is changed', async () => {
+    // Regression test: hasXmlMods must include galleryFlags, otherwise the XML
+    // vsixmanifest is never updated when extension-visibility is the only change.
+    const testDir = join(tmpdir(), `vsix-visibility-only-${Date.now()}`);
+    mkdirSync(testDir, { recursive: true });
+    const inputPath = join(testDir, 'input.vsix');
+    const outputPath = join(testDir, 'output.vsix');
+
+    const zipFile = new yazl.ZipFile();
+
+    // vsomanifest with no visibility info
+    const vsomanifest = {
+      manifestVersion: 1,
+      scope: ['vso.build'],
+      contributions: [
+        {
+          id: 'test-task',
+          type: 'ms.vss-distributed-task.task',
+          targets: ['ms.vss-distributed-task.tasks'],
+          properties: { name: 'TestTask' },
+        },
+      ],
+    };
+
+    // vsixmanifest with NO GalleryFlags element
+    const vsixmanifest = `<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+  <Metadata>
+    <Identity Language="en-US" Id="test-ext" Version="1.0.0" Publisher="test-pub"/>
+    <DisplayName>Test Extension</DisplayName>
+    <Description xml:space="preserve">Test Description</Description>
+  </Metadata>
+  <Dependencies/>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Services"/>
+  </Installation>
+</PackageManifest>`;
+
+    zipFile.addBuffer(Buffer.from(JSON.stringify(vsomanifest, null, 2)), 'extension.vsomanifest');
+    zipFile.addBuffer(Buffer.from(vsixmanifest), 'extension.vsixmanifest');
+
+    await new Promise<void>((resolve, reject) => {
+      (zipFile.outputStream as any)
+        .pipe(createWriteStream(inputPath) as any)
+        .on('finish', resolve)
+        .on('error', reject);
+      zipFile.end();
+    });
+
+    // Only set visibility — no other changes
+    const reader = await VsixReader.open(inputPath);
+    const writer = await ManifestEditor.fromReader(reader).setVisibility('public').toWriter();
+
+    await writer.writeToFile(outputPath);
+    await reader.close();
+
+    const outputReader = await VsixReader.open(outputPath);
+    const xml = (await outputReader.readFile('extension.vsixmanifest')).toString('utf-8');
+    await outputReader.close();
+
+    expect(xml).toContain('GalleryFlags');
+    expect(xml).toContain('Public');
+  });
+
+  it('should infer GalleryFlags from legacy public:true JSON field when no visibility override is given', async () => {
+    // Regression test: old-style VSIXes (e.g. jessehouwing-vsts-msbuild-helper-task)
+    // have `"public": true` in the JSON manifest but no GalleryFlags in the XML
+    // vsixmanifest. Without this fix the marketplace receives an XML with empty
+    // GalleryFlags and treats the extension as private.
+    const testDir = join(tmpdir(), `vsix-legacy-public-${Date.now()}`);
+    mkdirSync(testDir, { recursive: true });
+    const inputPath = join(testDir, 'input.vsix');
+    const outputPath = join(testDir, 'output.vsix');
+
+    const zipFile = new yazl.ZipFile();
+
+    // vsomanifest with legacy `public: true`
+    const vsomanifest = {
+      manifestVersion: 1,
+      public: true,
+      scope: ['vso.build'],
+      contributions: [
+        {
+          id: 'test-task',
+          type: 'ms.vss-distributed-task.task',
+          targets: ['ms.vss-distributed-task.tasks'],
+          properties: { name: 'TestTask' },
+        },
+      ],
+    };
+
+    // vsixmanifest with NO GalleryFlags element
+    const vsixmanifest = `<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+  <Metadata>
+    <Identity Language="en-US" Id="test-ext" Version="1.0.0" Publisher="test-pub"/>
+    <DisplayName>Test Extension</DisplayName>
+    <Description xml:space="preserve">Test Description</Description>
+  </Metadata>
+  <Dependencies/>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Services"/>
+  </Installation>
+</PackageManifest>`;
+
+    zipFile.addBuffer(Buffer.from(JSON.stringify(vsomanifest, null, 2)), 'extension.vsomanifest');
+    zipFile.addBuffer(Buffer.from(vsixmanifest), 'extension.vsixmanifest');
+
+    await new Promise<void>((resolve, reject) => {
+      (zipFile.outputStream as any)
+        .pipe(createWriteStream(inputPath) as any)
+        .on('finish', resolve)
+        .on('error', reject);
+      zipFile.end();
+    });
+
+    // Update only the version — no explicit visibility override
+    const reader = await VsixReader.open(inputPath);
+    const writer = await ManifestEditor.fromReader(reader).setVersion('1.5.17').toWriter();
+
+    await writer.writeToFile(outputPath);
+    await reader.close();
+
+    const outputReader = await VsixReader.open(outputPath);
+    const xml = (await outputReader.readFile('extension.vsixmanifest')).toString('utf-8');
+    await outputReader.close();
+
+    // The XML must contain GalleryFlags Public, inferred from `public: true` in JSON
+    expect(xml).toContain('GalleryFlags');
+    expect(xml).toContain('Public');
+  });
 });

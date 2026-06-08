@@ -8,8 +8,8 @@
  */
 
 import { Buffer } from 'buffer';
-import { createWriteStream } from 'fs';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { createWriteStream } from 'fs';
 import yazl from 'yazl';
 import type { ManifestEditor } from './manifest-editor.js';
 import type { ExtensionManifest, TaskManifest } from './manifest-reader.js';
@@ -343,12 +343,24 @@ export class VsixWriter {
 
     // Update extension.vsixmanifest XML metadata when present
     if (hasVsixXmlManifest) {
+      // If no galleryFlags were explicitly set, infer visibility from the JSON manifest's
+      // legacy `public: true` field. Old-style VSIXes may have `public: true` in JSON but
+      // no corresponding GalleryFlags in the XML vsixmanifest, causing the marketplace to
+      // treat them as private when the XML is not updated.
+      if (!xmlMods.galleryFlags?.length && !manifestMods.galleryFlags?.length) {
+        const manifestPublic = (manifest as { public?: boolean }).public;
+        if (manifestPublic === true) {
+          xmlMods.galleryFlags = ['Public'];
+        }
+      }
+
       const hasXmlMods =
         !!xmlMods.id ||
         !!xmlMods.publisher ||
         !!xmlMods.version ||
         !!xmlMods.name ||
-        !!xmlMods.description;
+        !!xmlMods.description ||
+        !!xmlMods.galleryFlags?.length;
 
       if (hasXmlMods) {
         const xmlBuffer = await reader.readFile('extension.vsixmanifest');
