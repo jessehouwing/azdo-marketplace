@@ -343,14 +343,21 @@ export class VsixWriter {
 
     // Update extension.vsixmanifest XML metadata when present
     if (hasVsixXmlManifest) {
-      // If no galleryFlags were explicitly set, infer visibility from the JSON manifest's
-      // legacy `public: true` field. Old-style VSIXes may have `public: true` in JSON but
-      // no corresponding GalleryFlags in the XML vsixmanifest, causing the marketplace to
-      // treat them as private when the XML is not updated.
+      // If no galleryFlags were explicitly set, infer visibility/preview from the JSON
+      // manifest's legacy `public: true` and `preview: true` fields. Old-style VSIXes may
+      // have these fields in JSON but no corresponding GalleryFlags in the XML vsixmanifest,
+      // causing the marketplace to treat them as private/non-preview when the XML is not updated.
       if (!xmlMods.galleryFlags?.length && !manifestMods.galleryFlags?.length) {
-        const manifestPublic = (manifest as { public?: boolean }).public;
-        if (manifestPublic === true) {
-          xmlMods.galleryFlags = ['Public'];
+        const legacyManifest = manifest as { public?: boolean; preview?: boolean };
+        const inferredFlags: string[] = [];
+        if (legacyManifest.public === true) {
+          inferredFlags.push('Public');
+        }
+        if (legacyManifest.preview === true) {
+          inferredFlags.push('Preview');
+        }
+        if (inferredFlags.length > 0) {
+          xmlMods.galleryFlags = inferredFlags;
         }
       }
 

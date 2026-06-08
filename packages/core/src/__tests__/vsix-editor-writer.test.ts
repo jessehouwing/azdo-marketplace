@@ -631,5 +631,131 @@ describe('VsixWriter', () => {
     // The XML must contain GalleryFlags Public, inferred from `public: true` in JSON
     expect(xml).toContain('GalleryFlags');
     expect(xml).toContain('Public');
+    expect(xml).not.toContain('Preview');
+  });
+
+  it('should infer GalleryFlags Preview from legacy preview:true JSON field when no visibility override is given', async () => {
+    const testDir = join(tmpdir(), `vsix-legacy-preview-${Date.now()}`);
+    mkdirSync(testDir, { recursive: true });
+    const inputPath = join(testDir, 'input.vsix');
+    const outputPath = join(testDir, 'output.vsix');
+
+    const zipFile = new yazl.ZipFile();
+
+    const vsomanifest = {
+      manifestVersion: 1,
+      public: true,
+      preview: true,
+      scope: ['vso.build'],
+      contributions: [
+        {
+          id: 'test-task',
+          type: 'ms.vss-distributed-task.task',
+          targets: ['ms.vss-distributed-task.tasks'],
+          properties: { name: 'TestTask' },
+        },
+      ],
+    };
+
+    const vsixmanifest = `<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+  <Metadata>
+    <Identity Language="en-US" Id="test-ext" Version="1.0.0" Publisher="test-pub"/>
+    <DisplayName>Test Extension</DisplayName>
+    <Description xml:space="preserve">Test Description</Description>
+  </Metadata>
+  <Dependencies/>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Services"/>
+  </Installation>
+</PackageManifest>`;
+
+    zipFile.addBuffer(Buffer.from(JSON.stringify(vsomanifest, null, 2)), 'extension.vsomanifest');
+    zipFile.addBuffer(Buffer.from(vsixmanifest), 'extension.vsixmanifest');
+
+    await new Promise<void>((resolve, reject) => {
+      (zipFile.outputStream as any)
+        .pipe(createWriteStream(inputPath) as any)
+        .on('finish', resolve)
+        .on('error', reject);
+      zipFile.end();
+    });
+
+    // Update only the version — no explicit visibility override
+    const reader = await VsixReader.open(inputPath);
+    const writer = await ManifestEditor.fromReader(reader).setVersion('1.5.17').toWriter();
+
+    await writer.writeToFile(outputPath);
+    await reader.close();
+
+    const outputReader = await VsixReader.open(outputPath);
+    const xml = (await outputReader.readFile('extension.vsixmanifest')).toString('utf-8');
+    await outputReader.close();
+
+    // Both Public and Preview must be inferred from the JSON legacy fields
+    expect(xml).toContain('GalleryFlags');
+    expect(xml).toContain('Public');
+    expect(xml).toContain('Preview');
+  });
+
+  it('should infer only Preview GalleryFlag when only preview:true is set in JSON', async () => {
+    const testDir = join(tmpdir(), `vsix-legacy-preview-only-${Date.now()}`);
+    mkdirSync(testDir, { recursive: true });
+    const inputPath = join(testDir, 'input.vsix');
+    const outputPath = join(testDir, 'output.vsix');
+
+    const zipFile = new yazl.ZipFile();
+
+    const vsomanifest = {
+      manifestVersion: 1,
+      preview: true,
+      scope: ['vso.build'],
+      contributions: [
+        {
+          id: 'test-task',
+          type: 'ms.vss-distributed-task.task',
+          targets: ['ms.vss-distributed-task.tasks'],
+          properties: { name: 'TestTask' },
+        },
+      ],
+    };
+
+    const vsixmanifest = `<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+  <Metadata>
+    <Identity Language="en-US" Id="test-ext" Version="1.0.0" Publisher="test-pub"/>
+    <DisplayName>Test Extension</DisplayName>
+    <Description xml:space="preserve">Test Description</Description>
+  </Metadata>
+  <Dependencies/>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Services"/>
+  </Installation>
+</PackageManifest>`;
+
+    zipFile.addBuffer(Buffer.from(JSON.stringify(vsomanifest, null, 2)), 'extension.vsomanifest');
+    zipFile.addBuffer(Buffer.from(vsixmanifest), 'extension.vsixmanifest');
+
+    await new Promise<void>((resolve, reject) => {
+      (zipFile.outputStream as any)
+        .pipe(createWriteStream(inputPath) as any)
+        .on('finish', resolve)
+        .on('error', reject);
+      zipFile.end();
+    });
+
+    const reader = await VsixReader.open(inputPath);
+    const writer = await ManifestEditor.fromReader(reader).setVersion('1.5.17').toWriter();
+
+    await writer.writeToFile(outputPath);
+    await reader.close();
+
+    const outputReader = await VsixReader.open(outputPath);
+    const xml = (await outputReader.readFile('extension.vsixmanifest')).toString('utf-8');
+    await outputReader.close();
+
+    expect(xml).toContain('GalleryFlags');
+    expect(xml).toContain('Preview');
+    expect(xml).not.toContain('Public');
   });
 });
