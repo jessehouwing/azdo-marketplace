@@ -57,7 +57,7 @@
     "js-yaml": "^4.2.0",
     "prettier": "^3.8.3",
     "rollup": "^4.61.1",
-    "tfx-cli": "^0.23.1",
+    "tfx-cli": "^0.23.3",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
