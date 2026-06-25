@@ -17,6 +17,6 @@
     "azure-pipelines-tool-lib": "^2.0.10"
   },
   "devDependencies": {
-    "@types/node": "^24.13.1"
+    "@types/node": "^26.0.0"
   }
 }
