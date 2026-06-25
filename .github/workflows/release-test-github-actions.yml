@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Test GitHub Actions
 
 # Triggered by the release workflow to validate the root GitHub Action

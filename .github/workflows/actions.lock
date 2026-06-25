@@ -4,32 +4,32 @@
 version: 'v0.0.2'
 workflows:
     '.github/workflows/actions-dependency-submission.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/dependency-review-action@v5.0.0'
         - 'jessehouwing/actions-dependency-submission@v1.0.15'
     '.github/workflows/actions-example-checker.yaml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'jessehouwing/actions-example-checker@v0.0.11'
     '.github/workflows/actions-semver-checker.yml':
         - 'jessehouwing/actions-semver-checker@v2.1.0'
     '.github/workflows/check-dist.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/setup-node@v6.4.0'
         - 'actions/upload-artifact@v7.0.1'
     '.github/workflows/ci.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/setup-node@v6.4.0'
         - 'codecov/codecov-action@v7.0.0'
     '.github/workflows/copilot-setup-steps.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/setup-go@v6.4.0'
         - 'actions/setup-node@v6.4.0'
         - 'actions/setup-python@v6.2.0'
     '.github/workflows/linter.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/setup-node@v6.4.0'
     '.github/workflows/pre-commit.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/setup-go@v6.4.0'
         - 'actions/setup-node@v6.4.0'
         - 'actions/setup-python@v6.2.0'
@@ -45,12 +45,12 @@ workflows:
         - 'jessehouwing/actions-example-checker@v0.0.11'
         - 'jessehouwing/azdo-marketplace@main'
     '.github/workflows/scorecard.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/upload-artifact@v7.0.1'
         - 'github/codeql-action@v4.36.2'
         - 'ossf/scorecard-action@v2.4.3'
     '.github/workflows/unit-tests.yml':
-        - 'actions/checkout@v6.0.3'
+        - 'actions/checkout@v7.0.0'
         - 'actions/setup-node@v6.4.0'
 dependencies:
     'actions/checkout@v6.0.3':
