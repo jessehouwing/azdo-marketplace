@@ -80,7 +80,7 @@ jobs:
           "minor=$minor" >> $env:GITHUB_OUTPUT
           "patch=$patch" >> $env:GITHUB_OUTPUT
 
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
+      - uses: actions/checkout@v6.0.3
         with:
           ref: main
           fetch-depth: 0
@@ -102,18 +102,18 @@ jobs:
           }
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e #v6.4.0
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: .node-version
           cache: npm
 
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 #v6.2.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.x'
 
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
+        uses: actions/setup-go@v6.4.0
         with:
           go-version: stable
 
@@ -174,7 +174,7 @@ jobs:
           output-path: ${{ runner.temp }}
 
       - name: Upload VSIX artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: vsix
           path: ${{ steps.package.outputs.vsix-file }}
@@ -208,7 +208,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
+      - uses: actions/checkout@v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           sparse-checkout: |
@@ -220,7 +220,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Validate documentation action versions
-        uses: jessehouwing/actions-example-checker@eb2c287585cd48847abc0d3012e861918793561f # v0.0.11
+        uses: jessehouwing/actions-example-checker@v0.0.11
         with:
           version: v${{ needs.prepare-release.outputs.version }}
 
@@ -241,23 +241,23 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e #v6.4.0
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: .node-version
 
       - name: Download VSIX artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c #v8.0.1
+        uses: actions/download-artifact@v8.0.1
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
 
       - name: Azure login (OIDC)
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 #v3.0.0
+        uses: azure/login@v3.0.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -336,7 +336,7 @@ jobs:
 
     steps:
       - name: Azure login (OIDC)
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 #v3.0.0
+        uses: azure/login@v3.0.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -509,23 +509,23 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
+      - uses: actions/checkout@v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e #v6.4.0
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: .node-version
 
       - name: Download VSIX artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c #v8.0.1
+        uses: actions/download-artifact@v8.0.1
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
 
       - name: Azure login (OIDC)
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 #v3.0.0
+        uses: azure/login@v3.0.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -559,13 +559,13 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
+      - uses: actions/checkout@v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           fetch-depth: 0
 
       - name: Download VSIX artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c #v8.0.1
+        uses: actions/download-artifact@v8.0.1
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
@@ -649,7 +649,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v6.0.3
+      - uses: actions/checkout@v6.0.3
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           fetch-depth: 0

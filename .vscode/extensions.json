@@ -6,7 +6,6 @@
     "ms-azuretools.vscode-docker",
     "github.copilot-chat",
     "github.vscode-pull-request-github",
-    "eamodio.gitlens",
     "editorconfig.editorconfig",
     "ms-vscode.vscode-typescript-next"
   ]
