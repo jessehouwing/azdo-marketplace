@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Dependabot Actions Lock
 
 # Regenerates the `gh actions-lock` lockfile on Dependabot pull requests that

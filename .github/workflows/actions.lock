@@ -25,6 +25,8 @@ workflows:
         - 'actions/setup-go@v6.5.0'
         - 'actions/setup-node@v6.4.0'
         - 'actions/setup-python@v6.3.0'
+    '.github/workflows/dependabot-actions-lock.yml':
+        - 'actions/checkout@v7.0.0'
     '.github/workflows/linter.yml':
         - 'actions/checkout@v7.0.0'
         - 'actions/setup-node@v6.4.0'
