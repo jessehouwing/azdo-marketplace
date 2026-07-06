@@ -1,0 +1,76 @@
+name: Dependabot Actions Lock
+
+# Regenerates the `gh actions-lock` lockfile on Dependabot pull requests that
+# bump GitHub Actions version pins. Dependabot only edits the `uses:` lines
+# in workflow files and has no way to run the actions-lock CLI itself, so
+# without this workflow the actions-lock validation check fails on every
+# Dependabot "github-actions" ecosystem pull request.
+#
+# Safety - this workflow is intentionally restricted so it can only ever
+# touch Dependabot's own github-actions update branches:
+#   - Only triggers on pull_request events (opened/synchronize/reopened)
+#     targeting the default branch.
+#   - Requires github.actor AND the PR author to be dependabot[bot].
+#   - Requires the PR head repository to be this repository (never a fork).
+#   - Requires the PR head branch to start with "dependabot/github_actions/",
+#     which is the fixed prefix Dependabot uses for the github-actions
+#     ecosystem (see .github/dependabot.yml). PRs for other ecosystems
+#     (e.g. dependabot/npm_and_yarn/...) are ignored.
+#   - Only checks out and pushes back to that same PR head branch; main is
+#     never modified directly by this workflow.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+
+permissions: {}
+
+jobs:
+  relock-actions:
+    name: Regenerate actions-lock lockfile
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    concurrency:
+      group: 'dependabot-actions-lock-${{ github.event.pull_request.number }}'
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout Dependabot branch
+        uses: actions/checkout@v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          persist-credentials: true
+
+      - name: Regenerate actions-lock lockfile
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh actions-lock --no-interactive --no-onboard --rescan
+
+      - name: Commit and push lockfile changes
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- .github/workflows/
+
+          if git diff --cached --quiet; then
+            echo "No lockfile changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: regenerate actions-lock lockfile"
+          git push origin "HEAD:$HEAD_REF"
