@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@v7.0.0
         with:
           repository: jessehouwing/actions-locked-dependencies
-          token: ${{ secrets.actions_locked_dependencies_pat }}
+          token: ${{ secrets.ACTIONS_LOCKED_DEPENDENCIES_PAT }}
           path: .actions-locked-dependencies
           persist-credentials: false
 
