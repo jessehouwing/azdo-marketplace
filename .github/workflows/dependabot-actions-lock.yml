@@ -11,7 +11,17 @@ name: Dependabot Actions Lock
 # The `gh actions-lock` extension is not publicly published. It is sourced
 # from the private jessehouwing/actions-locked-dependencies repository and
 # installed via its script/install(.sh|.ps1) into a separate checkout path,
-# using the `actions_locked_dependencies_pat` repository secret to clone it.
+# using the `ACTIONS_LOCKED_DEPENDENCIES_PAT` secret to clone it.
+#
+# IMPORTANT: this workflow is triggered by Dependabot, so GitHub treats the
+# run as if it came from a fork. Regular repository/organization Actions
+# secrets are NOT available in that case - only secrets configured as
+# "Dependabot secrets" (Settings > Secrets and variables > Dependabot) are.
+# ACTIONS_LOCKED_DEPENDENCIES_PAT must therefore be added as a Dependabot
+# secret (not a normal Actions secret) with this exact name, or the checkout
+# of actions-locked-dependencies below will fail to authenticate. The
+# GITHUB_TOKEN used later is unaffected since its permissions are explicitly
+# elevated via the `permissions:` block below.
 #
 # Safety - this workflow is intentionally restricted so it can only ever
 # touch Dependabot's own github-actions update branches:
@@ -71,6 +81,8 @@ jobs:
         shell: bash
         working-directory: .actions-locked-dependencies
         run: bash ./script/install.sh
+        env:
+          GH_TOKEN: ${{ secrets.ACTIONS_LOCKED_DEPENDENCIES_PAT }}
 
       - name: Regenerate actions-lock lockfile
         env:
