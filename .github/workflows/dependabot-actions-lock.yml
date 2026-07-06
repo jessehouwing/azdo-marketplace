@@ -8,6 +8,11 @@ name: Dependabot Actions Lock
 # without this workflow the actions-lock validation check fails on every
 # Dependabot "github-actions" ecosystem pull request.
 #
+# The `gh actions-lock` extension is not publicly published. It is sourced
+# from the private jessehouwing/actions-locked-dependencies repository and
+# installed via its script/install(.sh|.ps1) into a separate checkout path,
+# using the `actions_locked_dependencies_pat` repository secret to clone it.
+#
 # Safety - this workflow is intentionally restricted so it can only ever
 # touch Dependabot's own github-actions update branches:
 #   - Only triggers on pull_request events (opened/synchronize/reopened)
@@ -53,6 +58,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           persist-credentials: true
+
+      - name: Checkout actions-lock CLI
+        uses: actions/checkout@v7.0.0
+        with:
+          repository: jessehouwing/actions-locked-dependencies
+          token: ${{ secrets.actions_locked_dependencies_pat }}
+          path: .actions-locked-dependencies
+          persist-credentials: false
+
+      - name: Install actions-lock CLI
+        shell: bash
+        working-directory: .actions-locked-dependencies
+        run: bash ./script/install.sh
 
       - name: Regenerate actions-lock lockfile
         env:
