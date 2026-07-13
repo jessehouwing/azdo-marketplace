@@ -253,11 +253,7 @@ async function runPackage(platform: GitHubAdapter, tfxManager: TfxManager): Prom
     extensionVersion: platform.getInput('extension-version'),
     extensionName: platform.getInput('extension-name'),
     extensionVisibility: platform.getInput('extension-visibility') as
-      | 'private'
-      | 'public'
-      | 'private_preview'
-      | 'public_preview'
-      | undefined,
+      'private' | 'public' | 'private_preview' | 'public_preview' | undefined,
     extensionPricing:
       extensionPricingInput && extensionPricingInput !== 'default'
         ? (extensionPricingInput as 'free' | 'paid' | 'trial')

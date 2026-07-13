@@ -269,11 +269,7 @@ async function runPackage(platform: AzdoAdapter, tfxManager: TfxManager): Promis
     extensionVersion: platform.getInput('extensionVersion'),
     extensionName: platform.getInput('extensionName'),
     extensionVisibility: platform.getInput('extensionVisibility') as
-      | 'private'
-      | 'public'
-      | 'private_preview'
-      | 'public_preview'
-      | undefined,
+      'private' | 'public' | 'private_preview' | 'public_preview' | undefined,
     extensionPricing:
       extensionPricingInput && extensionPricingInput !== 'default'
         ? (extensionPricingInput as 'free' | 'paid' | 'trial')
@@ -321,11 +317,7 @@ async function runPublish(
       extensionVersion: platform.getInput('extensionVersion'),
       extensionName: platform.getInput('extensionName'),
       extensionVisibility: platform.getInput('extensionVisibility') as
-        | 'private'
-        | 'public'
-        | 'private_preview'
-        | 'public_preview'
-        | undefined,
+        'private' | 'public' | 'private_preview' | 'public_preview' | undefined,
       extensionPricing:
         extensionPricingInput && extensionPricingInput !== 'default'
           ? (extensionPricingInput as 'free' | 'paid' | 'trial')
