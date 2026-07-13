@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "azure-devops-node-api": "^15.1.2",
-    "fast-xml-builder": "^1.2.0",
+    "fast-xml-builder": "^1.2.1",
     "fast-xml-parser": "^5.9.3",
-    "tfx-cli": "^0.23.3",
+    "tfx-cli": "^0.23.4",
     "uuid": "^14.0.1"
   },
   "devDependencies": {
