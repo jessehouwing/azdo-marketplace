@@ -61,7 +61,7 @@
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.62.1",
+    "typescript-eslint": "^8.63.0",
     "yauzl": "^3.4.0",
     "yazl": "^3.3.1"
   },
