@@ -4,6 +4,6 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "tfx-cli": "0.23.3"
+    "tfx-cli": "0.23.4"
   }
 }
