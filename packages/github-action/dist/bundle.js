@@ -2704,7 +2704,13 @@ function requireRequest$1 () {
 	      } else if (typeof val[i] === 'object') {
 	        throw new InvalidArgumentError(`invalid ${key} header`)
 	      } else {
-	        arr.push(`${val[i]}`);
+	        // Coerce primitives (and reject unsafe coercions such as functions
+	        // with a crafted toString/Symbol.toPrimitive).
+	        const str = `${val[i]}`;
+	        if (!isValidHeaderValue(str)) {
+	          throw new InvalidArgumentError(`invalid ${key} header`)
+	        }
+	        arr.push(str);
 	      }
 	    }
 	    val = arr;
@@ -2715,7 +2721,12 @@ function requireRequest$1 () {
 	  } else if (val === null) {
 	    val = '';
 	  } else {
+	    // Coerce primitives (and reject unsafe coercions such as functions
+	    // with a crafted toString/Symbol.toPrimitive).
 	    val = `${val}`;
+	    if (!isValidHeaderValue(val)) {
+	      throw new InvalidArgumentError(`invalid ${key} header`)
+	    }
 	  }
 
 	  if (headerName === 'host') {
@@ -8771,6 +8782,7 @@ function requireClientH1 () {
 	  RequestContentLengthMismatchError,
 	  ResponseContentLengthMismatchError,
 	  RequestAbortedError,
+	  InvalidArgumentError,
 	  HeadersTimeoutError,
 	  HeadersOverflowError,
 	  SocketError,
@@ -9754,8 +9766,16 @@ function requireClientH1 () {
 	    }
 	    body = bodyStream.stream;
 	    contentLength = bodyStream.length;
-	  } else if (util.isBlobLike(body) && request.contentType == null && body.type) {
-	    headers.push('content-type', body.type);
+	  } else if (util.isBlobLike(body) && request.contentType == null) {
+	    const contentType = body.type;
+	    if (contentType) {
+	      const contentTypeValue = `${contentType}`;
+	      if (!util.isValidHeaderValue(contentTypeValue)) {
+	        util.errorRequest(client, request, new InvalidArgumentError('invalid content-type header'));
+	        return false
+	      }
+	      headers.push('content-type', contentTypeValue);
+	    }
 	  }
 
 	  if (body && typeof body.read === 'function') {
@@ -13190,6 +13210,28 @@ function requireRetryHandler () {
 	  return new Date(retryAfter).getTime() - current
 	}
 
+	function validatePartialResponseContentLength (headers, range, statusCode, retryCount) {
+	  const contentLength = headers['content-length'];
+	  if (contentLength == null) {
+	    return null
+	  }
+
+	  if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) {
+	    return null
+	  }
+
+	  const length = Number(contentLength);
+	  const expectedLength = range.end - range.start + 1;
+	  if (!Number.isFinite(length) || length !== expectedLength) {
+	    return new RequestRetryError('Content-Length mismatch', statusCode, {
+	      headers,
+	      data: { count: retryCount }
+	    })
+	  }
+
+	  return null
+	}
+
 	class RetryHandler {
 	  constructor (opts, handlers) {
 	    const { retryOptions, ...dispatchOpts } = opts;
@@ -13404,6 +13446,12 @@ function requireRetryHandler () {
 	        return false
 	      }
 
+	      const contentLengthError = validatePartialResponseContentLength(headers, contentRange, statusCode, this.retryCount);
+	      if (contentLengthError != null) {
+	        this.abort(contentLengthError);
+	        return false
+	      }
+
 	      const { start, size, end = size - 1 } = contentRange;
 
 	      assert(this.start === start, 'content-range mismatch');
@@ -13425,6 +13473,12 @@ function requireRetryHandler () {
 	            resume,
 	            statusMessage
 	          )
+	        }
+
+	        const contentLengthError = validatePartialResponseContentLength(headers, range, statusCode, this.retryCount);
+	        if (contentLengthError != null) {
+	          this.abort(contentLengthError);
+	          return false
 	        }
 
 	        const { start, size, end = size - 1 } = range;
@@ -23815,7 +23869,7 @@ function requireUtil$3 () {
 
 	    if (
 	      code < 0x20 || // exclude CTLs (0-31)
-	      code === 0x7F || // DEL
+	      code > 0x7E || // exclude DEL and non-ascii
 	      code === 0x3B // ;
 	    ) {
 	      throw new Error('Invalid cookie path')
@@ -23824,16 +23878,80 @@ function requireUtil$3 () {
 	}
 
 	/**
-	 * I have no idea why these values aren't allowed to be honest,
-	 * but Deno tests these. - Khafra
+	 * <let-dig> ::= <letter> | <digit>
+	 *
+	 * <letter> ::= any one of the 52 alphabetic characters A through Z in
+	 * upper case and a through z in lower case
+	 *
+	 * <digit> ::= any one of the ten digits 0 through 9r
+	 *
+	 * @see https://www.rfc-editor.org/rfc/rfc1034#section-3.5
+	 * @param {number} code
+	 */
+	function isLetterOrDigit (code) {
+	  return (
+	    (code >= 0x30 && code <= 0x39) || // 0-9
+	    (code >= 0x41 && code <= 0x5A) || // A-Z
+	    (code >= 0x61 && code <= 0x7A) // a-z
+	  )
+	}
+
+	/**
+	 * Validates a cookie domain against the "preferred name syntax".
+	 *
+	 * <domain>      ::= <subdomain> | " "
+	 * <subdomain>   ::= <label> | <subdomain> "." <label>
+	 * <label>       ::= <let-dig> [ [ <ldh-str> ] <let-dig> ]
+	 * <ldh-str>     ::= <let-dig-hyp> | <let-dig-hyp> <ldh-str>
+	 * <let-dig-hyp> ::= <let-dig> | "-"
+	 *
+	 * @see https://www.rfc-editor.org/rfc/rfc1034#section-3.5
+	 * @see https://www.rfc-editor.org/rfc/rfc1123#section-2.1
+	 * @see https://www.rfc-editor.org/rfc/rfc1035#section-2.3.4
 	 * @param {string} domain
 	 */
 	function validateCookieDomain (domain) {
-	  if (
-	    domain.startsWith('-') ||
-	    domain.endsWith('.') ||
-	    domain.endsWith('-')
-	  ) {
+	  // <domain> ::= <subdomain> | " "
+	  if (domain === ' ') {
+	    return
+	  }
+
+	  if (domain.length > 255) {
+	    throw new Error('Invalid cookie domain')
+	  }
+
+	  let labelLength = 0;
+
+	  for (let i = 0; i < domain.length; ++i) {
+	    const code = domain.charCodeAt(i);
+
+	    if (code === 0x2E) {
+	      if (labelLength === 0) {
+	        throw new Error('Invalid cookie domain')
+	      }
+
+	      if (domain.charCodeAt(i - 1) === 0x2D) { // "-"
+	        throw new Error('Invalid cookie domain')
+	      }
+
+	      labelLength = 0;
+	      continue
+	    }
+
+	    if (labelLength === 0 && !isLetterOrDigit(code)) {
+	      throw new Error('Invalid cookie domain')
+	    }
+
+	    if (!isLetterOrDigit(code) && code !== 0x2D) { // "-"
+	      throw new Error('Invalid cookie domain')
+	    }
+
+	    if (++labelLength > 63) {
+	      throw new Error('Invalid cookie domain')
+	    }
+	  }
+
+	  if (labelLength === 0 || domain.charCodeAt(domain.length - 1) === 0x2D) { // "-"
 	    throw new Error('Invalid cookie domain')
 	  }
 	}
@@ -23976,7 +24094,13 @@ function requireUtil$3 () {
 
 	    const [key, ...value] = part.split('=');
 
-	    out.push(`${key.trim()}=${value.join('=')}`);
+	    const trimmedKey = key.trim();
+	    const joinedValue = value.join('=');
+
+	    validateCookieName(trimmedKey);
+	    validateCookieValue(joinedValue);
+
+	    out.push(`${trimmedKey}=${joinedValue}`);
 	  }
 
 	  return out.join('; ')
@@ -38700,6 +38824,7 @@ class OrderedObjParser {
     this.ignoreAttributesFn = getIgnoreAttributesFn$1(this.options.ignoreAttributes);
     this.entityExpansionCount = 0;
     this.currentExpandedLength = 0;
+    this.doctypefound = false;
     let namedEntities = { ...XML };
     if (this.options.entityDecoder) {
       this.entityDecoder = this.options.entityDecoder;
@@ -38907,6 +39032,7 @@ const parseXml = function (xmlData) {
   // Reset entity expansion counters for this document
   this.entityExpansionCount = 0;
   this.currentExpandedLength = 0;
+  this.doctypefound = false;
   const options = this.options;
   const docTypeReader = new DocTypeReader(options.processEntities);
   const xmlLen = xmlData.length;
@@ -38989,6 +39115,8 @@ const parseXml = function (xmlData) {
         i = endIndex;
       } else if (c1 === 33
         && xmlData.charCodeAt(i + 2) === 68) { //'!D'
+        if (this.doctypefound) throw new Error("Multiple DOCTYPE declarations found.");
+        this.doctypefound = true;
         const result = docTypeReader.readDocType(xmlData, i);
         this.entityDecoder.addInputEntities(result.entities);
         i = result.i;
@@ -118118,6 +118246,17 @@ const closePattern = /\\}/g;
 const commaPattern = /\\,/g;
 const periodPattern = /\\\./g;
 const EXPANSION_MAX = 100_000;
+// `EXPANSION_MAX` caps the *number* of expansions, but not their length. An
+// input like `'{a,b}'.repeat(1500)` stays under that count - its output is
+// truncated to 100k results - while making every result ~1500 characters
+// long. The result set, and the intermediate arrays built while combining
+// brace sets, then grow large enough to exhaust memory and crash the process
+// (CVE-2026-14257). `EXPANSION_MAX_LENGTH` bounds the total number of
+// characters the accumulator may hold at any point, so memory stays flat no
+// matter how many brace groups are chained. The limit sits well above any
+// realistic expansion (100k results hitting `EXPANSION_MAX` measure ~1M
+// characters) so legitimate input is unaffected.
+const EXPANSION_MAX_LENGTH = 4_000_000;
 function numeric(str) {
     return !isNaN(str) ? parseInt(str, 10) : str.charCodeAt(0);
 }
@@ -118166,7 +118305,7 @@ function expand(str, options = {}) {
     if (!str) {
         return [];
     }
-    const { max = EXPANSION_MAX } = options;
+    const { max = EXPANSION_MAX, maxLength = EXPANSION_MAX_LENGTH } = options;
     // I don't know why Bash 4.3 does this, but it does.
     // Anything starting with {} will have the first two bytes preserved
     // but *only* at the top level, so {},a}b will not expand to anything,
@@ -118176,7 +118315,7 @@ function expand(str, options = {}) {
     if (str.slice(0, 2) === '{}') {
         str = '\\{\\}' + str.slice(2);
     }
-    return expand_(escapeBraces(str), max, true).map(unescapeBraces);
+    return expand_(escapeBraces(str), max, maxLength, true).map(unescapeBraces);
 }
 function embrace(str) {
     return '{' + str + '}';
@@ -118190,22 +118329,117 @@ function lte(i, y) {
 function gte(i, y) {
     return i >= y;
 }
-function expand_(str, max, isTop) {
-    /** @type {string[]} */
-    const expansions = [];
-    const m = balanced('{', '}', str);
-    if (!m)
-        return [str];
-    // no need to expand pre, since it is guaranteed to be free of brace-sets
-    const pre = m.pre;
-    const post = m.post.length ? expand_(m.post, max, false) : [''];
-    if (/\$$/.test(m.pre)) {
-        for (let k = 0; k < post.length && k < max; k++) {
-            const expansion = pre + '{' + m.body + '}' + post[k];
-            expansions.push(expansion);
+// Build `{ acc[a] + pre + values[v] }` for every combination, capping the
+// number of results at `max` and the total number of characters at `maxLength`.
+// This is the one place output grows, so bounding it here keeps the single
+// accumulator - and therefore memory - flat regardless of how many brace groups
+// are combined (CVE-2026-14257).
+function combine(acc, pre, values, max, maxLength, dropEmpties) {
+    const out = [];
+    let length = 0;
+    for (let a = 0; a < acc.length; a++) {
+        for (let v = 0; v < values.length; v++) {
+            if (out.length >= max)
+                return out;
+            const expansion = acc[a] + pre + values[v];
+            // Bash drops empty results at the top level. Skip them before they count
+            // against `max`, so `max` bounds the number of *kept* results.
+            if (dropEmpties && !expansion)
+                continue;
+            if (length + expansion.length > maxLength)
+                return out;
+            out.push(expansion);
+            length += expansion.length;
         }
     }
-    else {
+    return out;
+}
+// The expansion values of a single numeric (`1..5`) or alphabetic (`a..e..2`)
+// sequence body.
+function expandSequence(body, isAlphaSequence, max, maxLength) {
+    const n = body.split(/\.\./);
+    const N = [];
+    // A sequence body always splits into two or three parts, but the compiler
+    // can't know that.
+    /* c8 ignore start */
+    if (n[0] === undefined || n[1] === undefined) {
+        return N;
+    }
+    /* c8 ignore stop */
+    const x = numeric(n[0]);
+    const y = numeric(n[1]);
+    const width = Math.max(n[0].length, n[1].length);
+    let incr = n.length === 3 && n[2] !== undefined ?
+        Math.max(Math.abs(numeric(n[2])), 1)
+        : 1;
+    let test = lte;
+    const reverse = y < x;
+    if (reverse) {
+        incr *= -1;
+        test = gte;
+    }
+    const pad = n.some(isPadded);
+    let length = 0;
+    for (let i = x; test(i, y) && N.length < max; i += incr) {
+        let c;
+        if (isAlphaSequence) {
+            c = String.fromCharCode(i);
+            if (c === '\\') {
+                c = '';
+            }
+        }
+        else {
+            c = String(i);
+            if (pad) {
+                const need = width - c.length;
+                if (need > 0) {
+                    const z = new Array(need + 1).join('0');
+                    if (i < 0) {
+                        c = '-' + z + c.slice(1);
+                    }
+                    else {
+                        c = z + c;
+                    }
+                }
+            }
+        }
+        if (length + c.length > maxLength)
+            break;
+        N.push(c);
+        length += c.length;
+    }
+    return N;
+}
+function expand_(str, max, maxLength, isTop) {
+    // Consume the string's top-level brace groups left to right, threading a
+    // running set of combined prefixes (`acc`). Expanding the tail iteratively -
+    // rather than recursing on `m.post` once per group - keeps the native stack
+    // depth constant, so deeply chained input (`'{a,b}'.repeat(3000)`) can no
+    // longer overflow the stack, and leaves a single accumulator whose size
+    // `maxLength` bounds directly (CVE-2026-14257).
+    let acc = [''];
+    // Bash drops empty results, but only when the *first* top-level group is a
+    // comma set - a sequence like `{a..\}` may legitimately yield ''. The drop
+    // is on the final strings, so it is applied to whichever `combine` produces
+    // them (the one with no brace set left in the tail).
+    let dropEmpties = false;
+    let firstGroup = true;
+    for (;;) {
+        const m = balanced('{', '}', str);
+        // No brace set left: the rest of the string is literal.
+        if (!m) {
+            return combine(acc, str, [''], max, maxLength, dropEmpties);
+        }
+        // no need to expand pre, since it is guaranteed to be free of brace-sets
+        const pre = m.pre;
+        if (/\$$/.test(pre)) {
+            acc = combine(acc, pre + '{' + m.body + '}', [''], max, maxLength, dropEmpties && !m.post.length);
+            firstGroup = false;
+            if (!m.post.length)
+                break;
+            str = m.post;
+            continue;
+        }
         const isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m.body);
         const isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m.body);
         const isSequence = isNumericSequence || isAlphaSequence;
@@ -118214,87 +118448,69 @@ function expand_(str, max, isTop) {
             // {a},b}
             if (m.post.match(/,(?!,).*\}/)) {
                 str = m.pre + '{' + m.body + escClose + m.post;
-                return expand_(str, max, true);
+                isTop = true;
+                continue;
             }
-            return [str];
+            // Nothing here expands, so the whole remaining string is literal.
+            return combine(acc, pre + '{' + m.body + '}' + m.post, [''], max, maxLength, dropEmpties);
         }
-        let n;
+        if (firstGroup) {
+            dropEmpties = isTop && !isSequence;
+            firstGroup = false;
+        }
+        let values;
         if (isSequence) {
-            n = m.body.split(/\.\./);
+            values = expandSequence(m.body, isAlphaSequence, max, maxLength);
         }
         else {
-            n = parseCommaParts(m.body);
+            let n = parseCommaParts(m.body);
             if (n.length === 1 && n[0] !== undefined) {
                 // x{{a,b}}y ==> x{a}y x{b}y
-                n = expand_(n[0], max, false).map(embrace);
+                n = expand_(n[0], max, maxLength, false).map(embrace);
                 //XXX is this necessary? Can't seem to hit it in tests.
                 /* c8 ignore start */
                 if (n.length === 1) {
-                    return post.map(p => m.pre + n[0] + p);
+                    acc = combine(acc, pre + n[0], [''], max, maxLength, dropEmpties && !m.post.length);
+                    if (!m.post.length)
+                        break;
+                    str = m.post;
+                    continue;
                 }
                 /* c8 ignore stop */
             }
-        }
-        // at this point, n is the parts, and we know it's not a comma set
-        // with a single entry.
-        let N;
-        if (isSequence && n[0] !== undefined && n[1] !== undefined) {
-            const x = numeric(n[0]);
-            const y = numeric(n[1]);
-            const width = Math.max(n[0].length, n[1].length);
-            let incr = n.length === 3 && n[2] !== undefined ?
-                Math.max(Math.abs(numeric(n[2])), 1)
-                : 1;
-            let test = lte;
-            const reverse = y < x;
-            if (reverse) {
-                incr *= -1;
-                test = gte;
+            // Values that `combine` is going to drop as empty produce no result, so
+            // they must not count against `max` - otherwise `{a,,b}` with `max: 2`
+            // would stop at `['a', '']` and yield one result instead of two. Skipping
+            // them outright keeps `values` bounded while leaving `max` a bound on
+            // *kept* results.
+            let dropsEmpties = dropEmpties && !m.post.length && !pre;
+            for (let d = 0; dropsEmpties && d < acc.length; d++) {
+                if (acc[d]) {
+                    dropsEmpties = false;
+                }
             }
-            const pad = n.some(isPadded);
-            N = [];
-            for (let i = x; test(i, y) && N.length < max; i += incr) {
-                let c;
-                if (isAlphaSequence) {
-                    c = String.fromCharCode(i);
-                    if (c === '\\') {
-                        c = '';
+            values = [];
+            let valuesLength = 0;
+            outer: for (let j = 0; j < n.length; j++) {
+                const expanded = expand_(n[j], max, maxLength, false);
+                for (let k = 0; k < expanded.length; k++) {
+                    const v = expanded[k];
+                    if (dropsEmpties && !v)
+                        continue;
+                    if (values.length >= max || valuesLength + v.length > maxLength) {
+                        break outer;
                     }
-                }
-                else {
-                    c = String(i);
-                    if (pad) {
-                        const need = width - c.length;
-                        if (need > 0) {
-                            const z = new Array(need + 1).join('0');
-                            if (i < 0) {
-                                c = '-' + z + c.slice(1);
-                            }
-                            else {
-                                c = z + c;
-                            }
-                        }
-                    }
-                }
-                N.push(c);
-            }
-        }
-        else {
-            N = [];
-            for (let j = 0; j < n.length; j++) {
-                N.push.apply(N, expand_(n[j], max, false));
-            }
-        }
-        for (let j = 0; j < N.length; j++) {
-            for (let k = 0; k < post.length && expansions.length < max; k++) {
-                const expansion = pre + N[j] + post[k];
-                if (!isTop || isSequence || expansion) {
-                    expansions.push(expansion);
+                    values.push(v);
+                    valuesLength += v.length;
                 }
             }
         }
+        acc = combine(acc, pre, values, max, maxLength, dropEmpties && !m.post.length);
+        if (!m.post.length)
+            break;
+        str = m.post;
     }
-    return expansions;
+    return acc;
 }
 
 const MAX_PATTERN_LENGTH = 1024 * 64;
@@ -121391,6 +121607,22 @@ function requireSemver$1 () {
 
 	const parseOptions = requireParseOptions();
 	const { compareIdentifiers } = requireIdentifiers();
+
+	const isPrereleaseIdentifier = (prerelease, identifier) => {
+	  const identifiers = identifier.split('.');
+	  if (identifiers.length > prerelease.length) {
+	    return false
+	  }
+
+	  for (let i = 0; i < identifiers.length; i++) {
+	    if (compareIdentifiers(prerelease[i], identifiers[i]) !== 0) {
+	      return false
+	    }
+	  }
+
+	  return true
+	};
+
 	class SemVer {
 	  constructor (version, options) {
 	    options = parseOptions(options);
@@ -121694,8 +121926,9 @@ function requireSemver$1 () {
 	          if (identifierBase === false) {
 	            prerelease = [identifier];
 	          }
-	          if (compareIdentifiers(this.prerelease[0], identifier) === 0) {
-	            if (isNaN(this.prerelease[1])) {
+	          if (isPrereleaseIdentifier(this.prerelease, identifier)) {
+	            const prereleaseBase = this.prerelease[identifier.split('.').length];
+	            if (isNaN(prereleaseBase)) {
 	              this.prerelease = prerelease;
 	            }
 	          } else {
@@ -122613,6 +122846,11 @@ function requireRange () {
 
 	const isX = id => !id || id.toLowerCase() === 'x' || id === '*';
 
+	const invalidXRangeOrder = (M, m, p) => (
+	  (isX(M) && !isX(m)) ||
+	  (isX(m) && p && !isX(p))
+	);
+
 	// ~, ~> --> * (any, kinda silly)
 	// ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0-0
 	// ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0-0
@@ -122630,6 +122868,10 @@ function requireRange () {
 
 	const replaceTilde = (comp, options) => {
 	  const r = options.loose ? re[t.TILDELOOSE] : re[t.TILDE];
+	  // if we're including prereleases in the match, then the lower bound is
+	  // -0, the lowest possible prerelease value, just like x-ranges and carets.
+	  // this keeps `~1.2` equivalent to the `1.2.x` x-range it's documented as.
+	  const z = options.includePrerelease ? '-0' : '';
 	  return comp.replace(r, (_, M, m, p, pr) => {
 	    debug('tilde', comp, _, M, m, p, pr);
 	    let ret;
@@ -122637,10 +122879,10 @@ function requireRange () {
 	    if (isX(M)) {
 	      ret = '';
 	    } else if (isX(m)) {
-	      ret = `>=${M}.0.0 <${+M + 1}.0.0-0`;
+	      ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
 	    } else if (isX(p)) {
 	      // ~1.2 == >=1.2.0 <1.3.0-0
-	      ret = `>=${M}.${m}.0 <${M}.${+m + 1}.0-0`;
+	      ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
 	    } else if (pr) {
 	      debug('replaceTilde pr', pr);
 	      ret = `>=${M}.${m}.${p}-${pr
@@ -122709,10 +122951,10 @@ function requireRange () {
 	      if (M === '0') {
 	        if (m === '0') {
 	          ret = `>=${M}.${m}.${p
-	          }${z} <${M}.${m}.${+p + 1}-0`;
+	          } <${M}.${m}.${+p + 1}-0`;
 	        } else {
 	          ret = `>=${M}.${m}.${p
-	          }${z} <${M}.${+m + 1}.0-0`;
+	          } <${M}.${+m + 1}.0-0`;
 	        }
 	      } else {
 	        ret = `>=${M}.${m}.${p
@@ -122738,6 +122980,10 @@ function requireRange () {
 	  const r = options.loose ? re[t.XRANGELOOSE] : re[t.XRANGE];
 	  return comp.replace(r, (ret, gtlt, M, m, p, pr) => {
 	    debug('xRange', comp, ret, gtlt, M, m, p, pr);
+	    if (invalidXRangeOrder(M, m, p)) {
+	      return comp
+	    }
+
 	    const xM = isX(M);
 	    const xm = xM || isX(m);
 	    const xp = xm || isX(p);
