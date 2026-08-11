@@ -4,39 +4,39 @@
 version: 'v0.0.2'
 workflows:
     '.github/workflows/actions-dependency-submission.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/dependency-review-action@v5.0.0'
         - 'jessehouwing/actions-dependency-submission@v1.0.15'
     '.github/workflows/actions-example-checker.yaml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'jessehouwing/actions-example-checker@v0.0.11'
     '.github/workflows/actions-semver-checker.yml':
         - 'jessehouwing/actions-semver-checker@v2.1.0'
     '.github/workflows/check-dist.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.4.0'
         - 'actions/upload-artifact@v7.0.1'
     '.github/workflows/ci.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.4.0'
         - 'codecov/codecov-action@v7.0.0'
     '.github/workflows/copilot-setup-steps.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/setup-go@v6.5.0'
         - 'actions/setup-node@v6.4.0'
         - 'actions/setup-python@v6.3.0'
     '.github/workflows/dependabot-actions-lock.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
     '.github/workflows/linter.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.4.0'
     '.github/workflows/pre-commit.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/setup-go@v6.5.0'
         - 'actions/setup-node@v6.4.0'
         - 'actions/setup-python@v6.3.0'
     '.github/workflows/release.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.1'
         - 'actions/setup-go@v6.5.0'
         - 'actions/setup-node@v6.4.0'
@@ -46,17 +46,17 @@ workflows:
         - 'jessehouwing/actions-example-checker@v0.0.11'
         - 'jessehouwing/azdo-marketplace@main'
     '.github/workflows/scorecard.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.1'
-        - 'github/codeql-action@v4.37.0'
-        - 'ossf/scorecard-action@v2.4.3'
+        - 'github/codeql-action@v4.37.3'
+        - 'ossf/scorecard-action@v2.4.4'
     '.github/workflows/unit-tests.yml':
-        - 'actions/checkout@v7.0.0'
+        - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.4.0'
 dependencies:
-    'actions/checkout@v7.0.0':
-        ref: 'v7.0.0'
-        commit: 'sha1-9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0'
+    'actions/checkout@v7.0.1':
+        ref: 'v7.0.1'
+        commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
     'actions/dependency-review-action@v5.0.0':
@@ -106,9 +106,9 @@ dependencies:
         repo_id: 200299178
         uses:
             - 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd'
-    'github/codeql-action@v4.37.0':
-        ref: 'v4.37.0'
-        commit: 'sha1-99df26d4f13ea111d4ec1a7dddef6063f76b97e9'
+    'github/codeql-action@v4.37.3':
+        ref: 'v4.37.3'
+        commit: 'sha1-e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81'
         owner_id: 9919
         repo_id: 259445878
     'jessehouwing/actions-dependency-submission@v1.0.15':
@@ -131,8 +131,8 @@ dependencies:
         commit: 'sha1-8c16d36185057fa4d80bb9361a22097525204c9e'
         owner_id: 4173387
         repo_id: 1158033287
-    'ossf/scorecard-action@v2.4.3':
-        ref: 'v2.4.3'
-        commit: 'sha1-4eaacf0543bb3f2c246792bd56e8cdeffafb205a'
+    'ossf/scorecard-action@v2.4.4':
+        ref: 'v2.4.4'
+        commit: 'sha1-2d1146689b8cda280b9bc96326124645441f03bc'
         owner_id: 67707773
         repo_id: 421101922
