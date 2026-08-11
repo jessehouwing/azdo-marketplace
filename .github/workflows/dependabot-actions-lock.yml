@@ -63,14 +63,14 @@ jobs:
 
     steps:
       - name: Checkout Dependabot branch
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           persist-credentials: true
 
       - name: Checkout actions-lock CLI
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           repository: jessehouwing/actions-locked-dependencies
           token: ${{ secrets.ACTIONS_LOCKED_DEPENDENCIES_PAT }}
