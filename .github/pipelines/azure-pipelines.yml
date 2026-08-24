@@ -24,9 +24,9 @@ stages:
       - job:
         displayName: 'Build on Windows'
         steps:
-          - task: NodeTool@0
+          - task: UseNode@1
             inputs:
-              versionSpec: '20.x'
+              version: '20.x'
             displayName: 'Install Node.js'
 
           - task: Npm@1
@@ -93,9 +93,9 @@ stages:
                   artifact: vsix
                   patterns: '**/*-private.vsix'
 
-                - task: NodeTool@0
+                - task: UseNode@1
                   inputs:
-                    versionSpec: '20.x'
+                    version: '20.x'
                   displayName: 'Install Node.js'
 
                 - task: azdo-marketplace@6
@@ -133,9 +133,9 @@ stages:
                   artifact: vsix
                   patterns: '**/*-public.vsix'
 
-                - task: NodeTool@0
+                - task: UseNode@1
                   inputs:
-                    versionSpec: '20.x'
+                    version: '20.x'
                   displayName: 'Install Node.js'
 
                 - task: azdo-marketplace@6

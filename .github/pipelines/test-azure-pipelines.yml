@@ -60,10 +60,10 @@ stages:
         steps:
           - checkout: self
 
-          - task: NodeTool@0
+          - task: UseNode@1
             displayName: Setup Node.js
             inputs:
-              versionSpec: 24.x
+              version: 24.x
 
           # For PAT matrix entries, acquire a short-lived marketplace token at runtime
           # from the OIDC-backed Azure RM connection so no PAT secret is stored.
