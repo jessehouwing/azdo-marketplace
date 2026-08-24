@@ -15,7 +15,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
 ### Verify with Manifest
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -27,7 +27,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
 ### Verify with a Manifest in a Subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -40,7 +40,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
 ### Verify with VSIX
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     accounts: 'myorg'
@@ -50,7 +50,7 @@ Verify that an Azure DevOps extension has been installed correctly and that all 
 ### Verify with Expected Tasks JSON
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -68,7 +68,7 @@ The `id` (task UUID) is optional when using `expected-tasks` directly, but stron
 ### Verify Multiple Accounts
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -83,7 +83,7 @@ The `id` (task UUID) is optional when using `expected-tasks` directly, but stron
 ### With Custom Timeout and Polling
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: 'my-publisher'
@@ -103,7 +103,7 @@ The `id` (task UUID) is optional when using `expected-tasks` directly, but stron
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     auth-type: 'oidc'
     publisher-id: 'my-publisher'
@@ -171,7 +171,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Package Extension
-        uses: jessehouwing/azdo-marketplace/package@v6
+        uses: jessehouwing/azdo-marketplace/package@v6.2.9
         id: package
         with:
           manifest-file: './extension/vss-extension.json'
@@ -179,14 +179,14 @@ jobs:
           update-tasks-version: 'patch'
 
       - name: Publish Extension
-        uses: jessehouwing/azdo-marketplace/publish@v6
+        uses: jessehouwing/azdo-marketplace/publish@v6.2.9
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           use: 'vsix'
           vsix-file: ${{ steps.package.outputs.vsix-file }}
 
       - name: Install to Production Org
-        uses: jessehouwing/azdo-marketplace/install@v6
+        uses: jessehouwing/azdo-marketplace/install@v6.2.9
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -194,7 +194,7 @@ jobs:
           accounts: 'production-org'
 
       - name: Verify Installation
-        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
         with:
           token: ${{ secrets.MARKETPLACE_TOKEN }}
           publisher-id: 'my-publisher'
@@ -244,7 +244,7 @@ When using `manifest-file` or `vsix-file` as the task source, the UUID is read a
 ## GitHub Marketplace sample
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.9
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher

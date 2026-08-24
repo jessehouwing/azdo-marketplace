@@ -533,7 +533,7 @@ outputs:
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@v6
+      - uses: jessehouwing/azdo-marketplace@v6.2.9
         id: package
         with:
           operation: package
@@ -546,7 +546,7 @@ outputs:
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@v6
+      - uses: jessehouwing/azdo-marketplace@v6.2.9
         id: package
         with:
           operation: package
@@ -565,7 +565,7 @@ outputs:
 
       **Example usage:**
       ```yaml
-      - uses: jessehouwing/azdo-marketplace@v6
+      - uses: jessehouwing/azdo-marketplace@v6.2.9
         id: show
         with:
           operation: show
