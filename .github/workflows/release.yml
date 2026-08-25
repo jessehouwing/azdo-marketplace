@@ -533,9 +533,28 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
 
+      # Detects a retry after the exact version was already published (e.g. a
+      # previous run's publish succeeded but "Wait for validation" timed out),
+      # so we don't attempt to republish the same version.
+      - name: Check current marketplace version
+        id: check-version
+        uses: jessehouwing/azdo-marketplace/query-version@main
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          version-source: marketplace
+          marketplace-version-action: None
+
+      - name: Skip publish (version already deployed)
+        if: steps.check-version.outputs.current-version == needs.prepare-release.outputs.version
+        run: Write-Host "Version ${{ needs.prepare-release.outputs.version }} is already published, skipping publish and re-checking validation."
+        shell: pwsh
+
       - name: Publish production extension
-        uses: jessehouwing/azdo-marketplace/publish@main
         id: publish
+        if: steps.check-version.outputs.current-version != needs.prepare-release.outputs.version
+        uses: jessehouwing/azdo-marketplace/publish@main
         with:
           auth-type: oidc
           use: vsix
@@ -546,7 +565,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/wait-for-validation@main
         with:
           auth-type: oidc
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file || format('{0}/vsix/{1}', runner.temp, needs.prepare-release.outputs.vsix-file-name) }}
 
   # ---------------------------------------------------------------------------
   # Job 7: Create GitHub draft release and tags
