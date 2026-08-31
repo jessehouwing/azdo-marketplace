@@ -66,8 +66,8 @@
     "yazl": "^3.3.1"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.62.5",
-    "@rollup/rollup-win32-x64-gnu": "^4.62.5",
-    "@rollup/rollup-win32-x64-msvc": "^4.62.5"
+    "@rollup/rollup-linux-x64-gnu": "^4.63.0",
+    "@rollup/rollup-win32-x64-gnu": "^4.63.0",
+    "@rollup/rollup-win32-x64-msvc": "^4.63.0"
   }
 }
