@@ -548,6 +548,7 @@ jobs:
             throw 'Failed to trigger Azure DevOps pipeline run.'
           }
 
+          "pipeline_run_id=$runId" >> $env:GITHUB_OUTPUT
           $runUrl = "$organization/$project/_build/results?buildId=$runId&view=results"
           "pipeline_run_url=$runUrl" >> $env:GITHUB_OUTPUT
 
@@ -579,6 +580,34 @@ jobs:
           }
 
           throw "Pipeline timed out after ${timeoutSeconds}s"
+
+      - name: Cancel Azure DevOps pipeline run if parent workflow was cancelled
+        if: ${{ cancelled() && steps.run-azdo-pipeline.outputs.pipeline_run_id != '' }}
+        continue-on-error: true
+        env:
+          AZDO_PIPELINE_RUN_ID: ${{ steps.run-azdo-pipeline.outputs.pipeline_run_id }}
+          AZDO_ORGANIZATION: https://dev.azure.com/jessehouwing
+          AZDO_PROJECT: azure-devops-extensions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:AZDO_PIPELINE_RUN_ID) {
+            exit 0
+          }
+
+          try {
+            az pipelines runs cancel `
+              --id $env:AZDO_PIPELINE_RUN_ID `
+              --org $env:AZDO_ORGANIZATION `
+              --project $env:AZDO_PROJECT `
+              --output none
+
+            Write-Host "Cancelled Azure DevOps pipeline run $($env:AZDO_PIPELINE_RUN_ID) because the parent release workflow was cancelled."
+          }
+          catch {
+            Write-Warning "Unable to cancel Azure DevOps pipeline run $($env:AZDO_PIPELINE_RUN_ID): $($_.Exception.Message)"
+            exit 0
+          }
 
   # ---------------------------------------------------------------------------
   # Job 5: Test GitHub Actions
@@ -676,6 +705,28 @@ jobs:
           }
 
           throw "release-test-github-actions.yml run $runId timed out after $timeoutSeconds seconds"
+
+      - name: Cancel GitHub Actions verification run if parent workflow was cancelled
+        if: ${{ cancelled() && steps.dispatch.outputs.run_id != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:RUN_ID) {
+            exit 0
+          }
+
+          try {
+            gh run cancel $env:RUN_ID --repo $env:GITHUB_REPOSITORY
+            Write-Host "Cancelled GitHub Actions verification run $($env:RUN_ID) because the parent release workflow was cancelled."
+          }
+          catch {
+            Write-Warning "Unable to cancel GitHub Actions verification run $($env:RUN_ID): $($_.Exception.Message)"
+            exit 0
+          }
 
   # ---------------------------------------------------------------------------
   # Job 5b: Release approval gate
