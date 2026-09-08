@@ -48,12 +48,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version: '3.x'
-
-      - name: Setup Go
-        uses: actions/setup-go@v7.0.0
-        with:
-          go-version: stable
+          python-version-file: '.python-version'
 
       - name: Ensure Azure CLI is installed
         id: azure_cli
@@ -88,24 +83,18 @@ jobs:
           echo "version=${jest_version}" >> "$GITHUB_OUTPUT"
           echo "jest version: ${jest_version}"
 
-      - name: Ensure pre-commit is installed
+      - name: Ensure pre-commit and zizmor are installed
         id: pre_commit
         run: |
           set -euo pipefail
-          python3 -m pip install --user pre-commit
+          # Plain (non --user) install so the `zizmor` binary is on PATH.
+          python3 -m pip install -r requirements-dev.txt
           pre_commit_version="$(python3 -m pre_commit --version)"
           echo "version=${pre_commit_version}" >> "$GITHUB_OUTPUT"
           echo "pre-commit version: ${pre_commit_version}"
-
-      - name: Ensure actionlint is installed
-        id: actionlint
-        run: |
-          set -euo pipefail
-          go install github.com/rhysd/actionlint/cmd/actionlint@latest
-          gopath="$(go env GOPATH)"
-          actionlint_version="$("${gopath}/bin/actionlint" -version | head -n 1)"
-          echo "version=${actionlint_version}" >> "$GITHUB_OUTPUT"
-          echo "actionlint version: ${actionlint_version}"
+          zizmor_version="$(zizmor --version)"
+          echo "zizmor_version=${zizmor_version}" >> "$GITHUB_OUTPUT"
+          echo "zizmor version: ${zizmor_version}"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -124,7 +113,7 @@ jobs:
           TFX_VERSION: ${{ steps.tfx.outputs.version }}
           JEST_VERSION: ${{ steps.jest.outputs.version }}
           PRE_COMMIT_VERSION: ${{ steps.pre_commit.outputs.version }}
-          ACTIONLINT_VERSION: ${{ steps.actionlint.outputs.version }}
+          ZIZMOR_VERSION: ${{ steps.pre_commit.outputs.zizmor_version }}
         run: |
           {
             echo "## Copilot setup summary"
@@ -133,7 +122,7 @@ jobs:
             echo "- tfx-cli: ${TFX_VERSION}"
             echo "- jest: ${JEST_VERSION}"
             echo "- pre-commit: ${PRE_COMMIT_VERSION}"
-            echo "- actionlint: ${ACTIONLINT_VERSION}"
+            echo "- zizmor: ${ZIZMOR_VERSION}"
             echo "- Dependencies: ✅ Installed"
             echo "- Git hooks: ✅ Installed"
             echo "- Build: ✅ Successful"

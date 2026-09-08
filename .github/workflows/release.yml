@@ -14,6 +14,10 @@ name: Release
 # Required environments (with protection rules):
 #   publisher-jessehouwing-dev  - For preview release and GitHub Actions tests
 #   publisher-jessehouwing      - For production releases (job 4, requires approval)
+#   release-publish-approval    - Single consolidated manual gate before any
+#                                 irreversible action (immutable GitHub
+#                                 release, Marketplace publish). Additive to
+#                                 the environments above, not a replacement.
 
 on:
   push:
@@ -25,6 +29,11 @@ on:
         description: 'Semantic version to release (e.g., 6.1.0)'
         required: true
         type: string
+      dry_run:
+        description: 'Test only: validate the release without creating an immutable GitHub release or publishing to the Marketplace'
+        required: false
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -43,6 +52,8 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      attestations: write
+      id-token: write
     outputs:
       version: ${{ steps.resolve.outputs.version }}
       branch: release/v${{ steps.resolve.outputs.version }}
@@ -60,13 +71,16 @@ jobs:
       - name: Resolve version
         id: resolve
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $version = "${{ inputs.version }}"
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            $version = $env:INPUT_VERSION
           }
           else {
             # Extract version from branch name: release/vX.Y.Z -> X.Y.Z
-            $version = "${{ github.ref_name }}" -replace '^release/v', ''
+            $version = $env:REF_NAME -replace '^release/v', ''
           }
           "version=$version" >> $env:GITHUB_OUTPUT
 
@@ -112,23 +126,18 @@ jobs:
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .node-version
-          cache: npm
+          # Release builds must not restore from (poisonable) runtime caches
+          package-manager-cache: false
 
       - name: Setup Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version: '3.x'
+          python-version-file: '.python-version'
 
-      - name: Setup Go
-        uses: actions/setup-go@v7.0.0
-        with:
-          go-version: stable
-
-      - name: Install pre-commit
-        run: python3 -m pip install --user pre-commit
-
-      - name: Install actionlint
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+      - name: Install pre-commit and zizmor
+        # Plain (non --user) install so the `zizmor` binary invoked by the
+        # pre-commit hook (language: system) is on PATH.
+        run: python3 -m pip install -r requirements-dev.txt
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -166,19 +175,40 @@ jobs:
       - name: Run pre-commit checks
         shell: pwsh
         continue-on-error: true
-        run: |
-          $gopath = go env GOPATH
-          $env:PATH = "$gopath/bin;$env:PATH"
-          python3 -m pre_commit run --all-files
+        run: python3 -m pre_commit run --all-files
 
       - name: Package Azure DevOps extension
-        uses: jessehouwing/azdo-marketplace/package@main
+        uses: jessehouwing/azdo-marketplace/package@v6.2.10
         id: package
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
           extension-version: ${{ steps.resolve.outputs.version }}
           output-path: ${{ runner.temp }}
+
+      # Attests the exact VSIX bytes produced here. Nothing downstream may
+      # re-package or apply overrides (extension-version/update-tasks-id/etc.)
+      # to this file — publish-production and create-release both consume it
+      # unmodified via actions/download-artifact, so the attested digest
+      # matches what's ultimately published/released bit-for-bit. The
+      # updated task.json files written to the filesystem by this packaging
+      # step are committed below (git add -A), so the repo state also
+      # reflects exactly what was packaged/attested.
+      #
+      # This is a Sigstore/GitHub-OIDC keyless attestation over a single
+      # external digest — a supply-chain provenance signal consumed by this
+      # repo's own release/publish jobs (`gh attestation verify`). It is
+      # NOT the same as an OPC (Open Packaging Conventions) XML-DSig
+      # signature — the Authenticode-family, X.509-based signing scheme
+      # Visual Studio/tfx natively recognize for VSIX packages (the same
+      # mechanism used to sign Office OOXML documents). Real OPC signing of
+      # the VSIX (e.g. via Microsoft's `sign` CLI + Azure Trusted Signing)
+      # is deferred future work — see plan.md — pending an Azure Trusted
+      # Signing account; it would complement, not replace, this attestation.
+      - name: Attest build provenance (VSIX)
+        uses: actions/attest-build-provenance@v4.0.0
+        with:
+          subject-path: ${{ steps.package.outputs.vsix-file }}
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7.0.1
@@ -202,6 +232,33 @@ jobs:
             git commit -m "chore: prepare release v${{ steps.resolve.outputs.version }}"
           }
           git push origin "HEAD:$branch"
+
+      # GitHub Action provenance rationale: unlike the VSIX (a built binary
+      # artifact published to the Marketplace), the GitHub Action itself is
+      # consumed directly as source at a git tag/SHA
+      # (`uses: jessehouwing/azdo-marketplace@vX`) — there is no separate
+      # release asset to attach evidence to. Its provenance is therefore a
+      # Sigstore attestation over the committed dist/ tree at the release
+      # commit, PLUS the immutable git tag, PLUS the test-github-actions job
+      # exercising this same commit before it can reach release-approval.
+      #
+      # dist/ contains thousands of files (bundled runtime node_modules),
+      # far beyond attest-build-provenance's per-file subject limits, so a
+      # single deterministic tarball digest is attested instead:
+      # `git archive` output depends only on the commit (blob contents +
+      # commit timestamp — no working-tree/EOL/platform variance), so
+      # release-test-github-actions.yml can regenerate the byte-identical
+      # archive from its own checkout of this commit and verify it with one
+      # `gh attestation verify` call. This step runs after "Commit and push
+      # changes" so HEAD is the exact release-branch commit being tested.
+      - name: Create deterministic GitHub Action dist/ archive
+        shell: bash
+        run: git archive --format=tar --output "$RUNNER_TEMP/github-action-dist.tar" HEAD packages/github-action/dist
+
+      - name: Attest build provenance (GitHub Action dist/)
+        uses: actions/attest-build-provenance@v4.0.0
+        with:
+          subject-path: ${{ runner.temp }}/github-action-dist.tar
 
   # ---------------------------------------------------------------------------
   # Job 2: Validate documentation version references
@@ -266,6 +323,8 @@ jobs:
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .node-version
+          # Release builds must not restore from (poisonable) runtime caches
+          package-manager-cache: false
 
       - name: Download VSIX artifact
         uses: actions/download-artifact@v8.0.1
@@ -281,7 +340,7 @@ jobs:
           allow-no-subscriptions: true
 
       - name: Publish preview extension
-        uses: jessehouwing/azdo-marketplace/publish@main
+        uses: jessehouwing/azdo-marketplace/publish@v6.2.10
         id: publish
         with:
           auth-type: oidc
@@ -294,13 +353,13 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azdo-marketplace/wait-for-validation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.2.10
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
 
       - name: Share extension
-        uses: jessehouwing/azdo-marketplace/share@main
+        uses: jessehouwing/azdo-marketplace/share@v6.2.10
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
@@ -308,7 +367,7 @@ jobs:
             https://dev.azure.com/jessehouwing
 
       - name: Install extension
-        uses: jessehouwing/azdo-marketplace/install@main
+        uses: jessehouwing/azdo-marketplace/install@v6.2.10
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
@@ -316,7 +375,7 @@ jobs:
             https://dev.azure.com/jessehouwing
 
       - name: Wait for installation
-        uses: jessehouwing/azdo-marketplace/wait-for-installation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.2.10
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
@@ -501,18 +560,108 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 5: Test GitHub Actions
-  # Runs the reusable test workflow against the prepared release branch.
+  # Dispatches the reusable test workflow against the release branch and
+  # polls for completion (mirrors test-azure-pipelines' trigger+poll shape).
+  # Dispatching on the ref (rather than a same-repo workflow_call) guarantees
+  # the test workflow is loaded from the release branch, so its self
+  # references resolve to this branch's action code, not main.
   # ---------------------------------------------------------------------------
   test-github-actions:
     name: Test GitHub Actions
     needs: [prepare-release, validate-documentation-versions]
-    uses: ./.github/workflows/release-test-github-actions.yml
-    with:
-      ref: release/v${{ needs.prepare-release.outputs.version }}
-    secrets: inherit
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
+      actions: write
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Dispatch and wait for the GitHub Actions test workflow
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: release/v${{ needs.prepare-release.outputs.version }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $timeoutSeconds = 1800
+          $intervalSeconds = 15
+
+          # gh (>= 2.87.0) prints the created run's URL on dispatch (the
+          # workflow_dispatch API now returns run details), so the run id is
+          # just the trailing path segment — no timestamp/branch correlation
+          # needed.
+          $runUrl = gh workflow run release-test-github-actions.yml `
+            --repo $env:GITHUB_REPOSITORY `
+            --ref $env:BRANCH `
+            -f "ref=$env:BRANCH"
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to dispatch release-test-github-actions.yml.'
+          }
+
+          $runId = $runUrl.Trim().Split('/')[-1]
+
+          if ($runId -notmatch '^[0-9]+$') {
+            throw "gh workflow run did not return a run URL: $runUrl"
+          }
+
+          "run_id=$runId" >> $env:GITHUB_OUTPUT
+          Write-Host "Triggered release-test-github-actions.yml run: $runId"
+          $runUrl = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$runId"
+          "- GitHub Actions test run: [$runId]($runUrl)" >> $env:GITHUB_STEP_SUMMARY
+
+          $elapsed = 0
+          while ($elapsed -lt $timeoutSeconds) {
+            $status = gh run view $runId --repo $env:GITHUB_REPOSITORY --json status --jq '.status'
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to query run $runId status."
+            }
+
+            $status = $status.Trim()
+            if ($status -eq 'completed') {
+              $conclusion = gh run view $runId --repo $env:GITHUB_REPOSITORY --json conclusion --jq '.conclusion'
+              if ($LASTEXITCODE -ne 0) {
+                throw "Failed to query run $runId conclusion."
+              }
+
+              $conclusion = $conclusion.Trim()
+              Write-Host "Run $runId completed with conclusion: $conclusion"
+              if ($conclusion -eq 'success') {
+                exit 0
+              }
+
+              throw "release-test-github-actions.yml run $runId finished with conclusion: $conclusion"
+            }
+
+            Write-Host "Run $runId status: $status ($elapsed`s elapsed)"
+            Start-Sleep -Seconds $intervalSeconds
+            $elapsed += $intervalSeconds
+          }
+
+          throw "release-test-github-actions.yml run $runId timed out after $timeoutSeconds seconds"
+
+  # ---------------------------------------------------------------------------
+  # Job 5b: Release approval gate
+  # Single consolidated manual approval, additive to any existing per-job
+  # environment gates. Holds the workflow after all preview/test jobs
+  # complete and before anything irreversible (immutable GitHub release,
+  # Marketplace publish) happens. Skipped entirely in dry-run mode, since
+  # nothing irreversible happens there.
+  # ---------------------------------------------------------------------------
+  release-approval:
+    name: Approve release and publish
+    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    environment:
+      name: release-publish-approval
+    permissions: {}
+    steps:
+      - name: Approved
+        run: echo "Approved release v${{ needs.prepare-release.outputs.version }} for immutable release and Marketplace publish."
 
   # ---------------------------------------------------------------------------
   # Job 6: Production release to marketplace
@@ -520,7 +669,15 @@ jobs:
   # ---------------------------------------------------------------------------
   publish-production:
     name: Publish to marketplace
-    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
+    needs:
+      [
+        prepare-release,
+        preview-release,
+        test-azure-pipelines,
+        test-github-actions,
+        release-approval,
+      ]
+    if: ${{ !inputs.dry_run }}
     runs-on: windows-latest
     environment:
       name: publisher-jessehouwing
@@ -544,12 +701,21 @@ jobs:
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .node-version
+          # Release builds must not restore from (poisonable) runtime caches
+          package-manager-cache: false
 
       - name: Download VSIX artifact
         uses: actions/download-artifact@v8.0.1
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
+
+      - name: Verify VSIX build provenance attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VSIX_FILE: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
+        run: gh attestation verify "$VSIX_FILE" --repo "$GITHUB_REPOSITORY"
+        shell: bash
 
       - name: Azure login (OIDC)
         uses: azure/login@v3.0.2
@@ -563,7 +729,7 @@ jobs:
       # so we don't attempt to republish the same version.
       - name: Check current marketplace version
         id: check-version
-        uses: jessehouwing/azdo-marketplace/query-version@main
+        uses: jessehouwing/azdo-marketplace/query-version@v6.2.10
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -579,7 +745,7 @@ jobs:
       - name: Publish production extension
         id: publish
         if: steps.check-version.outputs.current-version != needs.prepare-release.outputs.version
-        uses: jessehouwing/azdo-marketplace/publish@main
+        uses: jessehouwing/azdo-marketplace/publish@v6.2.10
         with:
           auth-type: oidc
           use: vsix
@@ -587,7 +753,7 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azdo-marketplace/wait-for-validation@main
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.2.10
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file || format('{0}/vsix/{1}', runner.temp, needs.prepare-release.outputs.vsix-file-name) }}
@@ -599,7 +765,25 @@ jobs:
   # ---------------------------------------------------------------------------
   create-release:
     name: Create GitHub draft release
-    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
+    needs:
+      [
+        prepare-release,
+        preview-release,
+        test-azure-pipelines,
+        test-github-actions,
+        release-approval,
+      ]
+    # Always runs (even in dry-run) to create/update the real, testable
+    # version tag; the release-object-creation step below is what's actually
+    # gated on !inputs.dry_run. release-approval is skipped in dry-run mode,
+    # so tolerate that with always()+result checks.
+    if: |
+      always() &&
+      needs.prepare-release.result == 'success' &&
+      needs.preview-release.result == 'success' &&
+      needs.test-azure-pipelines.result == 'success' &&
+      needs.test-github-actions.result == 'success' &&
+      (needs.release-approval.result == 'success' || needs.release-approval.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -621,6 +805,13 @@ jobs:
           name: vsix
           path: ${{ runner.temp }}/vsix
 
+      - name: Verify VSIX build provenance attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VSIX_FILE: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
+        run: gh attestation verify "$VSIX_FILE" --repo "$GITHUB_REPOSITORY"
+        shell: bash
+
       - name: Create version tag
         shell: pwsh
         run: |
@@ -633,6 +824,7 @@ jobs:
           git push origin $version --force
 
       - name: Create GitHub draft release
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: v${{ needs.prepare-release.outputs.version }}
@@ -688,13 +880,21 @@ jobs:
             --target "release/$version" `
             $vsixFile
 
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run }}
+        shell: pwsh
+        run: |
+          Write-Host "dry_run=true: tag v${{ needs.prepare-release.outputs.version }} was created/updated for testing, but no GitHub release object was created."
+
   # ---------------------------------------------------------------------------
   # Job 8: Publish GitHub release
   # Publishes the draft release after marketplace publication succeeds.
+  # Skipped entirely in dry-run mode (no draft release exists to publish).
   # ---------------------------------------------------------------------------
   publish-github-release:
     name: Publish GitHub release
     needs: [prepare-release, publish-production, create-release]
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -737,11 +937,53 @@ jobs:
           git push origin $majorMinor --force
 
   # ---------------------------------------------------------------------------
+  # Job 8b: Check semver hygiene
+  # Runs after the immutable release + floating tags exist. Independent of
+  # the manually-approved Marketplace publish, so semver bookkeeping isn't
+  # blocked on/by that approval. Skipped in dry-run (no new immutable
+  # release/tag semantics were finalized).
+  # ---------------------------------------------------------------------------
+  check-semver:
+    name: Check SemVer
+    needs: [prepare-release, publish-github-release]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: jessehouwing/actions-semver-checker@v2.1.0
+        with:
+          floating-versions-use: tags
+          check-minor-version: error
+          check-release-immutability: error
+          ignore-preview-releases: true
+          check-releases: error
+          token: ${{ secrets.GITHUB_TOKEN }}
+          auto-fix: false
+
+  # ---------------------------------------------------------------------------
   # Job 9: Cleanup release branch
+  # Runs regardless of dry-run/publish outcome; tolerates skipped upstream
+  # jobs (publish-production/create-release/publish-github-release/
+  # check-semver may all be skipped in dry-run mode).
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup release branch
-    needs: [prepare-release, publish-production, create-release, publish-github-release]
+    needs:
+      [prepare-release, publish-production, create-release, publish-github-release, check-semver]
+    if: |
+      always() &&
+      needs.prepare-release.result == 'success' &&
+      (needs.publish-production.result == 'success' || needs.publish-production.result == 'skipped') &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (needs.publish-github-release.result == 'success' || needs.publish-github-release.result == 'skipped') &&
+      (needs.check-semver.result == 'success' || needs.check-semver.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write

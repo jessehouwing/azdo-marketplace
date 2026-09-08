@@ -1,0 +1,15 @@
+# zizmor configuration for this repo.
+#
+# This repo pins GitHub Actions to immutable commit SHAs via the
+# `gh actions-lock` extension (see .github/skills/actions-lock/SKILL.md and
+# .github/workflows/actions.lock), not via inline `owner/repo@<sha>` refs in
+# each workflow file. zizmor's `unpinned-uses` audit doesn't know about this
+# out-of-band pinning mechanism (nor does GitHub Advanced Security code
+# scanning currently pick up `actions.lock` as a substitute) and would
+# otherwise flag every `uses:` line in every workflow. Disabled entirely so
+# no findings are produced at all — this also keeps them out of the SARIF
+# uploaded to GHAS/code scanning (see .github/workflows/zizmor.yml), since
+# disabled audits never run rather than just being remapped/suppressed.
+rules:
+  unpinned-uses:
+    disable: true

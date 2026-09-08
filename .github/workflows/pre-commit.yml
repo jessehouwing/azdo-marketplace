@@ -33,24 +33,15 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version: '3.x'
-
-      - name: Setup Go
-        uses: actions/setup-go@v7.0.0
-        with:
-          go-version: stable
+          python-version-file: '.python-version'
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Install pre-commit
-        run: python3 -m pip install --user pre-commit
-
-      - name: Install actionlint
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+      - name: Install pre-commit and zizmor
+        # Plain (non --user) install so the `zizmor` binary invoked by the
+        # pre-commit hook (language: system) is on PATH.
+        run: python3 -m pip install -r requirements-dev.txt
 
       - name: Run pre-commit
-        run: |
-          gopath="$(go env GOPATH)"
-          export PATH="${gopath}/bin:${PATH}"
-          python3 -m pre_commit run --all-files
+        run: python3 -m pre_commit run --all-files

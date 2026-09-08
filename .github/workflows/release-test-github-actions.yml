@@ -10,12 +10,6 @@ name: Test GitHub Actions
 #   AZURE_TENANT_ID   - Azure AD tenant ID for workflow authentication
 
 on:
-  workflow_call:
-    inputs:
-      ref:
-        description: 'Git ref to test'
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       ref:
@@ -59,6 +53,21 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
+      # Verifies the dist/ provenance attestation created in release.yml's
+      # prepare-release job. The attested subject is a deterministic
+      # `git archive` tarball of the release commit's dist/ tree; the same
+      # command against the same commit reproduces byte-identical output, so
+      # regenerating and verifying it here proves this checkout's dist/
+      # matches what was built and attested.
+      - name: Verify GitHub Action dist/ build provenance attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=tar --output "$RUNNER_TEMP/github-action-dist.tar" HEAD packages/github-action/dist
+          gh attestation verify "$RUNNER_TEMP/github-action-dist.tar" --repo "$GITHUB_REPOSITORY"
+
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
@@ -88,7 +97,7 @@ jobs:
       - id: query
         name: Query next patch version
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           operation: query-version
           auth-type: ${{ matrix.auth-type }}
@@ -104,7 +113,7 @@ jobs:
       # --- Package (manifest mode) ---
       - id: package-manifest
         name: Package from manifest
-        uses: ./
+        uses: $/
         with:
           operation: package
           working-directory: tests/sample-extension
@@ -118,7 +127,7 @@ jobs:
 
       # --- Publish (vsix mode) ---
       - name: Publish from VSIX
-        uses: ./
+        uses: $/
         id: publish
         with:
           operation: publish
@@ -130,7 +139,7 @@ jobs:
 
       # --- Wait for validation ---
       - name: Wait for validation
-        uses: ./
+        uses: $/
         with:
           operation: wait-for-validation
           auth-type: ${{ matrix.auth-type }}
@@ -138,7 +147,7 @@ jobs:
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
       # --- Show extension ---
       - name: Show extension metadata
-        uses: ./
+        uses: $/
         with:
           operation: show
           auth-type: ${{ matrix.auth-type }}
@@ -148,7 +157,7 @@ jobs:
 
       # --- Share ---
       - name: Share extension
-        uses: ./
+        uses: $/
         with:
           operation: share
           auth-type: ${{ matrix.auth-type }}
@@ -159,7 +168,7 @@ jobs:
 
       # --- Install ---
       - name: Install extension
-        uses: ./
+        uses: $/
         with:
           operation: install
           auth-type: ${{ matrix.auth-type }}
@@ -170,7 +179,7 @@ jobs:
 
       # --- Wait for installation ---
       - name: Wait for installation
-        uses: ./
+        uses: $/
         with:
           operation: wait-for-installation
           auth-type: ${{ matrix.auth-type }}
@@ -181,7 +190,7 @@ jobs:
 
       # --- Unshare ---
       - name: Unshare extension
-        uses: ./
+        uses: $/
         with:
           operation: unshare
           auth-type: ${{ matrix.auth-type }}

@@ -1,0 +1,60 @@
+# This workflow is managed by gh actions-lock.
+#
+# Replaces GitHub's "default setup" CodeQL analysis with "advanced setup" so
+# that .github/codeql/codeql-config.yml (which excludes the
+# `actions/unpinned-tag` query — see that file for why) is actually applied.
+# Default setup does not support custom codeql-config.yml query filters.
+
+name: 'CodeQL'
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  schedule:
+    - cron: '30 3 * * 1'
+
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4.37.9
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4.37.9
+        with:
+          category: '/language:${{ matrix.language }}'
