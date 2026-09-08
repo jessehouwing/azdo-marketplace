@@ -633,6 +633,9 @@ jobs:
             auth-type: pat
           - os: windows-latest
             auth-type: oidc
+    environment:
+      name: 'publisher-jessehouwing'
+      url: ${{ steps.dispatch.outputs.run_url }}
     permissions:
       actions: write
 
@@ -672,6 +675,7 @@ jobs:
 
           "run_id=$runId" >> $env:GITHUB_OUTPUT
           $runUrl = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$runId"
+          "run_url=$runUrl" >> $env:GITHUB_OUTPUT
           "- GitHub Actions test run [$($env:AUTH_TYPE), $($env:OS)]: [$runId]($runUrl)" >> $env:GITHUB_STEP_SUMMARY
           Write-Host "Triggered release-test-github-actions.yml run: $runId"
           Write-Host "Workflow URL: $runUrl"
