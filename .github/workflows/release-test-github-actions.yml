@@ -50,6 +50,11 @@ jobs:
       EXTENSION_ID: ${{ format('azdo-gha-{0}-{1}', matrix.auth-type, matrix.os == 'ubuntu-latest' && 'ubuntu' || 'windows') }}
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
