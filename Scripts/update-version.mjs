@@ -4,7 +4,7 @@
  * Updates version references across the entire repository:
  * - package.json files (root + workspace packages)
  * - vss-extension.json
- * - packages/azdo-task/task.json (Major/Minor/Patch)
+ * - Azure Pipelines task.json files (Major/Minor/Patch)
  * - Composite action.yaml files (uses: jessehouwing/azdo-marketplace@...)
  * - Documentation and examples (GitHub Actions @vX.Y.Z, Azure Pipelines @major)
  * - Root action.yml output description examples
@@ -59,16 +59,20 @@ await fs.writeFile(vssPath, JSON.stringify(vssContent, null, 2) + '\n');
 console.log(`✓ vss-extension.json → version ${version}`);
 updatedCount++;
 
-// 3. Update task.json
-const taskPath = path.join(rootDir, 'packages/azdo-task/task.json');
-const taskRaw = await fs.readFile(taskPath, 'utf-8');
-const taskContent = JSON.parse(taskRaw);
-taskContent.version.Major = major;
-taskContent.version.Minor = minor;
-taskContent.version.Patch = patch;
-await fs.writeFile(taskPath, JSON.stringify(taskContent, null, 2) + '\n');
-console.log(`✓ packages/azdo-task/task.json → version ${major}.${minor}.${patch}`);
-updatedCount++;
+// 3. Update Azure Pipelines task.json files
+const taskJsonPaths = ['packages/azdo-task/task.json', 'packages/azdo-server-task/task.json'];
+
+for (const p of taskJsonPaths) {
+  const taskPath = path.join(rootDir, p);
+  const taskRaw = await fs.readFile(taskPath, 'utf-8');
+  const taskContent = JSON.parse(taskRaw);
+  taskContent.version.Major = major;
+  taskContent.version.Minor = minor;
+  taskContent.version.Patch = patch;
+  await fs.writeFile(taskPath, JSON.stringify(taskContent, null, 2) + '\n');
+  console.log(`✓ ${p} → version ${major}.${minor}.${patch}`);
+  updatedCount++;
+}
 
 // 4. Update composite action.yaml files
 // These reference jessehouwing/azdo-marketplace@main (or any ref) in both:
