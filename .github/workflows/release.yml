@@ -66,10 +66,35 @@ jobs:
       github-action-dist-attestation-url: ${{ steps.attest-github-action-dist.outputs.attestation-url }}
 
     steps:
-      - name: Harden the runner (Audit all outbound calls)
+      - name: Harden the runner (Block unexpected outbound calls)
         uses: step-security/harden-runner@v2.21.1
         with:
-          egress-policy: audit
+          egress-policy: block
+          # GitHub API/artifacts/releases: api.github.com, release-assets.githubusercontent.com.
+          # Git transport and GitHub CLI release operations: github.com.
+          # npm and Python tooling: registry.npmjs.org, pypi.org, files.pythonhosted.org.
+          # Sigstore provenance: fulcio.sigstore.dev, rekor.sigstore.dev.
+          # Windows runner connectivity and certificate revocation: dns.msftncsi.com,
+          # fs.microsoft.com, www.microsoft.com, ocsp.digicert.com,
+          # ocsp.sectigo.com, oneocsp.microsoft.com.
+          # Go module proxy is used by transitive release tooling when needed.
+          # Telemetry-only hosts observed in audit mode are intentionally omitted.
+          allowed-endpoints: >
+            api.github.com:443
+            dns.msftncsi.com:443
+            files.pythonhosted.org:443
+            fs.microsoft.com:443
+            fulcio.sigstore.dev:443
+            github.com:443
+            ocsp.digicert.com:80
+            ocsp.sectigo.com:80
+            oneocsp.microsoft.com:80
+            proxy.golang.org:443
+            pypi.org:443
+            registry.npmjs.org:443
+            rekor.sigstore.dev:443
+            release-assets.githubusercontent.com:443
+            www.microsoft.com:80
 
       - name: Resolve version
         id: resolve
