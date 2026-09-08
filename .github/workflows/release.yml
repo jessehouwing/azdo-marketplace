@@ -61,6 +61,8 @@ jobs:
       minor: ${{ steps.parse.outputs.minor }}
       patch: ${{ steps.parse.outputs.patch }}
       vsix-file-name: ${{ steps.package.outputs.vsix-file-name }}
+      vsix-attestation-url: ${{ steps.attest-vsix.outputs.attestation-url }}
+      github-action-dist-attestation-url: ${{ steps.attest-github-action-dist.outputs.attestation-url }}
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -228,6 +230,7 @@ jobs:
       # is deferred future work — see plan.md — pending an Azure Trusted
       # Signing account; it would complement, not replace, this attestation.
       - name: Attest build provenance (VSIX)
+        id: attest-vsix
         uses: actions/attest-build-provenance@v4.0.0
         with:
           subject-path: ${{ steps.package.outputs.vsix-file }}
@@ -278,6 +281,7 @@ jobs:
         run: git archive --format=tar --output "$RUNNER_TEMP/github-action-dist.tar" HEAD packages/github-action/dist
 
       - name: Attest build provenance (GitHub Action dist/)
+        id: attest-github-action-dist
         uses: actions/attest-build-provenance@v4.0.0
         with:
           subject-path: ${{ runner.temp }}/github-action-dist.tar
@@ -921,6 +925,8 @@ jobs:
           RELEASE_VERSION: v${{ needs.prepare-release.outputs.version }}
           VSIX_FILE: ${{ runner.temp }}/vsix/${{ needs.prepare-release.outputs.vsix-file-name }}
           GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+          VSIX_ATTESTATION_URL: ${{ needs.prepare-release.outputs.vsix-attestation-url }}
+          GITHUB_ACTION_DIST_ATTESTATION_URL: ${{ needs.prepare-release.outputs.github-action-dist-attestation-url }}
         shell: pwsh
         run: |
           $version = $env:RELEASE_VERSION
@@ -961,12 +967,21 @@ jobs:
             $notesStartTagArg = @('--notes-start-tag', $previousTag)
           }
 
+          $provenanceNotes = @"
+          ## Build provenance
+
+          - VSIX: $($env:VSIX_ATTESTATION_URL)
+          - GitHub Action dist archive: $($env:GITHUB_ACTION_DIST_ATTESTATION_URL)
+          "@
+          $provenanceNotes = $provenanceNotes.Trim()
+
           # Create release with VSIX attachment
           gh release create $version `
             --repo $repository `
             --title "Release $version" `
             --draft `
             --generate-notes `
+            --notes $provenanceNotes `
             @notesStartTagArg `
             --target "release/$version" `
             $vsixFile
@@ -1060,21 +1075,29 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 9: Cleanup release branch
-  # Runs regardless of dry-run/publish outcome; tolerates skipped upstream
-  # jobs (publish-production/create-release/publish-github-release/
-  # check-semver may all be skipped in dry-run mode).
+  # Runs after successful or cancelled workflows, but leaves the release branch
+  # in place after failures so the run remains restartable.
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup release branch
     needs:
-      [prepare-release, publish-production, create-release, publish-github-release, check-semver]
+      [
+        prepare-release,
+        validate-documentation-versions,
+        preview-release,
+        test-azure-pipelines,
+        test-github-actions,
+        create-release,
+        release-approval,
+        publish-production,
+        publish-github-release,
+        check-semver,
+      ]
     if: |
       always() &&
       needs.prepare-release.result == 'success' &&
-      (needs.publish-production.result == 'success' || needs.publish-production.result == 'skipped') &&
-      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
-      (needs.publish-github-release.result == 'success' || needs.publish-github-release.result == 'skipped') &&
-      (needs.check-semver.result == 'success' || needs.check-semver.result == 'skipped')
+      !contains(needs.*.result, 'failure') &&
+      (!cancelled() || contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -1100,4 +1123,4 @@ jobs:
           catch {
             Write-Host "Branch already deleted or not found"
           }
-          Write-Host "✅ Branch $branch deleted"
+          Write-Host "Branch $branch deleted"
