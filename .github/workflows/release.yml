@@ -103,11 +103,13 @@ jobs:
 
       - uses: actions/checkout@v7.0.1
         with:
-          ref: main
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
       - name: Create or checkout release branch
         shell: pwsh
+        env:
+          SOURCE_REF_NAME: ${{ github.ref_name }}
         run: |
           $branch = "release/v${{ steps.resolve.outputs.version }}"
           git ls-remote --exit-code --heads origin $branch *> $null
@@ -118,7 +120,7 @@ jobs:
             git pull origin $branch
           }
           else {
-            Write-Host "Creating branch $branch from main"
+            Write-Host "Creating branch $branch from $env:SOURCE_REF_NAME"
             git checkout -b $branch
           }
 
