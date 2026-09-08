@@ -535,7 +535,9 @@ jobs:
             'pipelines', 'run',
             '--name', $pipelineName,
             '--branch', $branch,
+            '--org', $organization,
             '--project', $project,
+            '--detect', 'false',
             '--parameters',
             "vmImage=$($env:TEST_VM_IMAGE)",
             "connectionType=$($env:TEST_CONNECTION_TYPE)",
@@ -558,7 +560,14 @@ jobs:
 
           $elapsed = 0
           while ($elapsed -lt $timeoutSeconds) {
-            $runJson = Invoke-Az -Arguments @('pipelines', 'runs', 'show', '--id', $runId, '--project', $project, '--output', 'json')
+            $runJson = Invoke-Az -Arguments @(
+              'pipelines', 'runs', 'show',
+              '--id', $runId,
+              '--org', $organization,
+              '--project', $project,
+              '--detect', 'false',
+              '--output', 'json'
+            )
             $run = $runJson | ConvertFrom-Json
 
             $status = if ($null -ne $run.status) { [string]$run.status } else { '' }
@@ -600,6 +609,7 @@ jobs:
               --id $env:AZDO_PIPELINE_RUN_ID `
               --org $env:AZDO_ORGANIZATION `
               --project $env:AZDO_PROJECT `
+              --detect false `
               --output none
 
             Write-Host "Cancelled Azure DevOps pipeline run $($env:AZDO_PIPELINE_RUN_ID) because the parent release workflow was cancelled."
@@ -742,7 +752,8 @@ jobs:
   # ---------------------------------------------------------------------------
   release-approval:
     name: Approve release and publish
-    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
+    needs:
+      [prepare-release, preview-release, test-azure-pipelines, test-github-actions, create-release]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     environment:
@@ -854,25 +865,16 @@ jobs:
   # ---------------------------------------------------------------------------
   create-release:
     name: Create GitHub draft release
-    needs:
-      [
-        prepare-release,
-        preview-release,
-        test-azure-pipelines,
-        test-github-actions,
-        release-approval,
-      ]
+    needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     # Always runs (even in dry-run) to create/update the real, testable
     # version tag; the release-object-creation step below is what's actually
-    # gated on !inputs.dry_run. release-approval is skipped in dry-run mode,
-    # so tolerate that with always()+result checks.
+    # gated on !inputs.dry_run.
     if: |
       always() &&
       needs.prepare-release.result == 'success' &&
       needs.preview-release.result == 'success' &&
       needs.test-azure-pipelines.result == 'success' &&
-      needs.test-github-actions.result == 'success' &&
-      (needs.release-approval.result == 'success' || needs.release-approval.result == 'skipped')
+      needs.test-github-actions.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
