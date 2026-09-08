@@ -537,9 +537,21 @@ const runtimeNpmFlags = [
   '--no-fund',
 ];
 
-async function installRuntimeDependencies(target) {
+async function installRuntimeDependencies(target, frozen = false) {
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const nodeModulesDir = path.join(distDir, 'node_modules');
+  const lockfilePath = path.join(distDir, 'package-lock.json');
+  // Frozen mode (release builds): restore exactly what is committed via
+  // `npm ci` — never re-resolve, dedupe, or audit-fix. `npm ci` fails hard
+  // if the regenerated dist package.json disagrees with the committed
+  // lockfile, which is the guarantee that all dedupe/audit changes were
+  // already committed (check-dist.yml enforces that on main/PRs).
+  const useCi = frozen && (await pathExists(lockfilePath));
+  if (frozen && !useCi) {
+    console.log(
+      `No committed lockfile for ${target.name}; falling back to 'npm install' in frozen mode.`
+    );
+  }
 
   const resetNodeModules = async () => {
     try {
@@ -568,9 +580,11 @@ async function installRuntimeDependencies(target) {
   await resetNodeModules();
 
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const installArgs = ['install', ...runtimeNpmFlags];
+  const installArgs = [useCi ? 'ci' : 'install', ...runtimeNpmFlags];
 
-  console.log(`Installing runtime dependencies for ${target.name}...`);
+  console.log(
+    `${useCi ? 'Restoring (npm ci)' : 'Installing'} runtime dependencies for ${target.name}...`
+  );
   try {
     await runCommand(npmCommand, installArgs, distDir);
   } catch (error) {
@@ -738,7 +752,16 @@ async function removeMapArtifacts(directory) {
 }
 
 function resolveTargetsFromArgs() {
-  const mode = (process.argv[2] || 'all').toLowerCase();
+  const args = process.argv.slice(2);
+  const flags = args.filter((arg) => arg.startsWith('--'));
+  const frozen = flags.includes('--frozen');
+
+  const unknownFlags = flags.filter((flag) => flag !== '--frozen');
+  if (unknownFlags.length > 0) {
+    throw new Error(`Unknown bundle flag(s): ${unknownFlags.join(', ')}. Supported: --frozen`);
+  }
+
+  const mode = (args.find((arg) => !arg.startsWith('--')) || 'all').toLowerCase();
   const selector = targetSelectors[mode];
 
   if (!selector) {
@@ -750,11 +773,11 @@ function resolveTargetsFromArgs() {
     throw new Error(`No bundle targets matched mode '${mode}'`);
   }
 
-  return selectedTargets;
+  return { selectedTargets, frozen };
 }
 
 async function bundle() {
-  const selectedTargets = resolveTargetsFromArgs();
+  const { selectedTargets, frozen } = resolveTargetsFromArgs();
   const bundleStart = performance.now();
 
   for (const target of selectedTargets) {
@@ -779,11 +802,18 @@ async function bundle() {
     await writeRuntimeDependencyManifest(target);
     step('write dependency manifest');
 
-    await installRuntimeDependencies(target);
-    step('npm install');
+    await installRuntimeDependencies(target, frozen);
+    step(frozen ? 'npm ci (frozen)' : 'npm install');
 
-    await dedupeRuntimeDependencies(target);
-    step('npm dedupe + audit fix');
+    if (frozen) {
+      // Frozen (release) builds must not mutate the dependency tree:
+      // dedupe/audit-fix output is produced by regular bundles and enforced
+      // as committed by check-dist.yml.
+      step('skip npm dedupe + audit fix (frozen)');
+    } else {
+      await dedupeRuntimeDependencies(target);
+      step('npm dedupe + audit fix');
+    }
 
     // Normalize line endings in committed dist files (excludes node_modules which is not committed).
     // Only needed for the GitHub Action target; AzDO dist files are not committed.

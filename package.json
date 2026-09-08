@@ -36,6 +36,7 @@
     "bundle:azdo": "node Scripts/bundle.mjs azdo",
     "bundle:actions": "node Scripts/bundle.mjs actions",
     "bundle": "npm run bundle:azdo && npm run bundle:actions",
+    "bundle:frozen": "node Scripts/bundle.mjs all --frozen",
     "setup:windows:path": "powershell -NoProfile -ExecutionPolicy Bypass -File ./Scripts/setup-windows-path.ps1",
     "clean": "git clean -fdX"
   },

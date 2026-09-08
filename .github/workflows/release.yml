@@ -132,7 +132,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: '.python-version'
+          python-version: '3.13.7'
 
       - name: Install pre-commit and zizmor
         # Plain (non --user) install so the `zizmor` binary invoked by the
@@ -170,7 +170,27 @@ jobs:
           Write-Host "::$stopMarker::"
 
       - name: Bundle
-        run: npm run bundle
+        # Frozen bundle: restores dist runtime dependencies with `npm ci`
+        # from the committed lockfile and skips `npm install`/`npm dedupe`/
+        # `npm audit fix` — the release must ship exactly the dependency
+        # tree that was reviewed and committed (check-dist.yml enforces
+        # that dedupe/audit output is committed on main/PRs).
+        run: npm run bundle:frozen
+
+      - name: Verify no dependency drift after frozen bundle
+        shell: bash
+        # bundle.js content may legitimately change here (version bump —
+        # committed below), but the dependency manifests must be untouched:
+        # any diff means the committed dist lockfile/dedupe state is stale
+        # and check-dist should have caught it before releasing.
+        run: |
+          git diff --exit-code -- \
+            packages/github-action/dist/package.json \
+            packages/github-action/dist/package-lock.json \
+            packages/github-action/dist/runtime-dependencies.json \
+            packages/github-action/dist/node_modules \
+            packages/azdo-task/dist/package.json \
+            packages/azdo-task/dist/package-lock.json
 
       - name: Run pre-commit checks
         shell: pwsh

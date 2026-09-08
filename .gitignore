@@ -35,4 +35,12 @@ packages/*/build/
 !packages/github-action/dist/
 !packages/github-action/dist/**/dist/
 !packages/github-action/dist/**/node_modules/
+# The Azure Pipelines task dist/ is not committed (it ships inside the VSIX),
+# but its dependency manifests are: release builds restore the VSIX runtime
+# dependency tree reproducibly with `npm ci` (Scripts/bundle.mjs --frozen),
+# which validates the committed package.json/package-lock.json pair.
+!packages/azdo-task/dist/
+packages/azdo-task/dist/**
+!packages/azdo-task/dist/package.json
+!packages/azdo-task/dist/package-lock.json
 .rollup.cache/

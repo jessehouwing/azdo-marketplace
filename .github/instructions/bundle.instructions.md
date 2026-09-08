@@ -5,6 +5,28 @@ description: Guidance for bundling and minifying the javascript code for GitHub 
 
 # Bundling guidance
 
+## Frozen mode (release builds)
+
+`Scripts/bundle.mjs` accepts a `--frozen` flag (`npm run bundle:frozen`):
+
+- Restores dist runtime dependencies with `npm ci` from the committed
+  lockfile instead of `npm install`, and skips `npm dedupe`/`npm audit fix`.
+- `npm ci` fails hard if the regenerated dist `package.json` disagrees with
+  the committed `package-lock.json` — this is the guarantee that all
+  dedupe/audit output was committed beforehand (`check-dist.yml` enforces
+  this on main/PRs by running the regular mutating bundle and diffing).
+- Committed manifests: the entire `packages/github-action/dist/` tree, plus
+  `packages/azdo-task/dist/package.json` and
+  `packages/azdo-task/dist/package-lock.json` (the rest of the azdo dist is
+  not committed — it ships inside the VSIX, but its dependency tree must be
+  reproducible at release time).
+- `release.yml` uses frozen mode and additionally fails if any of these
+  dependency manifests change during the bundle.
+
+Regular (non-frozen) bundles remain the way to intentionally update the
+dependency tree: run `npm run bundle`, review, and commit the resulting
+manifest changes.
+
 ## Azure Pipelines
 
 ### Primary goals
