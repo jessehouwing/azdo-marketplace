@@ -16,6 +16,16 @@ on:
         description: 'Git ref to test'
         required: false
         type: string
+      os:
+        description: 'Runner OS for the GitHub Action validation'
+        required: false
+        type: string
+        default: ubuntu-latest
+      auth-type:
+        description: 'Authentication mode to validate'
+        required: false
+        type: string
+        default: pat
 
 permissions: {}
 
@@ -25,23 +35,16 @@ env:
 
 jobs:
   test:
-    name: Test (${{ matrix.auth-type }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        auth-type: [pat, oidc]
-        environment: [publisher-jessehouwing]
-
-    environment: ${{ matrix.environment || '' }}
+    name: Test (${{ inputs.auth-type }}, ${{ inputs.os }})
+    runs-on: ${{ inputs.os }}
+    environment: publisher-jessehouwing
 
     permissions:
       contents: read
       id-token: write
 
     env:
-      EXTENSION_ID: ${{ format('azdo-gha-{0}-{1}', matrix.auth-type, matrix.os == 'ubuntu-latest' && 'ubuntu' || 'windows') }}
+      EXTENSION_ID: ${{ format('azdo-gha-{0}-{1}', inputs.auth-type, inputs.os == 'ubuntu-latest' && 'ubuntu' || 'windows') }}
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -84,7 +87,7 @@ jobs:
 
       - id: azure-devops-token
         name: Get Azure DevOps bearer token
-        if: matrix.auth-type == 'pat'
+        if: ${{ inputs.auth-type == 'pat' }}
         shell: pwsh
         run: |
           $token = az account get-access-token `
@@ -100,8 +103,8 @@ jobs:
         uses: $/
         with:
           operation: query-version
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
           version-source: |
@@ -131,8 +134,8 @@ jobs:
         id: publish
         with:
           operation: publish
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           use: vsix
           vsix-file: ${{ steps.package-manifest.outputs.vsix-file }}
           no-wait-validation: true
@@ -142,16 +145,16 @@ jobs:
         uses: $/
         with:
           operation: wait-for-validation
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
       # --- Show extension ---
       - name: Show extension metadata
         uses: $/
         with:
           operation: show
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
 
@@ -160,8 +163,8 @@ jobs:
         uses: $/
         with:
           operation: share
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -171,8 +174,8 @@ jobs:
         uses: $/
         with:
           operation: install
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -182,8 +185,8 @@ jobs:
         uses: $/
         with:
           operation: wait-for-installation
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
@@ -193,8 +196,8 @@ jobs:
         uses: $/
         with:
           operation: unshare
-          auth-type: ${{ matrix.auth-type }}
-          token: ${{ matrix.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev

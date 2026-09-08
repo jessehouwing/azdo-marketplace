@@ -582,16 +582,28 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 5: Test GitHub Actions
-  # Dispatches the reusable test workflow against the release branch and
-  # polls for completion (mirrors test-azure-pipelines' trigger+poll shape).
-  # Dispatching on the ref (rather than a same-repo workflow_call) guarantees
-  # the test workflow is loaded from the release branch, so its self
-  # references resolve to this branch's action code, not main.
+  # Matrix queues 4 independent verification runs, each of which dispatches
+  # the release-test-github-actions workflow against the exact release ref and
+  # waits for completion before reporting back success/failure to the parent
+  # release pipeline. This keeps the rerun granularity and branch/version
+  # correctness of the original dispatch-and-wait pattern.
   # ---------------------------------------------------------------------------
   test-github-actions:
-    name: Test GitHub Actions
+    name: Test GitHub Actions (${{ matrix.auth-type }}, ${{ matrix.os }})
     needs: [prepare-release, validate-documentation-versions]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            auth-type: pat
+          - os: ubuntu-latest
+            auth-type: oidc
+          - os: windows-latest
+            auth-type: pat
+          - os: windows-latest
+            auth-type: oidc
     permissions:
       actions: write
 
@@ -606,34 +618,34 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: release/v${{ needs.prepare-release.outputs.version }}
+          OS: ${{ matrix.os }}
+          AUTH_TYPE: ${{ matrix.auth-type }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $timeoutSeconds = 1800
           $intervalSeconds = 15
 
-          # gh (>= 2.87.0) prints the created run's URL on dispatch (the
-          # workflow_dispatch API now returns run details), so the run id is
-          # just the trailing path segment — no timestamp/branch correlation
-          # needed.
           $runUrl = gh workflow run release-test-github-actions.yml `
             --repo $env:GITHUB_REPOSITORY `
             --ref $env:BRANCH `
-            -f "ref=$env:BRANCH"
+            -f "ref=$env:BRANCH" `
+            -f "os=$env:OS" `
+            -f "auth-type=$env:AUTH_TYPE"
           if ($LASTEXITCODE -ne 0) {
             throw 'Failed to dispatch release-test-github-actions.yml.'
           }
 
           $runId = $runUrl.Trim().Split('/')[-1]
-
           if ($runId -notmatch '^[0-9]+$') {
             throw "gh workflow run did not return a run URL: $runUrl"
           }
 
           "run_id=$runId" >> $env:GITHUB_OUTPUT
-          Write-Host "Triggered release-test-github-actions.yml run: $runId"
           $runUrl = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$runId"
-          "- GitHub Actions test run: [$runId]($runUrl)" >> $env:GITHUB_STEP_SUMMARY
+          "- GitHub Actions test run [$($env:AUTH_TYPE), $($env:OS)]: [$runId]($runUrl)" >> $env:GITHUB_STEP_SUMMARY
+          Write-Host "Triggered release-test-github-actions.yml run: $runId"
+          Write-Host "Workflow URL: $runUrl"
 
           $elapsed = 0
           while ($elapsed -lt $timeoutSeconds) {
