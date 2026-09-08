@@ -892,15 +892,14 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 7: Create GitHub draft release and tags
-  # Runs in parallel with publish-production after preview and both test jobs.
+  # Runs after preview and both test jobs.
   # The draft is published only after the marketplace release succeeds.
   # ---------------------------------------------------------------------------
   create-release:
     name: Create GitHub draft release
     needs: [prepare-release, preview-release, test-azure-pipelines, test-github-actions]
     # Always runs (even in dry-run) to create/update the real, testable
-    # version tag; the release-object-creation step below is what's actually
-    # gated on !inputs.dry_run.
+    # version tag and draft release. Publishing remains gated on !inputs.dry_run.
     if: |
       always() &&
       needs.prepare-release.result == 'success' &&
@@ -947,7 +946,6 @@ jobs:
           git push origin $version --force
 
       - name: Create GitHub draft release
-        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: v${{ needs.prepare-release.outputs.version }}
@@ -976,11 +974,20 @@ jobs:
             Sort-Object Version -Descending |
             Select-Object -First 1 -ExpandProperty Tag
 
-          # Delete existing release if present (idempotent)
-          try {
+          # Delete existing draft release if present (idempotent), but never
+          # remove an already-published release while refreshing a draft.
+          $existingReleaseJson = gh release view $version --repo $repository --json isDraft,url 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $existingRelease = $existingReleaseJson | ConvertFrom-Json
+            if (-not $existingRelease.isDraft) {
+              throw "GitHub release $version already exists and is not a draft ($($existingRelease.url)); refusing to delete it."
+            }
+
+            Write-Host "Deleting existing draft release $version before recreating it."
             gh release delete $version --repo $repository --yes
-          }
-          catch {
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to delete existing draft release $version."
+            }
           }
 
           if ($previousTag) {
@@ -1018,12 +1025,12 @@ jobs:
         if: ${{ inputs.dry_run }}
         shell: pwsh
         run: |
-          Write-Host "dry_run=true: tag v${{ needs.prepare-release.outputs.version }} was created/updated for testing, but no GitHub release object was created."
+          Write-Host "dry_run=true: tag v${{ needs.prepare-release.outputs.version }} and its draft GitHub release were created/updated for testing. Publishing was skipped."
 
   # ---------------------------------------------------------------------------
   # Job 8: Publish GitHub release
   # Publishes the draft release after marketplace publication succeeds.
-  # Skipped entirely in dry-run mode (no draft release exists to publish).
+  # Skipped entirely in dry-run mode so the draft remains unpublished.
   # ---------------------------------------------------------------------------
   publish-github-release:
     name: Publish GitHub release
@@ -1104,7 +1111,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # Job 9: Cleanup release branch
   # Runs after successful or cancelled workflows, but leaves the release branch
-  # in place after failures so the run remains restartable.
+  # in place after failures and dry-run/test runs so the run remains restartable
+  # and the draft release remains inspectable.
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup release branch
@@ -1123,6 +1131,7 @@ jobs:
       ]
     if: |
       always() &&
+      !inputs.dry_run &&
       needs.prepare-release.result == 'success' &&
       !contains(needs.*.result, 'failure') &&
       (!cancelled() || contains(needs.*.result, 'cancelled'))
