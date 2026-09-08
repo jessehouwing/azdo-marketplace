@@ -36,7 +36,7 @@ jobs:
           python-version-file: '.python-version'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install
 
       - name: Install pre-commit and zizmor
         # Plain (non --user) install so the `zizmor` binary invoked by the

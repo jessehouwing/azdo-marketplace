@@ -134,7 +134,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version: '3.13.7'
+          python-version-file: .python-version
 
       - name: Install pre-commit and zizmor
         # Plain (non --user) install so the `zizmor` binary invoked by the
@@ -142,7 +142,7 @@ jobs:
         run: python3 -m pip install -r requirements-dev.txt
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Update version references
         run: node Scripts/update-version.mjs ${{ steps.resolve.outputs.version }}

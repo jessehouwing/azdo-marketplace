@@ -20,7 +20,7 @@
     "packages/github-action"
   ],
   "scripts": {
-    "initdev": "npm install --no-progress --force --no-update-notifier --legacy-peer-deps --no-fund",
+    "initdev": "npm install --no-progress --force --no-update-notifier --no-fund",
     "build": "npm run build --workspaces --if-present",
     "build:clean": "npm run clean && npm run initdev && npm run build",
     "package:tasks": "tfx extension create --root . --output-path dist --manifest-globs vss-extension.json",
