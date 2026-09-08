@@ -31,7 +31,7 @@ on:
         required: true
         type: string
       dry_run:
-        description: 'Test only: validate the release without creating an immutable GitHub release or publishing to the Marketplace'
+        description: 'Test only: create the draft GitHub release and validate without publishing it or publishing to the Marketplace'
         required: false
         type: boolean
         default: false
