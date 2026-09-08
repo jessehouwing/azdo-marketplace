@@ -1,6 +1,7 @@
 # This workflow is managed by gh actions-lock.
 
-name: Test GitHub Actions v${{ inputs.ref && inputs.ref.replace('release/v','') || github.ref_name && github.ref_name.replace('release/v','') || github.ref }} (${{ inputs.os || 'ubuntu-latest' }}, ${{ inputs.auth-type || 'pat' }})
+name: Test GitHub Actions
+run-name: Test GitHub Actions v${{ inputs.version || inputs.ref || github.ref_name || github.ref }} (${{ inputs.os || 'ubuntu-latest' }}, ${{ inputs.auth-type || 'pat' }})
 
 # Triggered by the release workflow to validate the root GitHub Action
 # against a small sample extension using PAT and OIDC auth types.
@@ -14,6 +15,10 @@ on:
     inputs:
       ref:
         description: 'Git ref to test'
+        required: false
+        type: string
+      version:
+        description: 'Release version being tested'
         required: false
         type: string
       os:

@@ -1,6 +1,7 @@
 # This workflow is managed by gh actions-lock.
 
-name: Release v${{ github.ref_name || github.event.inputs.version || github.ref }}
+name: Release
+run-name: Release ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name || github.ref }}
 
 # Multi-job release workflow for Azure DevOps extension and GitHub Actions.
 #
@@ -664,6 +665,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: release/v${{ needs.prepare-release.outputs.version }}
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
           OS: ${{ matrix.os }}
           AUTH_TYPE: ${{ matrix.auth-type }}
         shell: pwsh
@@ -676,6 +678,7 @@ jobs:
             --repo $env:GITHUB_REPOSITORY `
             --ref $env:BRANCH `
             -f "ref=$env:BRANCH" `
+            -f "version=$env:RELEASE_VERSION" `
             -f "os=$env:OS" `
             -f "auth-type=$env:AUTH_TYPE"
           if ($LASTEXITCODE -ne 0) {
