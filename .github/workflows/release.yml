@@ -52,6 +52,11 @@ jobs:
       vsix-file-name: ${{ steps.package.outputs.vsix-file-name }}
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - name: Resolve version
         id: resolve
         shell: pwsh
@@ -210,6 +215,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -243,6 +253,11 @@ jobs:
       id-token: write
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -337,6 +352,11 @@ jobs:
       id-token: write
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - name: Azure login (OIDC)
         uses: azure/login@v3.0.2
         with:
@@ -511,6 +531,11 @@ jobs:
       id-token: write
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -580,6 +605,11 @@ jobs:
       contents: write
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -670,6 +700,11 @@ jobs:
       contents: write
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -712,6 +747,11 @@ jobs:
       contents: write
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - name: Delete release branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
