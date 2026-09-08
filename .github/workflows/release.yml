@@ -1,6 +1,6 @@
 # This workflow is managed by gh actions-lock.
 
-name: Release
+name: Release v${{ github.ref_name || github.event.inputs.version || github.ref }}
 
 # Multi-job release workflow for Azure DevOps extension and GitHub Actions.
 #
@@ -618,7 +618,7 @@ jobs:
   # correctness of the original dispatch-and-wait pattern.
   # ---------------------------------------------------------------------------
   test-github-actions:
-    name: Test GitHub Actions (${{ matrix.auth-type }}, ${{ matrix.os }})
+    name: Test GitHub Actions v${{ needs.prepare-release.outputs.version }} (${{ matrix.auth-type }}, ${{ matrix.os }})
     needs: [prepare-release, validate-documentation-versions]
     runs-on: ubuntu-latest
     strategy:
