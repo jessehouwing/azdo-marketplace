@@ -1110,6 +1110,7 @@ jobs:
           check-releases: error
           token: ${{ secrets.GITHUB_TOKEN }}
           auto-fix: false
+          ignore-versions: v6.3.3
 
   # ---------------------------------------------------------------------------
   # Job 9: Cleanup release branch
