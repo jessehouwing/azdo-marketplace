@@ -19,6 +19,9 @@ This folder contains implementation and usage documentation for the v6 architect
   - Granting service principal access to your Marketplace publisher
 - [Design and architecture](./design-and-architecture.md)
   - v6 package architecture, adapters, command routing, manifest pipeline
+- [Build provenance and attestation](./provenance-and-attestation.md)
+  - How the VSIX and the GitHub Action `dist/` bundle are attested during release
+  - How to verify the attestations yourself with `gh attestation verify`
 - [Contributing](./contributing.md)
   - Local setup, build, debug, test, lint/format, and bundling workflow
 - [Migrate Azure Pipelines from v5 to v6](./migrate-azure-pipelines-v5-to-v6.md)

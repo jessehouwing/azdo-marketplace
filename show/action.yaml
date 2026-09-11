@@ -161,7 +161,7 @@ runs:
   using: composite
   steps:
     - id: show
-      uses: jessehouwing/azdo-marketplace@main
+      uses: $/
       with:
         operation: show
         auth-type: ${{ inputs.auth-type }}

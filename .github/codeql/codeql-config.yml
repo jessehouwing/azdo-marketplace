@@ -1,0 +1,14 @@
+# CodeQL analysis configuration for this repo.
+#
+# `actions/unpinned-tag` (CodeQL's GitHub Actions "Actions" language query)
+# checks the same thing as zizmor's `unpinned-uses` audit (see
+# .github/zizmor.yml): whether a `uses:` reference is a mutable tag/branch
+# rather than an inline commit SHA. This repo intentionally pins actions via
+# the `gh actions-lock` extension and .github/workflows/actions.lock instead
+# (see .github/skills/actions-lock/SKILL.md), which CodeQL does not currently
+# recognize as an equivalent pinning mechanism. Excluded here for the same
+# reason `unpinned-uses` is disabled in zizmor.yml.
+name: 'CodeQL config'
+query-filters:
+  - exclude:
+      id: actions/unpinned-tag

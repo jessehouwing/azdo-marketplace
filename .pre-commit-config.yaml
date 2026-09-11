@@ -3,9 +3,11 @@ exclude: (^|/)dist/.*
 repos:
   - repo: local
     hooks:
-      - id: actionlint
-        name: actionlint
-        entry: actionlint
+      - id: zizmor
+        name: zizmor
+        # low/informational findings don't block commits; they still surface
+        # in code scanning via .github/workflows/zizmor.yml's SARIF upload.
+        entry: zizmor --no-progress --min-severity=medium
         language: system
         files: '^\.github/workflows/.*\.ya?ml$'
       - id: prettier

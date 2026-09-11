@@ -8,20 +8,8 @@ name: Dependabot Actions Lock
 # without this workflow the actions-lock validation check fails on every
 # Dependabot "github-actions" ecosystem pull request.
 #
-# The `gh actions-lock` extension is not publicly published. It is sourced
-# from the private jessehouwing/actions-locked-dependencies repository and
-# installed via its script/install(.sh|.ps1) into a separate checkout path,
-# using the `ACTIONS_LOCKED_DEPENDENCIES_PAT` secret to clone it.
-#
-# IMPORTANT: this workflow is triggered by Dependabot, so GitHub treats the
-# run as if it came from a fork. Regular repository/organization Actions
-# secrets are NOT available in that case - only secrets configured as
-# "Dependabot secrets" (Settings > Secrets and variables > Dependabot) are.
-# ACTIONS_LOCKED_DEPENDENCIES_PAT must therefore be added as a Dependabot
-# secret (not a normal Actions secret) with this exact name, or the checkout
-# of actions-locked-dependencies below will fail to authenticate. The
-# GITHUB_TOKEN used later is unaffected since its permissions are explicitly
-# elevated via the `permissions:` block below.
+# The `gh actions-lock` extension is installed from its public GitHub
+# repository using the standard `gh extension install` command.
 #
 # Safety - this workflow is intentionally restricted so it can only ever
 # touch Dependabot's own github-actions update branches:
@@ -49,7 +37,6 @@ jobs:
   relock-actions:
     name: Regenerate actions-lock lockfile
     if: >-
-      github.actor == 'dependabot[bot]' &&
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/')
@@ -74,20 +61,8 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           persist-credentials: true
 
-      - name: Checkout actions-lock CLI
-        uses: actions/checkout@v7.0.1
-        with:
-          repository: jessehouwing/actions-locked-dependencies
-          token: ${{ secrets.ACTIONS_LOCKED_DEPENDENCIES_PAT }}
-          path: .actions-locked-dependencies
-          persist-credentials: false
-
       - name: Install actions-lock CLI
-        shell: bash
-        working-directory: .actions-locked-dependencies
-        run: bash ./script/install.sh
-        env:
-          GH_TOKEN: ${{ secrets.ACTIONS_LOCKED_DEPENDENCIES_PAT }}
+        run: gh extension install github/gh-actions-lock
 
       - name: Regenerate actions-lock lockfile
         env:

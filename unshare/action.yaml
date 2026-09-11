@@ -212,7 +212,7 @@ runs:
   using: composite
   steps:
     - id: unshare
-      uses: jessehouwing/azdo-marketplace@main
+      uses: $/
       with:
         operation: unshare
         auth-type: ${{ inputs.auth-type }}

@@ -45,24 +45,33 @@ jobs:
           npm --version
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Build and bundle
         run: |
           npm run build
-          npm run bundle:actions
+          npm run bundle
 
       - name: Verify runtime dependency manifests
         run: |
           test -f packages/github-action/dist/runtime-dependencies.json
+          test -f packages/azdo-task/dist/package.json
+          test -f packages/azdo-task/dist/package-lock.json
         shell: bash
 
       - name: Compare the expected and actual dist/ directories
+        # For the Azure Pipelines task only the dependency manifests are
+        # committed (dist ships inside the VSIX); they must stay in sync so
+        # release builds can restore the VSIX runtime dependencies with
+        # `npm ci` (frozen bundle) instead of install/dedupe/audit-fix.
         run: |
-          if ! git diff --quiet -- packages/github-action/dist/; then
+          if ! git diff --quiet -- \
+            packages/github-action/dist/ \
+            packages/azdo-task/dist/package.json \
+            packages/azdo-task/dist/package-lock.json; then
             echo "Detected uncommitted changes after build. See status below:"
-            git diff --name-status -- packages/github-action/dist/
-            git diff -- packages/github-action/dist/
+            git diff --name-status -- packages/github-action/dist/ packages/azdo-task/dist/
+            git diff -- packages/github-action/dist/ packages/azdo-task/dist/
             exit 1
           fi
         id: diff
