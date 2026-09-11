@@ -409,6 +409,7 @@ jobs:
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          timeout-minutes: '30'
 
       - name: Share extension
         uses: jessehouwing/azdo-marketplace/share@v6.2.12
@@ -431,6 +432,7 @@ jobs:
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          timeout-minutes: '30'
           accounts: |
             https://dev.azure.com/jessehouwing
 
@@ -517,7 +519,7 @@ jobs:
           $project = $env:AZDO_PROJECT
           $pipelineName = $env:AZDO_PIPELINE_NAME
           $branch = "release/v$($env:RELEASE_VERSION)"
-          $timeoutSeconds = 1800
+          $timeoutSeconds = 3600
           $intervalSeconds = 30
 
           if (-not $organization) {
@@ -696,7 +698,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $timeoutSeconds = 1800
+          $timeoutSeconds = 3600
           $intervalSeconds = 15
 
           $runUrl = gh workflow run release-test-github-actions.yml `
@@ -889,6 +891,7 @@ jobs:
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file || format('{0}/vsix/{1}', runner.temp, needs.prepare-release.outputs.vsix-file-name) }}
+          timeout-minutes: '30'
 
   # ---------------------------------------------------------------------------
   # Job 7: Create GitHub draft release and tags
