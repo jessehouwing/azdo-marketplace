@@ -36,4 +36,5 @@ jobs:
           ignore-preview-releases: true
           check-releases: error
           token: ${{ secrets.GITHUB_TOKEN }}
+          ignore-versions: v6.3.3
           auto-fix: true
