@@ -3,6 +3,6 @@
     "tfx-cli"
   ],
   "dependencies": {
-    "tfx-cli": "0.24.0"
+    "tfx-cli": "0.24.1"
   }
 }
