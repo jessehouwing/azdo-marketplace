@@ -9,8 +9,8 @@
   "category": "Deploy",
   "version": {
     "Major": 6,
-    "Minor": 0,
-    "Patch": 0
+    "Minor": 3,
+    "Patch": 5
   },
   "visibility": ["Build", "Release"],
   "runsOn": ["Server", "ServerGate"],
