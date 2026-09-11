@@ -313,6 +313,7 @@ async function writeRuntimeDependencyManifest(target) {
     dependencies[dependency] = version;
   }
 
+  const rootManifest = await readJson('package.json');
   const distDir = path.join(rootDir, target.packageDir, 'dist');
   const distPackage = {
     name: `${packageManifest.name}-runtime`,
@@ -321,6 +322,18 @@ async function writeRuntimeDependencyManifest(target) {
     type: target.bundleFormat === 'esm' ? 'module' : 'commonjs',
     dependencies,
   };
+  if (rootManifest.overrides) {
+    // Propagate root-level dependency overrides (e.g. transitive security pins)
+    // so `npm install` inside the dist runtime tree respects the same pins.
+    // Skip overrides that duplicate a direct dependency of the dist manifest,
+    // since npm rejects an override matching a direct dependency at the same version.
+    const filteredOverrides = Object.fromEntries(
+      Object.entries(rootManifest.overrides).filter(([name]) => !dependencies[name])
+    );
+    if (Object.keys(filteredOverrides).length > 0) {
+      distPackage.overrides = filteredOverrides;
+    }
+  }
 
   await fs.writeFile(
     path.join(distDir, 'package.json'),
