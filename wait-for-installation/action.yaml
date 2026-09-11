@@ -246,7 +246,7 @@ runs:
   using: composite
   steps:
     - id: wait-for-installation
-      uses: $/
+      uses: jessehouwing/azdo-marketplace@main
       with:
         operation: wait-for-installation
         auth-type: ${{ inputs.auth-type }}
