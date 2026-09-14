@@ -7,6 +7,19 @@
     "tfx-cli": "0.24.1"
   },
   "overrides": {
-    "qs": "^6.16.0"
+    "qs": "^6.16.0",
+    "uuid": "^11.1.1",
+    "azure-pipelines-tool-lib": {
+      "uuid": "^11.1.1"
+    },
+    "msalv1": {
+      "uuid": "^11.1.1"
+    },
+    "msalv2": {
+      "uuid": "^11.1.1"
+    },
+    "msalv3": {
+      "uuid": "^11.1.1"
+    }
   }
 }

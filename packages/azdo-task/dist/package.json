@@ -11,6 +11,10 @@
     "shelljs": "0.10.0"
   },
   "overrides": {
-    "qs": "^6.16.0"
+    "qs": "^6.16.0",
+    "uuid": "^11.1.1",
+    "azure-pipelines-tool-lib": {
+      "uuid": "^11.1.1"
+    }
   }
 }
