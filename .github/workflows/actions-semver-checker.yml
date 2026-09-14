@@ -28,7 +28,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: jessehouwing/actions-semver-checker@v2.1.0
+      - uses: jessehouwing/actions-semver-checker@v2.1.1
         with:
           floating-versions-use: tags
           check-minor-version: error
