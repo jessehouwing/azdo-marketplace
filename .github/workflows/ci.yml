@@ -44,7 +44,7 @@ jobs:
         run: npm run bundle
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.1
         if: always()
         with:
           directory: ./coverage
