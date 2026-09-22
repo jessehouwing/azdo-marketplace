@@ -31,10 +31,14 @@ class RealPlatformAdapter extends MockPlatformAdapter {
         process.platform === 'win32' && tool.toLowerCase().endsWith('.cmd')
           ? ['/c', tool, ...args]
           : args;
+      // npm install of tfx-cli's ~214 dependencies can take well over 60s on a
+      // loaded CI runner; a longer timeout avoids spurious SIGTERM kills that
+      // surface as a generic "exit code 1" with no diagnostic detail.
+      const isNpmInstall = args[0] === 'install';
       const result = await execFileAsync(command, commandArgs, {
         cwd: options?.cwd,
         env: options?.env || process.env,
-        timeout: 60000, // 60 second timeout
+        timeout: isNpmInstall ? 180000 : 60000,
       });
 
       // Write to outStream if provided
@@ -44,8 +48,10 @@ class RealPlatformAdapter extends MockPlatformAdapter {
 
       return 0;
     } catch (error: any) {
-      this.error(`Exec failed: ${error.message}`);
-      return error.code || 1;
+      this.error(
+        `Exec failed: ${error.message}${error.killed ? ' (process killed, likely timeout)' : ''}`
+      );
+      return typeof error.code === 'number' ? error.code : 1;
     }
   }
 }
@@ -53,7 +59,7 @@ class RealPlatformAdapter extends MockPlatformAdapter {
 describe('TfxManager Integration Tests', () => {
   let platform: RealPlatformAdapter;
   let tempDir: string;
-  const testTimeout = 120000; // 2 minutes for download tests
+  const testTimeout = 420000; // 7 minutes: covers up to 2 retry attempts of a slow npm install on CI
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   let canUseNpmInstall = true;
 

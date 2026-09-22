@@ -265,76 +265,127 @@ export class TfxManager {
   private async downloadAndCache(exactVersion: string): Promise<string> {
     this.platform.info(`Installing tfx-cli@${exactVersion} from npm...`);
 
-    // Create temp directory for installation
-    const tempDir = this.platform.getTempDir();
-    const installDir = path.join(tempDir, `tfx-install-${Date.now()}`);
-    await fs.mkdir(installDir, { recursive: true });
+    const npmPath = await this.platform.which('npm', true);
+    const maxAttempts = 2;
+    const attemptFailures: string[] = [];
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Use a fresh, attempt-specific directory each try. Reusing a directory
+      // across retries would let a killed/partial install from a previous
+      // attempt (corrupt node_modules, half-written files, npm lock files)
+      // contaminate the next attempt or, worse, get silently packaged and
+      // cached below.
+      const tempDir = this.platform.getTempDir();
+      const installDir = path.join(tempDir, `tfx-install-${Date.now()}-${attempt}`);
+      await fs.mkdir(installDir, { recursive: true });
+
+      try {
+        this.platform.debug(
+          `Running npm install tfx-cli@${exactVersion} in ${installDir} (attempt ${attempt}/${maxAttempts})`
+        );
+        const exitCode = await this.platform.exec(
+          npmPath,
+          [
+            'install',
+            `tfx-cli@${exactVersion}`,
+            '--production',
+            '--no-save',
+            '--no-package-lock',
+            // Skip audit/fund network round-trips: they add extra registry
+            // calls that have been observed to stall npm install on
+            // windows-latest CI runners, causing repeated timeouts.
+            '--no-audit',
+            '--no-fund',
+          ],
+          { cwd: installDir }
+        );
+
+        if (exitCode !== 0) {
+          throw new Error(
+            `npm install exited with code ${exitCode}. This usually indicates a network/registry ` +
+              `problem (e.g. connectivity to the npm registry, DNS resolution, a proxy, or the ` +
+              `process being killed after taking too long) rather than an invalid tfx-cli version.`
+          );
+        }
+
+        // Step 2: Verify node_modules/tfx-cli exists before trusting/caching
+        // it (matches the original check). A process that was killed
+        // mid-install can exit non-zero but still leave a plausible-looking
+        // directory tree, so we still check even though npm reported success.
+        const tfxPackageDir = path.join(installDir, 'node_modules', 'tfx-cli');
+        try {
+          await fs.access(tfxPackageDir);
+        } catch (verifyError) {
+          throw new Error(
+            `npm install reported success but tfx-cli is missing at ${tfxPackageDir} ` +
+              `(${verifyError instanceof Error ? verifyError.message : String(verifyError)}). ` +
+              `The install was likely interrupted (e.g. killed after a timeout) rather than a genuine ` +
+              `npm error.`,
+            { cause: verifyError }
+          );
+        }
+
+        this.platform.info(`Successfully installed tfx-cli@${exactVersion} with dependencies`);
+
+        // Step 3: Make tfx executable on Unix systems
+        await this.ensureExecutable(tfxPackageDir);
+
+        // Step 4: Cache the entire node_modules directory structure
+        // This preserves the full dependency tree for tfx to work correctly
+        this.platform.info(`Caching tfx-cli@${exactVersion}...`);
+        const nodeModulesDir = path.join(installDir, 'node_modules');
+        const cachedDir = await this.platform.cacheDir(nodeModulesDir, 'tfx-cli', exactVersion);
+        this.platform.info(`Cached tfx-cli@${exactVersion} to ${cachedDir}`);
+
+        // Step 5: Return path to tfx executable
+        // The tfx executable is in tfx-cli/bin/ within the cached node_modules
+        const binDir = path.join(cachedDir, 'tfx-cli', 'bin');
+        return this.getTfxExecutable(binDir);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        attemptFailures.push(`attempt ${attempt}/${maxAttempts}: ${message}`);
+
+        if (attempt < maxAttempts) {
+          const delayMs = 2000 * attempt;
+          this.platform.warning(
+            `Installing tfx-cli@${exactVersion} failed (${message}); retrying in ${delayMs}ms...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      } finally {
+        // Always discard this attempt's directory immediately, whether it
+        // succeeded or failed, so a corrupt/partial install can never be
+        // reused by a later attempt or left behind to confuse future runs.
+        try {
+          await this.platform.rmRF(installDir);
+          this.platform.debug(`Cleaned up temp directory: ${installDir}`);
+        } catch (cleanupError) {
+          this.platform.warning(
+            `Failed to clean up temp directory ${installDir}: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`
+          );
+        }
+      }
+    }
+
+    // All attempts exhausted: fall back to PATH as last resort, but surface a
+    // clear, actionable error that points at the real underlying cause(s)
+    // rather than a bare "exit code 1".
+    const diagnostics = attemptFailures.join(' | ');
+    this.platform.warning(
+      `Failed to install tfx-cli@${exactVersion} after ${maxAttempts} attempt(s): ${diagnostics}`
+    );
+    this.platform.warning('Falling back to tfx from PATH');
 
     try {
-      // Step 1: Run npm install to download tfx-cli and all dependencies
-      // This installs into node_modules/tfx-cli with full dependency tree
-      this.platform.debug(`Running npm install tfx-cli@${exactVersion} in ${installDir}`);
-      const npmPath = await this.platform.which('npm', true);
-      const exitCode = await this.platform.exec(
-        npmPath,
-        ['install', `tfx-cli@${exactVersion}`, '--production', '--no-save', '--no-package-lock'],
-        { cwd: installDir }
+      const tfxPath = await this.platform.which('tfx', true);
+      return tfxPath;
+    } catch {
+      throw new Error(
+        `Failed to install tfx-cli@${exactVersion} after ${maxAttempts} attempt(s) and no tfx ` +
+          `was found on PATH as a fallback. This is most often caused by a transient network/npm ` +
+          `registry issue or a slow/killed install process, not by a bad tfx-cli version. ` +
+          `Details: ${diagnostics}`
       );
-
-      if (exitCode !== 0) {
-        throw new Error(`npm install failed with exit code ${exitCode}`);
-      }
-
-      // Step 2: Verify node_modules/tfx-cli exists
-      const tfxPackageDir = path.join(installDir, 'node_modules', 'tfx-cli');
-      try {
-        await fs.access(tfxPackageDir);
-      } catch {
-        throw new Error(`tfx-cli not found at ${tfxPackageDir} after npm install`);
-      }
-
-      this.platform.info(`Successfully installed tfx-cli@${exactVersion} with dependencies`);
-
-      // Step 3: Make tfx executable on Unix systems
-      await this.ensureExecutable(tfxPackageDir);
-
-      // Step 4: Cache the entire node_modules directory structure
-      // This preserves the full dependency tree for tfx to work correctly
-      this.platform.info(`Caching tfx-cli@${exactVersion}...`);
-      const nodeModulesDir = path.join(installDir, 'node_modules');
-      const cachedDir = await this.platform.cacheDir(nodeModulesDir, 'tfx-cli', exactVersion);
-      this.platform.info(`Cached tfx-cli@${exactVersion} to ${cachedDir}`);
-
-      // Step 5: Return path to tfx executable
-      // The tfx executable is in tfx-cli/bin/ within the cached node_modules
-      const binDir = path.join(cachedDir, 'tfx-cli', 'bin');
-      return this.getTfxExecutable(binDir);
-    } catch (error) {
-      // If install fails, fall back to PATH as last resort
-      this.platform.warning(
-        `Failed to install tfx-cli@${exactVersion}: ${error instanceof Error ? error.message : String(error)}`
-      );
-      this.platform.warning('Falling back to tfx from PATH');
-
-      try {
-        const tfxPath = await this.platform.which('tfx', true);
-        return tfxPath;
-      } catch {
-        throw new Error(
-          `Failed to install tfx-cli@${exactVersion} and no tfx found in PATH. ` +
-            `Original error: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-    } finally {
-      // Clean up temp directory
-      try {
-        await this.platform.rmRF(installDir);
-        this.platform.debug(`Cleaned up temp directory: ${installDir}`);
-      } catch (cleanupError) {
-        this.platform.warning(
-          `Failed to clean up temp directory ${installDir}: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`
-        );
-      }
     }
   }
 
