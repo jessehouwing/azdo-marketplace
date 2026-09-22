@@ -561,8 +561,9 @@ async function installRuntimeDependencies(target, frozen = false) {
   // already committed (check-dist.yml enforces that on main/PRs).
   const useCi = frozen && (await pathExists(lockfilePath));
   if (frozen && !useCi) {
-    console.log(
-      `No committed lockfile for ${target.name}; falling back to 'npm install' in frozen mode.`
+    throw new Error(
+      `No committed lockfile for ${target.name} (${lockfilePath}); refusing to fall back to ` +
+        `'npm install' in frozen mode, since that would silently break reproducibility guarantees.`
     );
   }
 

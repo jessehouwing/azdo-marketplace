@@ -29,6 +29,7 @@ jobs:
             **/*.md
           sparse-checkout-cone-mode: false
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Resolve version from ref or tags
         id: version

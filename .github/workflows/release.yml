@@ -114,8 +114,10 @@ jobs:
 
       - name: Validate version format
         shell: pwsh
+        env:
+          RESOLVED_VERSION: ${{ steps.resolve.outputs.version }}
         run: |
-          if ("${{ steps.resolve.outputs.version }}" -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+          if ($env:RESOLVED_VERSION -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
             Write-Host "::error::Version must be in format x.y.z (e.g., 6.1.0)"
             exit 1
           }
@@ -123,12 +125,17 @@ jobs:
       - name: Parse version components
         id: parse
         shell: pwsh
+        env:
+          RESOLVED_VERSION: ${{ steps.resolve.outputs.version }}
         run: |
-          $major, $minor, $patch = "${{ steps.resolve.outputs.version }}".Split('.')
+          $major, $minor, $patch = $env:RESOLVED_VERSION.Split('.')
           "major=$major" >> $env:GITHUB_OUTPUT
           "minor=$minor" >> $env:GITHUB_OUTPUT
           "patch=$patch" >> $env:GITHUB_OUTPUT
 
+      # zizmor: ignore[artipacked] this checkout commits and pushes the
+      # release branch (see "Commit and push changes" below), so it needs
+      # persisted git credentials.
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.ref }}
@@ -138,8 +145,9 @@ jobs:
         shell: pwsh
         env:
           SOURCE_REF_NAME: ${{ github.ref_name }}
+          RESOLVED_VERSION: ${{ steps.resolve.outputs.version }}
         run: |
-          $branch = "release/v${{ steps.resolve.outputs.version }}"
+          $branch = "release/v$env:RESOLVED_VERSION"
           git ls-remote --exit-code --heads origin $branch *> $null
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Branch $branch already exists, checking it out"
@@ -173,7 +181,9 @@ jobs:
         run: npm ci
 
       - name: Update version references
-        run: node Scripts/update-version.mjs ${{ steps.resolve.outputs.version }}
+        env:
+          RESOLVED_VERSION: ${{ steps.resolve.outputs.version }}
+        run: node Scripts/update-version.mjs "$env:RESOLVED_VERSION"
 
       - name: Format
         continue-on-error: true
@@ -270,8 +280,10 @@ jobs:
 
       - name: Commit and push changes
         shell: pwsh
+        env:
+          RESOLVED_VERSION: ${{ steps.resolve.outputs.version }}
         run: |
-          $branch = "release/v${{ steps.resolve.outputs.version }}"
+          $branch = "release/v$env:RESOLVED_VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -280,7 +292,7 @@ jobs:
             Write-Host "No changes to commit"
           }
           else {
-            git commit -m "chore: prepare release v${{ steps.resolve.outputs.version }}"
+            git commit -m "chore: prepare release v$env:RESOLVED_VERSION"
           }
           git push origin "HEAD:$branch"
 
@@ -339,6 +351,7 @@ jobs:
             **/action.schema.yml
             **/*.md
           sparse-checkout-cone-mode: false
+          persist-credentials: false
 
       - name: Validate documentation action versions
         uses: jessehouwing/actions-example-checker@v0.0.11
@@ -370,6 +383,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
@@ -795,7 +809,9 @@ jobs:
     permissions: {}
     steps:
       - name: Approved
-        run: echo "Approved release v${{ needs.prepare-release.outputs.version }} for immutable release and Marketplace publish."
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: echo "Approved release v$RELEASE_VERSION for immutable release and Marketplace publish."
 
   # ---------------------------------------------------------------------------
   # Job 6: Production release to marketplace
@@ -830,6 +846,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
@@ -873,7 +890,9 @@ jobs:
 
       - name: Skip publish (version already deployed)
         if: steps.check-version.outputs.current-version == needs.prepare-release.outputs.version
-        run: Write-Host "Version ${{ needs.prepare-release.outputs.version }} is already published, skipping publish and re-checking validation."
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: Write-Host "Version $env:RELEASE_VERSION is already published, skipping publish and re-checking validation."
         shell: pwsh
 
       - name: Publish production extension
@@ -919,6 +938,9 @@ jobs:
         with:
           egress-policy: audit
 
+      # zizmor: ignore[artipacked] this checkout creates and pushes the
+      # release version tag ("Create version tag" below), so it needs
+      # persisted git credentials.
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -939,8 +961,10 @@ jobs:
 
       - name: Create version tag
         shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
         run: |
-          $version = "v${{ needs.prepare-release.outputs.version }}"
+          $version = "v$env:RELEASE_VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -1027,8 +1051,10 @@ jobs:
       - name: Dry-run summary
         if: ${{ inputs.dry_run }}
         shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
         run: |
-          Write-Host "dry_run=true: tag v${{ needs.prepare-release.outputs.version }} and its draft GitHub release were created/updated for testing. Publishing was skipped."
+          Write-Host "dry_run=true: tag v$env:RELEASE_VERSION and its draft GitHub release were created/updated for testing. Publishing was skipped."
 
   # ---------------------------------------------------------------------------
   # Job 8: Publish GitHub release
@@ -1049,6 +1075,9 @@ jobs:
         with:
           egress-policy: audit
 
+      # zizmor: ignore[artipacked] this checkout updates and pushes floating
+      # major/minor tags ("Update floating tags" below), so it needs
+      # persisted git credentials.
       - uses: actions/checkout@v7.0.1
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
@@ -1057,21 +1086,25 @@ jobs:
       - name: Publish draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
         shell: pwsh
         run: |
-          $version = "v${{ needs.prepare-release.outputs.version }}"
+          $version = "v$env:RELEASE_VERSION"
           gh release edit $version `
             --repo "${{ github.repository }}" `
             --draft=false
 
       - name: Update floating tags
         shell: pwsh
+        env:
+          RELEASE_MAJOR: ${{ needs.prepare-release.outputs.major }}
+          RELEASE_MINOR: ${{ needs.prepare-release.outputs.minor }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          $major = "v${{ needs.prepare-release.outputs.major }}"
-          $majorMinor = "v${{ needs.prepare-release.outputs.major }}.${{ needs.prepare-release.outputs.minor }}"
+          $major = "v$env:RELEASE_MAJOR"
+          $majorMinor = "v$env:RELEASE_MAJOR.$env:RELEASE_MINOR"
 
           # Force-push floating major and major.minor tags
           git tag -fa $major -m "Floating tag $major" HEAD
@@ -1152,9 +1185,10 @@ jobs:
       - name: Delete release branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
         shell: pwsh
         run: |
-          $branch = "release/v${{ needs.prepare-release.outputs.version }}"
+          $branch = "release/v$env:RELEASE_VERSION"
           Write-Host "Deleting branch $branch"
           try {
             gh api `
