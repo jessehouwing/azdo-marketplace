@@ -4,7 +4,7 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
-    "tfx-cli": "0.24.1",
+    "tfx-cli": "0.24.2",
     "msalv1": "npm:@azure/msal-node@^1.18.4",
     "msalv2": "npm:@azure/msal-node@^2.7.0",
     "msalv3": "npm:@azure/msal-node@^3.5.3",
