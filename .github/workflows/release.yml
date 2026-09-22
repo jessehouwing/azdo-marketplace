@@ -133,10 +133,7 @@ jobs:
           "minor=$minor" >> $env:GITHUB_OUTPUT
           "patch=$patch" >> $env:GITHUB_OUTPUT
 
-      # zizmor: ignore[artipacked] this checkout commits and pushes the
-      # release branch (see "Commit and push changes" below), so it needs
-      # persisted git credentials.
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7.0.1 # zizmor: ignore[artipacked] this checkout commits and pushes the release branch (see "Commit and push changes" below), so it needs persisted git credentials.
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
@@ -938,10 +935,7 @@ jobs:
         with:
           egress-policy: audit
 
-      # zizmor: ignore[artipacked] this checkout creates and pushes the
-      # release version tag ("Create version tag" below), so it needs
-      # persisted git credentials.
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7.0.1 # zizmor: ignore[artipacked] this checkout creates and pushes the release version tag ("Create version tag" below), so it needs persisted git credentials.
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           fetch-depth: 0
@@ -1075,10 +1069,7 @@ jobs:
         with:
           egress-policy: audit
 
-      # zizmor: ignore[artipacked] this checkout updates and pushes floating
-      # major/minor tags ("Update floating tags" below), so it needs
-      # persisted git credentials.
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7.0.1 # zizmor: ignore[artipacked] this checkout updates and pushes floating major/minor tags ("Update floating tags" below), so it needs persisted git credentials.
         with:
           ref: release/v${{ needs.prepare-release.outputs.version }}
           fetch-depth: 0

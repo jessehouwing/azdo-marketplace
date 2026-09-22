@@ -35,6 +35,9 @@ jobs:
           cache: 'npm'
 
       - name: Pin npm version
+        # zizmor: ignore[adhoc-packages] pins npm to the exact version declared
+        # in package.json's packageManager field, so this is not an unpinned
+        # ad-hoc install.
         run: |
           $packageManager = node -p "require('./package.json').packageManager ?? ''"
           if ($packageManager -notmatch '^npm@(.+)$') {

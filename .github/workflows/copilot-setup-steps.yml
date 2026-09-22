@@ -68,6 +68,9 @@ jobs:
 
       - name: Ensure tfx-cli is installed
         id: tfx
+        # zizmor: ignore[adhoc-packages] deliberately installs the latest
+        # tfx-cli globally so the Copilot dev environment always has a current
+        # version available for interactive use; not part of a pinned build.
         run: |
           set -euo pipefail
           npm install --global tfx-cli
@@ -77,6 +80,9 @@ jobs:
 
       - name: Ensure jest is installed globally
         id: jest
+        # zizmor: ignore[adhoc-packages] deliberately installs the latest jest
+        # globally so the Copilot dev environment can run tests interactively
+        # without requiring the repo's local dependency tree to be built.
         run: |
           set -euo pipefail
           npm install --global jest
