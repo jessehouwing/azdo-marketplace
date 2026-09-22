@@ -245,7 +245,7 @@ export class MockPlatformAdapter implements IPlatformAdapter {
   }
 
   getTempDir(): string {
-    return '/tmp';
+    return path.join(this.fsSandboxRoot, 'tmp');
   }
 
   // ===== Tool Management =====

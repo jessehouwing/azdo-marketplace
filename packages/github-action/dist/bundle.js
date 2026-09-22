@@ -4,13 +4,13 @@ const __filename = __internal_fileURLToPath(import.meta.url);
 const __dirname = __internal_dirname(__filename);
 
 
+import * as crypto from 'crypto';
+import crypto__default, { randomBytes } from 'crypto';
 import fs$1, { readFile, readdir as readdir$1, writeFile as writeFile$1, mkdir as mkdir$1, copyFile as copyFile$2 } from 'fs/promises';
 import * as path$1 from 'path';
 import path__default, { normalize, isAbsolute, join, basename } from 'path';
 import * as os from 'os';
 import os__default from 'os';
-import * as crypto from 'crypto';
-import crypto__default from 'crypto';
 import * as fs from 'fs';
 import fs__default, { promises, createWriteStream } from 'fs';
 import * as http from 'http';
@@ -33761,7 +33761,11 @@ class FilesystemManifestWriter {
         if (!resolvedOverridesPath) {
             const tempDir = this.platform.getTempDir();
             await mkdir$1(tempDir, { recursive: true });
-            resolvedOverridesPath = path__default.join(tempDir, `overrides-${Date.now()}.json`);
+            // Include a random suffix alongside the timestamp: Date.now() alone has only
+            // millisecond resolution and can collide across concurrent processes/tests
+            // sharing the same temp directory (e.g. Agent.TempDirectory).
+            const uniqueSuffix = randomBytes(6).toString('hex');
+            resolvedOverridesPath = path__default.join(tempDir, `overrides-${Date.now()}-${uniqueSuffix}.json`);
         }
         else {
             await mkdir$1(path__default.dirname(resolvedOverridesPath), { recursive: true });
@@ -33880,7 +33884,7 @@ function v35(version, hash, value, namespace, buf, offset) {
     bytes[6] = (bytes[6] & 0x0f) | version;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     if (buf) {
-        offset = offset || 0;
+        offset ??= 0;
         if (offset < 0 || offset + 16 > buf.length) {
             throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
         }
@@ -33928,7 +33932,7 @@ function sha1(bytes) {
         }
         M[i] = arr;
     }
-    M[N - 1][14] = ((bytes.length - 1) * 8) / Math.pow(2, 32);
+    M[N - 1][14] = ((bytes.length - 1) * 8) / 2 ** 32;
     M[N - 1][14] = Math.floor(M[N - 1][14]);
     M[N - 1][15] = ((bytes.length - 1) * 8) & 0xffffffff;
     for (let i = 0; i < N; ++i) {
