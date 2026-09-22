@@ -552,7 +552,11 @@ describe('waitForInstallation', () => {
     );
 
     expect(result.success).toBe(true);
-    expect(webApiCtorMock).toHaveBeenCalledWith('https://dev.azure.com/org1', expect.anything());
+    expect(webApiCtorMock).toHaveBeenCalledWith(
+      'https://dev.azure.com/org1',
+      expect.anything(),
+      expect.objectContaining({ headers: { 'X-TFS-FedAuthRedirect': 'Suppress' } })
+    );
   });
 
   it('allows Azure DevOps Server account URLs in accounts list', async () => {
@@ -607,7 +611,11 @@ describe('waitForInstallation', () => {
     );
 
     expect(result.success).toBe(true);
-    expect(webApiCtorMock).toHaveBeenCalledWith('https://dev.azure.com/org1', expect.anything());
+    expect(webApiCtorMock).toHaveBeenCalledWith(
+      'https://dev.azure.com/org1',
+      expect.anything(),
+      expect.objectContaining({ headers: { 'X-TFS-FedAuthRedirect': 'Suppress' } })
+    );
   });
 
   it('emits higher-version warning once after polling ends, not per poll', async () => {

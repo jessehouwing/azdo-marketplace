@@ -201,7 +201,10 @@ export async function waitForInstallation(
       }
 
       const handler = getPersonalAccessTokenHandler(auth.token);
-      const connection = new WebApi(accountUrl, handler);
+      // Prevent redirects to the interactive login page when auth fails/expires; surface a proper error instead.
+      const connection = new WebApi(accountUrl, handler, {
+        headers: { 'X-TFS-FedAuthRedirect': 'Suppress' },
+      });
       const taskAgentApi: ITaskAgentApi = await connection.getTaskAgentApi();
 
       // Poll until tasks appear or timeout
