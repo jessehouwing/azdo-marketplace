@@ -65,6 +65,8 @@ pins), not rewrite any `uses:` lines in the workflow files themselves.
 
 ## When Dependabot opens a `dependabot/github_actions/...` PR
 
-The `.github/workflows/dependabot-actions-lock.yml` workflow automatically
-regenerates the lockfile on such PRs using `gh actions-lock --no-interactive
---no-onboard --rescan`.
+There is no longer an automated workflow that regenerates the lockfile on
+Dependabot PRs (the `dependabot-actions-lock.yml` workflow was removed).
+Run `gh actions-lock --relock --no-interactive` locally (or via the release
+maintainer) and push the updated `.github/workflows/actions.lock` to the PR
+branch before merging.

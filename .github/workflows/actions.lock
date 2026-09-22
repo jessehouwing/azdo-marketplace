@@ -34,9 +34,6 @@ workflows:
         - 'actions/setup-node@v7.0.0'
         - 'actions/setup-python@v7.0.0'
         - 'step-security/harden-runner@v2.21.1'
-    '.github/workflows/dependabot-actions-lock.yml':
-        - 'actions/checkout@v7.0.1'
-        - 'step-security/harden-runner@v2.21.1'
     '.github/workflows/linter.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.0.0'

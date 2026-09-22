@@ -13,3 +13,8 @@
 rules:
   unpinned-uses:
     disable: true
+  # This repo intentionally uses a 3-day Dependabot cooldown (see
+  # .github/dependabot.yml), shorter than zizmor's generic >=7 day
+  # recommendation. Disabled rather than left as noise on every PR.
+  dependabot-cooldown:
+    disable: true

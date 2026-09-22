@@ -60,6 +60,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
 
       # Verifies the dist/ provenance attestation created in release.yml's
       # prepare-release job. The attested subject is a deterministic
