@@ -5,6 +5,7 @@
  * an overrides.json file for tfx to use during packaging.
  */
 
+import { randomBytes } from 'crypto';
 import { mkdir, readFile, readdir, writeFile } from 'fs/promises';
 import path from 'path';
 import type { FilesystemManifestReader } from './filesystem-manifest-reader.js';
@@ -462,7 +463,11 @@ export class FilesystemManifestWriter {
     if (!resolvedOverridesPath) {
       const tempDir = this.platform.getTempDir();
       await mkdir(tempDir, { recursive: true });
-      resolvedOverridesPath = path.join(tempDir, `overrides-${Date.now()}.json`);
+      // Include a random suffix alongside the timestamp: Date.now() alone has only
+      // millisecond resolution and can collide across concurrent processes/tests
+      // sharing the same temp directory (e.g. Agent.TempDirectory).
+      const uniqueSuffix = randomBytes(6).toString('hex');
+      resolvedOverridesPath = path.join(tempDir, `overrides-${Date.now()}-${uniqueSuffix}.json`);
     } else {
       await mkdir(path.dirname(resolvedOverridesPath), { recursive: true });
     }
