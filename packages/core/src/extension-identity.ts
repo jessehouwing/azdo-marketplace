@@ -15,25 +15,40 @@ export async function resolveExtensionIdentity(
   options: ExtensionIdentityOptions,
   platform: IPlatformAdapter,
   operationName: string
-): Promise<{ publisherId: string; extensionId: string }> {
+): Promise<{ publisherId: string; extensionId: string; version?: string }> {
   let publisherId = options.publisherId;
   let extensionId = options.extensionId;
+  let version: string | undefined;
 
-  if ((!publisherId || !extensionId) && options.vsixFile) {
+  // Whether identity was already fully known before consulting vsix/manifest sources.
+  // When true, a failure to read those sources only means the (optional) version
+  // fallback couldn't be resolved, and should not fail the whole operation.
+  const identityAlreadyKnown = !!(publisherId && extensionId);
+
+  if ((!publisherId || !extensionId || !version) && options.vsixFile) {
     platform.debug(`Reading extension identity from VSIX: ${options.vsixFile}`);
 
-    const reader = await VsixReader.open(options.vsixFile);
     try {
-      const metadata = await reader.getMetadata();
-      publisherId = publisherId || metadata.publisher;
-      extensionId = extensionId || metadata.extensionId;
-    } finally {
-      await reader.close();
+      const reader = await VsixReader.open(options.vsixFile);
+      try {
+        const metadata = await reader.getMetadata();
+        publisherId = publisherId || metadata.publisher;
+        extensionId = extensionId || metadata.extensionId;
+        version = version || metadata.version;
+      } finally {
+        await reader.close();
+      }
+    } catch (error: unknown) {
+      if (!identityAlreadyKnown) {
+        throw error;
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      platform.debug(`Could not resolve extension version from VSIX: ${errorMessage}`);
     }
   }
 
   if (
-    (!publisherId || !extensionId) &&
+    (!publisherId || !extensionId || !version) &&
     options.manifestGlobs !== undefined &&
     options.manifestGlobs.length > 0
   ) {
@@ -42,17 +57,26 @@ export async function resolveExtensionIdentity(
       `Reading extension identity from manifest (rootFolder: ${rootFolder}, globs: ${options.manifestGlobs.join(', ')}).`
     );
 
-    const reader = new FilesystemManifestReader({
-      rootFolder,
-      manifestGlobs: options.manifestGlobs,
-      platform,
-    });
     try {
-      const metadata = await reader.getMetadata();
-      publisherId = publisherId || metadata.publisher;
-      extensionId = extensionId || metadata.extensionId;
-    } finally {
-      await reader.close();
+      const reader = new FilesystemManifestReader({
+        rootFolder,
+        manifestGlobs: options.manifestGlobs,
+        platform,
+      });
+      try {
+        const metadata = await reader.getMetadata();
+        publisherId = publisherId || metadata.publisher;
+        extensionId = extensionId || metadata.extensionId;
+        version = version || metadata.version;
+      } finally {
+        await reader.close();
+      }
+    } catch (error: unknown) {
+      if (!identityAlreadyKnown) {
+        throw error;
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      platform.debug(`Could not resolve extension version from manifest: ${errorMessage}`);
     }
   }
 
@@ -62,5 +86,5 @@ export async function resolveExtensionIdentity(
     );
   }
 
-  return { publisherId, extensionId };
+  return { publisherId, extensionId, version };
 }

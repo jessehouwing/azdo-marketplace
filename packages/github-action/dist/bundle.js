@@ -32783,41 +32783,66 @@ var vsixReader = /*#__PURE__*/Object.freeze({
 async function resolveExtensionIdentity(options, platform, operationName) {
     let publisherId = options.publisherId;
     let extensionId = options.extensionId;
-    if ((!publisherId || !extensionId) && options.vsixFile) {
+    let version;
+    // Whether identity was already fully known before consulting vsix/manifest sources.
+    // When true, a failure to read those sources only means the (optional) version
+    // fallback couldn't be resolved, and should not fail the whole operation.
+    const identityAlreadyKnown = !!(publisherId && extensionId);
+    if ((!publisherId || !extensionId || !version) && options.vsixFile) {
         platform.debug(`Reading extension identity from VSIX: ${options.vsixFile}`);
-        const reader = await VsixReader.open(options.vsixFile);
         try {
-            const metadata = await reader.getMetadata();
-            publisherId = publisherId || metadata.publisher;
-            extensionId = extensionId || metadata.extensionId;
+            const reader = await VsixReader.open(options.vsixFile);
+            try {
+                const metadata = await reader.getMetadata();
+                publisherId = publisherId || metadata.publisher;
+                extensionId = extensionId || metadata.extensionId;
+                version = version || metadata.version;
+            }
+            finally {
+                await reader.close();
+            }
         }
-        finally {
-            await reader.close();
+        catch (error) {
+            if (!identityAlreadyKnown) {
+                throw error;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            platform.debug(`Could not resolve extension version from VSIX: ${errorMessage}`);
         }
     }
-    if ((!publisherId || !extensionId) &&
+    if ((!publisherId || !extensionId || !version) &&
         options.manifestGlobs !== undefined &&
         options.manifestGlobs.length > 0) {
         const rootFolder = options.rootFolder ?? cwd();
         platform.debug(`Reading extension identity from manifest (rootFolder: ${rootFolder}, globs: ${options.manifestGlobs.join(', ')}).`);
-        const reader = new FilesystemManifestReader({
-            rootFolder,
-            manifestGlobs: options.manifestGlobs,
-            platform,
-        });
         try {
-            const metadata = await reader.getMetadata();
-            publisherId = publisherId || metadata.publisher;
-            extensionId = extensionId || metadata.extensionId;
+            const reader = new FilesystemManifestReader({
+                rootFolder,
+                manifestGlobs: options.manifestGlobs,
+                platform,
+            });
+            try {
+                const metadata = await reader.getMetadata();
+                publisherId = publisherId || metadata.publisher;
+                extensionId = extensionId || metadata.extensionId;
+                version = version || metadata.version;
+            }
+            finally {
+                await reader.close();
+            }
         }
-        finally {
-            await reader.close();
+        catch (error) {
+            if (!identityAlreadyKnown) {
+                throw error;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            platform.debug(`Could not resolve extension version from manifest: ${errorMessage}`);
         }
     }
     if (!publisherId || !extensionId) {
         throw new Error(`publisherId and extensionId are required for ${operationName}. Provide them directly, or provide vsixFile/manifestGlobs so they can be inferred from VSIX or manifest metadata.`);
     }
-    return { publisherId, extensionId };
+    return { publisherId, extensionId, version };
 }
 
 /**
@@ -44015,7 +44040,10 @@ async function queryVersion(options, auth, tfx, platform) {
  */
 async function waitForValidation(options, auth, tfx, platform) {
     const identity = await resolveExtensionIdentity(options, platform, 'wait-for-validation');
-    platform.info(`Validating extension ${identity.publisherId}.${identity.extensionId}...`);
+    const resolvedVersion = options.extensionVersion || identity.version;
+    platform.info(`Validating extension ${identity.publisherId}.${identity.extensionId}` +
+        (resolvedVersion ? ` v${resolvedVersion}` : '') +
+        '...');
     const extensionId = identity.extensionId;
     // Retry configuration (aligned with wait-for-installation)
     const timeoutMinutes = options.timeoutMinutes ?? 10;
@@ -44035,8 +44063,9 @@ async function waitForValidation(options, auth, tfx, platform) {
             .flag('--no-color')
             .option('--publisher', identity.publisherId)
             .option('--extension-id', extensionId);
-        if (options.extensionVersion) {
-            args.option('--version', options.extensionVersion);
+        const resolvedVersion = options.extensionVersion || identity.version;
+        if (resolvedVersion) {
+            args.option('--version', resolvedVersion);
         }
         // Manifest arguments if provided
         if (options.rootFolder) {
