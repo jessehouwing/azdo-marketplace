@@ -81,8 +81,13 @@ export async function waitForValidation(
   platform: IPlatformAdapter
 ): Promise<WaitForValidationResult> {
   const identity = await resolveExtensionIdentity(options, platform, 'wait-for-validation');
+  const resolvedVersion = options.extensionVersion || identity.version;
 
-  platform.info(`Validating extension ${identity.publisherId}.${identity.extensionId}...`);
+  platform.info(
+    `Validating extension ${identity.publisherId}.${identity.extensionId}` +
+      (resolvedVersion ? ` v${resolvedVersion}` : '') +
+      '...'
+  );
 
   const extensionId = identity.extensionId;
 
@@ -108,8 +113,9 @@ export async function waitForValidation(
       .option('--publisher', identity.publisherId)
       .option('--extension-id', extensionId);
 
-    if (options.extensionVersion) {
-      args.option('--version', options.extensionVersion);
+    const resolvedVersion = options.extensionVersion || identity.version;
+    if (resolvedVersion) {
+      args.option('--version', resolvedVersion);
     }
 
     // Manifest arguments if provided

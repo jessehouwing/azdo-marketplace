@@ -334,6 +334,138 @@ describe('waitForValidation', () => {
     }
   });
 
+  it('should resolve extension version from vsixFile when extensionVersion is not provided', async () => {
+    const vsix = await createIdentityVsix({
+      publisher: 'publisher-from-vsix',
+      extensionId: 'extension-from-vsix',
+      version: '9.9.9',
+    });
+
+    try {
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: { status: 'success' },
+        stdout: '',
+        stderr: '',
+      });
+
+      await waitForValidation(
+        {
+          vsixFile: vsix.vsixFile,
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      const callArgs = mockExecute.mock.calls[0][0];
+      expect(callArgs).toContain('--version');
+      expect(callArgs).toContain('9.9.9');
+    } finally {
+      await vsix.cleanup();
+    }
+  });
+
+  it('should prefer explicit extensionVersion over the version inferred from vsixFile', async () => {
+    const vsix = await createIdentityVsix({
+      publisher: 'publisher-from-vsix',
+      extensionId: 'extension-from-vsix',
+      version: '9.9.9',
+    });
+
+    try {
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: { status: 'success' },
+        stdout: '',
+        stderr: '',
+      });
+
+      await waitForValidation(
+        {
+          vsixFile: vsix.vsixFile,
+          extensionVersion: '1.2.3',
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      const callArgs = mockExecute.mock.calls[0][0];
+      expect(callArgs).toContain('--version');
+      expect(callArgs).toContain('1.2.3');
+      expect(callArgs).not.toContain('9.9.9');
+    } finally {
+      await vsix.cleanup();
+    }
+  });
+
+  it('should resolve extension version from manifestGlobs when extensionVersion is not provided', async () => {
+    const testDir = await mkdtemp(join(tmpdir(), 'wait-validation-manifest-version-'));
+    const manifestPath = join(testDir, 'vss-extension.json');
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        publisher: 'publisher-from-manifest',
+        id: 'extension-from-manifest',
+        version: '4.5.6',
+        name: 'test',
+      }),
+      'utf-8'
+    );
+
+    try {
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: 0,
+        json: { status: 'success' },
+        stdout: '',
+        stderr: '',
+      });
+
+      await waitForValidation(
+        {
+          rootFolder: testDir,
+          manifestGlobs: ['vss-extension.json'],
+        },
+        auth,
+        tfxManager,
+        platform
+      );
+
+      const callArgs = mockExecute.mock.calls[0][0];
+      expect(callArgs).toContain('--version');
+      expect(callArgs).toContain('4.5.6');
+    } finally {
+      await rm(testDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should not include --version when it cannot be resolved from any source', async () => {
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 0,
+      json: { status: 'success' },
+      stdout: '',
+      stderr: '',
+    });
+
+    await waitForValidation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+      },
+      auth,
+      tfxManager,
+      platform
+    );
+
+    const callArgs = mockExecute.mock.calls[0][0];
+    expect(callArgs).not.toContain('--version');
+  });
+
   it('should resolve publisher and extension from manifestGlobs', async () => {
     const testDir = await mkdtemp(join(tmpdir(), 'wait-validation-manifest-'));
     const manifestPath = join(testDir, 'vss-extension.json');
