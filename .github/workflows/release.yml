@@ -882,7 +882,9 @@ jobs:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
           extension-id: ${{ env.EXTENSION_ID }}
-          version-source: marketplace
+          version-source: |
+            marketplace
+            0.0.0
           marketplace-version-action: None
 
       - name: Skip publish (version already deployed)
