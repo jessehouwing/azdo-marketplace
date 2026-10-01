@@ -91,6 +91,42 @@ describe('waitForValidation', () => {
     expect(mockExecute).toHaveBeenCalledTimes(3);
   });
 
+  it('should retry on tfx request timeout output', async () => {
+    const requestTimeout =
+      'error: Request timeout: /_apis/gallery/publishers/pub/extensions/ext?flags=15';
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValueOnce({
+      exitCode: 1,
+      json: undefined,
+      stdout: requestTimeout,
+      stderr: '',
+    });
+    mockExecute.mockResolvedValueOnce({
+      exitCode: 0,
+      json: { status: 'success' },
+      stdout: '',
+      stderr: '',
+    });
+
+    const result = await waitForValidation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        timeoutMinutes: 0.00005,
+        pollingIntervalSeconds: 0.001,
+      },
+      auth,
+      tfxManager,
+      platform
+    );
+
+    expect(result.isValid).toBe(true);
+    expect(result.status).toBe('success');
+    expect(result.attempts).toBe(2);
+    expect(mockExecute).toHaveBeenCalledTimes(2);
+    expect(platform.warningMessages).toContain('No status in validation response');
+  });
+
   it('should handle failed validation', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
     mockExecute.mockResolvedValue({
@@ -113,6 +149,118 @@ describe('waitForValidation', () => {
     expect(result.isValid).toBe(false);
     expect(result.status).toBe('failed');
     expect(result.attempts).toBe(1);
+  });
+
+  it('throws explicit marketplace errors instead of retrying until timeout', async () => {
+    const marketplaceError =
+      'error: Error: ﻿{"$id":"1","customProperties":{"Descriptor":null,"IdentityDisplayName":null,"Token":null,"RequestedPermissions":0,"NamespaceId":"00000000-0000-0000-0000-000000000000"},"innerException":null,"message":"Access Denied: The Personal Access Token used has expired.","typeName":"Microsoft.VisualStudio.Services.Security.AccessCheckException, Microsoft.VisualStudio.Services.WebApi","typeKey":"AccessCheckException","errorCode":0,"eventId":3000}';
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 1,
+      json: undefined,
+      stdout: marketplaceError,
+      stderr: '',
+    });
+
+    await expect(
+      waitForValidation(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          timeoutMinutes: 0.00005,
+          pollingIntervalSeconds: 0.001,
+        },
+        auth,
+        tfxManager,
+        platform
+      )
+    ).rejects.toThrow('Access Denied: The Personal Access Token used has expired.');
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws explicit tfx API location errors instead of retrying until timeout', async () => {
+    const apiLocationError =
+      'error: Error: Failed to find api location for area: gallery id: e11ea35a-16fe-4b80-ab11-c4cab88a0966';
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 1,
+      json: undefined,
+      stdout: apiLocationError,
+      stderr: '',
+    });
+
+    await expect(
+      waitForValidation(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          timeoutMinutes: 0.00005,
+          pollingIntervalSeconds: 0.001,
+        },
+        auth,
+        tfxManager,
+        platform
+      )
+    ).rejects.toThrow(apiLocationError);
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws explicit tfx unpublished extension errors instead of retrying until timeout', async () => {
+    const unpublishedError = 'error: Error: Extension not published.';
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 1,
+      json: undefined,
+      stdout: unpublishedError,
+      stderr: '',
+    });
+
+    await expect(
+      waitForValidation(
+        {
+          publisherId: 'pub',
+          extensionId: 'missing-ext',
+          timeoutMinutes: 0.00005,
+          pollingIntervalSeconds: 0.001,
+        },
+        auth,
+        tfxManager,
+        platform
+      )
+    ).rejects.toThrow(unpublishedError);
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws explicit tfx missing extension version errors instead of retrying until timeout', async () => {
+    const missingVersionError =
+      'error: Error: Could not find extension version 999999.999999.999999';
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValue({
+      exitCode: 1,
+      json: undefined,
+      stdout: missingVersionError,
+      stderr: '',
+    });
+
+    await expect(
+      waitForValidation(
+        {
+          publisherId: 'pub',
+          extensionId: 'ext',
+          extensionVersion: '999999.999999.999999',
+          timeoutMinutes: 0.00005,
+          pollingIntervalSeconds: 0.001,
+        },
+        auth,
+        tfxManager,
+        platform
+      )
+    ).rejects.toThrow(missingVersionError);
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 
   it('logs nested validation failure details from message payload', async () => {

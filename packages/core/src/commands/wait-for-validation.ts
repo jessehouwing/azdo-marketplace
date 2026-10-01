@@ -6,6 +6,7 @@ import { ArgBuilder } from '../arg-builder.js';
 import type { AuthCredentials } from '../auth.js';
 import { resolveExtensionIdentity } from '../extension-identity.js';
 import type { IPlatformAdapter } from '../platform.js';
+import { classifyServiceError } from '../service-error.js';
 import type { TfxManager } from '../tfx-manager.js';
 
 /**
@@ -191,9 +192,22 @@ export async function waitForValidation(
             break;
         }
       } else {
+        const fatalError =
+          result.exitCode !== 0
+            ? classifyServiceError([result.json, result.stdout, result.stderr])
+            : undefined;
+        if (fatalError) {
+          throw fatalError;
+        }
+
         platform.warning('No status in validation response');
       }
     } catch (err: unknown) {
+      const fatalError = classifyServiceError(err);
+      if (fatalError) {
+        throw fatalError;
+      }
+
       const errorMessage = err instanceof Error ? err.message : String(err);
       platform.error(`Validation attempt ${attempts} failed: ${errorMessage}`);
       if (attempts >= maxRetries) {

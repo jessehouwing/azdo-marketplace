@@ -444,6 +444,32 @@ describe('waitForInstallation', () => {
     nowSpy.mockRestore();
   });
 
+  it('fails fast on terminal task API authentication errors', async () => {
+    getTaskDefinitionsMock.mockRejectedValue({
+      statusCode: 401,
+      message: 'Unauthorized',
+    });
+
+    const result = await waitForInstallation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        accounts: ['https://dev.azure.com/org1'],
+        expectedTasks: [{ name: 'Task1', versions: ['1.0.0'] }],
+        timeoutMinutes: 1,
+        pollingIntervalSeconds: 0,
+      },
+      auth,
+      platform
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.accountResults[0].available).toBe(false);
+    expect(result.accountResults[0].error).toContain('401 Unauthorized');
+    expect(result.accountResults[0].error).not.toContain('Timeout waiting for tasks');
+    expect(getTaskDefinitionsMock).toHaveBeenCalledTimes(1);
+  });
+
   it('falls back when individual task manifest read fails', async () => {
     resolveManifestPathsMock.mockResolvedValue(['vss-extension.json']);
     readManifestMock

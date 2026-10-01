@@ -9,6 +9,7 @@ import type { ExtensionManifest } from '../manifest-reader.js';
 import { readManifest, resolveManifestPaths, resolveTaskManifestPaths } from '../manifest-utils.js';
 import { normalizeAccountsToServiceUrls } from '../organization-utils.js';
 import type { IPlatformAdapter } from '../platform.js';
+import { classifyServiceError } from '../service-error.js';
 import { VsixReader } from '../vsix-reader.js';
 
 export interface ExpectedTask {
@@ -447,6 +448,11 @@ export async function waitForInstallation(
           }
         } catch (error: unknown) {
           lastError = error instanceof Error ? error : new Error(String(error));
+          const fatalError = classifyServiceError(error);
+          if (fatalError) {
+            throw fatalError;
+          }
+
           platform.debug(`Error polling for tasks: ${lastError.message}. Retrying...`);
 
           if (Date.now() < deadline) {
