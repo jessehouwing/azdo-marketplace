@@ -27,7 +27,7 @@ workflows:
         - 'step-security/harden-runner@v2.21.1'
     '.github/workflows/codeql.yml':
         - 'actions/checkout@v7.0.1'
-        - 'github/codeql-action@v4.38.1'
+        - 'github/codeql-action@v4.38.2'
         - 'step-security/harden-runner@v2.21.1'
     '.github/workflows/copilot-setup-steps.yml':
         - 'actions/checkout@v7.0.1'
@@ -58,12 +58,12 @@ workflows:
         - 'azure/login@v3.1.0'
         - 'jessehouwing/actions-example-checker@v0.0.11'
         - 'jessehouwing/actions-semver-checker@v2.1.1'
-        - 'jessehouwing/azdo-marketplace@v6.3.6'
+        - 'jessehouwing/azdo-marketplace@v6.3.8'
         - 'step-security/harden-runner@v2.21.1'
     '.github/workflows/scorecard.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.1'
-        - 'github/codeql-action@v4.38.1'
+        - 'github/codeql-action@v4.38.2'
         - 'ossf/scorecard-action@v2.4.4'
         - 'step-security/harden-runner@v2.21.1'
     '.github/workflows/unit-tests.yml':
@@ -73,7 +73,7 @@ workflows:
     '.github/workflows/zizmor.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.0.0'
-        - 'github/codeql-action@v4.38.1'
+        - 'github/codeql-action@v4.38.2'
         - 'step-security/harden-runner@v2.21.1'
 dependencies:
     'actions/attest-build-provenance@v4.2.2':
@@ -135,9 +135,9 @@ dependencies:
         repo_id: 200299178
         uses:
             - 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd'
-    'github/codeql-action@v4.38.1':
-        ref: 'v4.38.1'
-        commit: 'sha1-1c5b675653bb5c22dbe9b12b556ec555138e09fd'
+    'github/codeql-action@v4.38.2':
+        ref: 'v4.38.2'
+        commit: 'sha1-2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2'
         owner_id: 9919
         repo_id: 259445878
     'jessehouwing/actions-dependency-submission@v1.0.17':
@@ -155,9 +155,9 @@ dependencies:
         commit: 'sha1-550e3a35452defcedbdc51aca36487c3bfee0696'
         owner_id: 4173387
         repo_id: 684124547
-    'jessehouwing/azdo-marketplace@v6.3.6':
-        ref: 'v6.3.6'
-        commit: 'sha1-ae5608c749564921f9172846215e40fb3b1bdd85'
+    'jessehouwing/azdo-marketplace@v6.3.8':
+        ref: 'v6.3.8'
+        commit: 'sha1-533fe74c8886b5d0e6dd9be70fbf50296a7ed48f'
         owner_id: 4173387
         repo_id: 1158033287
     'ossf/scorecard-action@v2.4.4':

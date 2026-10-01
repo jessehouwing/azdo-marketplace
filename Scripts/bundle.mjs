@@ -50,6 +50,10 @@ const targets = [
   },
 ];
 
+const runtimeAliasDependencies = new Set(
+  targets.flatMap((target) => target.runtimeAliasDependencies ?? [])
+);
+
 const targetSelectors = {
   azdo: (target) => target.packageDir === 'packages/azdo-task',
   actions: (target) => target.packageDir === 'packages/github-action',
@@ -323,12 +327,15 @@ async function writeRuntimeDependencyManifest(target) {
     dependencies,
   };
   if (rootManifest.overrides) {
-    // Propagate root-level dependency overrides (e.g. transitive security pins)
-    // so `npm install` inside the dist runtime tree respects the same pins.
-    // Skip overrides that duplicate a direct dependency of the dist manifest,
-    // since npm rejects an override matching a direct dependency at the same version.
+    // Preserve nested overrides for direct dependencies using npm's reference
+    // syntax; overriding the direct dependency's version itself is rejected.
     const filteredOverrides = Object.fromEntries(
-      Object.entries(rootManifest.overrides).filter(([name]) => !dependencies[name])
+      Object.entries(rootManifest.overrides).flatMap(([name, override]) => {
+        if (runtimeAliasDependencies.has(name) && !dependencies[name]) return [];
+        if (!dependencies[name]) return [[name, override]];
+        if (typeof override !== 'object') return [];
+        return [[name, { '.': `$${name}`, ...override }]];
+      })
     );
     if (Object.keys(filteredOverrides).length > 0) {
       distPackage.overrides = filteredOverrides;

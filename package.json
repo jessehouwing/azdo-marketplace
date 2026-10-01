@@ -74,11 +74,6 @@
     "@rollup/rollup-win32-x64-msvc": "^4.63.5"
   },
   "overrides": {
-    "qs": "^6.16.0",
-    "tfx-cli": "^0.24.1",
-    "azure-pipelines-tool-lib": {
-      "uuid": "^11.1.1"
-    },
     "msalv1": {
       "uuid": "^11.1.1"
     },
