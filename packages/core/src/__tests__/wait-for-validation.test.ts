@@ -127,6 +127,41 @@ describe('waitForValidation', () => {
     expect(platform.warningMessages).toContain('No status in validation response');
   });
 
+  it('should retry when Marketplace returns the Azure DevOps unavailable HTML page', async () => {
+    const unavailablePage =
+      'error: <title>Azure DevOps Services Unavailable</title>\r\n' +
+      "error: <h2>Sorry! Our services aren't available right now.</h2>";
+    const mockExecute = jest.spyOn(tfxManager, 'execute');
+    mockExecute.mockResolvedValueOnce({
+      exitCode: 1,
+      json: undefined,
+      stdout: unavailablePage,
+      stderr: '',
+    });
+    mockExecute.mockResolvedValueOnce({
+      exitCode: 0,
+      json: { status: 'success' },
+      stdout: '',
+      stderr: '',
+    });
+
+    const result = await waitForValidation(
+      {
+        publisherId: 'pub',
+        extensionId: 'ext',
+        timeoutMinutes: 0.00005,
+        pollingIntervalSeconds: 0.001,
+      },
+      auth,
+      tfxManager,
+      platform
+    );
+
+    expect(result.isValid).toBe(true);
+    expect(result.attempts).toBe(2);
+    expect(mockExecute).toHaveBeenCalledTimes(2);
+  });
+
   it('should handle failed validation', async () => {
     const mockExecute = jest.spyOn(tfxManager, 'execute');
     mockExecute.mockResolvedValue({

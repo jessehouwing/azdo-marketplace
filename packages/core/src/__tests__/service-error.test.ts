@@ -86,6 +86,16 @@ describe('classifyServiceError', () => {
       name: 'tfx request timeout',
       input: 'error: Request timeout: /_apis/gallery/publishers/pub/extensions/ext?flags=15',
     },
+    {
+      name: 'unrelated HTML response',
+      input: '<title>Some other service error</title><h2>Temporarily unavailable</h2>',
+    },
+    {
+      name: 'Azure DevOps Services Unavailable HTML page',
+      input:
+        'error: <title>Azure DevOps Services Unavailable</title>\r\n' +
+        "error: <h2>Sorry! Our services aren't available right now.</h2>",
+    },
   ])('does not treat $name as terminal without explicit service signal', ({ input }) => {
     const error = classifyServiceError(input);
 
