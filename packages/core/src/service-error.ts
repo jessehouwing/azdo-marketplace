@@ -117,7 +117,8 @@ function errorFromText(message: string): Error | undefined {
     return new TerminalServiceError(tfError[1].trim());
   }
 
-  const httpStatusError = /\b(?:received response|http)\s+(401|403)\b/i.exec(message);
+  const httpStatusError =
+    /\b(?:(?:received response|http)\s+(401|403)\b|Failed request:\s*\((401|403)\))/i.exec(message);
   if (httpStatusError) {
     return new TerminalServiceError(message.trim());
   }

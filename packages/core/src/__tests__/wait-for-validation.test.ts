@@ -214,6 +214,37 @@ describe('waitForValidation', () => {
     expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['stdout', 'stderr'] as const)(
+    'throws revoked PAT request failures from %s on the first attempt',
+    async (stream) => {
+      const revokedPatError = 'error: Error: Failed request: (401)';
+      const mockExecute = jest.spyOn(tfxManager, 'execute');
+      mockExecute.mockResolvedValue({
+        exitCode: -1,
+        json: undefined,
+        stdout: '',
+        stderr: '',
+        [stream]: revokedPatError,
+      });
+
+      await expect(
+        waitForValidation(
+          {
+            publisherId: 'pub',
+            extensionId: 'ext',
+            timeoutMinutes: 0.00005,
+            pollingIntervalSeconds: 0.001,
+          },
+          auth,
+          tfxManager,
+          platform
+        )
+      ).rejects.toThrow(revokedPatError);
+
+      expect(mockExecute).toHaveBeenCalledTimes(1);
+    }
+  );
+
   it('throws explicit tfx API location errors instead of retrying until timeout', async () => {
     const apiLocationError =
       'error: Error: Failed to find api location for area: gallery id: e11ea35a-16fe-4b80-ab11-c4cab88a0966';

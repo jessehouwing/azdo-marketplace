@@ -39,6 +39,16 @@ describe('classifyServiceError', () => {
       expected: 'Received response 403 (Forbidden). Check that you have access.',
     },
     {
+      name: 'revoked PAT tfx request failure',
+      input: 'error: Error: Failed request: (401)',
+      expected: 'error: Error: Failed request: (401)',
+    },
+    {
+      name: 'forbidden tfx request failure',
+      input: 'error: Error: Failed request: (403)',
+      expected: 'error: Error: Failed request: (403)',
+    },
+    {
       name: 'standalone 401 status with message',
       input: {
         statusCode: 401,
@@ -85,6 +95,14 @@ describe('classifyServiceError', () => {
     {
       name: 'tfx request timeout',
       input: 'error: Request timeout: /_apis/gallery/publishers/pub/extensions/ext?flags=15',
+    },
+    {
+      name: 'tfx throttled request',
+      input: 'error: Error: Failed request: (429)',
+    },
+    {
+      name: 'tfx unavailable service request',
+      input: 'error: Error: Failed request: (503)',
     },
     {
       name: 'unrelated HTML response',
