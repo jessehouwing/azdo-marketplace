@@ -15,9 +15,11 @@ run-name: Release ${{ inputs.version && format('v{0}', inputs.version) || github
 # Required environments (with protection rules):
 #   publisher-jessehouwing-dev  - For preview release and GitHub Actions tests
 #   publisher-jessehouwing      - For production releases (job 4, requires approval)
-#   release-publish-approval    - Single consolidated manual gate before any
-#                                 irreversible action (immutable GitHub
-#                                 release, Marketplace publish). Additive to
+#   release-publish-approval    - Manual gate before any irreversible action
+#                                 (immutable GitHub release, Marketplace
+#                                 publish) and again before the SemVer check,
+#                                 which must only be approved after the
+#                                 Marketplace publication is done. Additive to
 #                                 the environments above, not a replacement.
 
 on:
@@ -1118,6 +1120,9 @@ jobs:
     needs: [prepare-release, publish-github-release]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
+    # Manual gate: approve only after the Marketplace publication step is done.
+    environment:
+      name: release-publish-approval
     permissions:
       contents: write
 
