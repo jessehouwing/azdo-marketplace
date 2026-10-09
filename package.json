@@ -20,7 +20,6 @@
     "packages/github-action"
   ],
   "scripts": {
-    "postinstall": "patch-package",
     "initdev": "npm install --no-progress --force --no-update-notifier --no-fund",
     "build": "npm run build --workspaces --if-present",
     "build:clean": "npm run clean && npm run initdev && npm run build",
@@ -57,7 +56,6 @@
     "globals": "^17.13.0",
     "jest": "^30.5.1",
     "js-yaml": "^5.4.1",
-    "patch-package": "^8.0.1",
     "prettier": "^3.9.9",
     "rollup": "^4.63.6",
     "tfx-cli": "^0.24.1",
