@@ -69,7 +69,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Block unexpected outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: block
           # GitHub API/artifacts/releases: api.github.com, release-assets.githubusercontent.com.
@@ -160,7 +160,7 @@ jobs:
           }
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
           # Release builds must not restore from (poisonable) runtime caches
@@ -237,7 +237,7 @@ jobs:
         run: python3 -m pre_commit run --all-files
 
       - name: Package Azure DevOps extension
-        uses: jessehouwing/azdo-marketplace/package@v6.3.14
+        uses: jessehouwing/azdo-marketplace/package@v6.3.15
         id: package
         with:
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -271,7 +271,7 @@ jobs:
           subject-path: ${{ steps.package.outputs.vsix-file }}
 
       - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: vsix
           path: ${{ steps.package.outputs.vsix-file }}
@@ -336,7 +336,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -375,7 +375,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -385,14 +385,14 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
           # Release builds must not restore from (poisonable) runtime caches
           package-manager-cache: false
 
       - name: Download VSIX artifact
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
@@ -405,7 +405,7 @@ jobs:
           allow-no-subscriptions: true
 
       - name: Publish preview extension
-        uses: jessehouwing/azdo-marketplace/publish@v6.3.14
+        uses: jessehouwing/azdo-marketplace/publish@v6.3.15
         id: publish
         with:
           auth-type: oidc
@@ -418,14 +418,14 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.3.14
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.3.15
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
           timeout-minutes: '30'
 
       - name: Share extension
-        uses: jessehouwing/azdo-marketplace/share@v6.3.14
+        uses: jessehouwing/azdo-marketplace/share@v6.3.15
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
@@ -433,7 +433,7 @@ jobs:
             https://dev.azure.com/jessehouwing
 
       - name: Install extension
-        uses: jessehouwing/azdo-marketplace/install@v6.3.14
+        uses: jessehouwing/azdo-marketplace/install@v6.3.15
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
@@ -441,7 +441,7 @@ jobs:
             https://dev.azure.com/jessehouwing
 
       - name: Wait for installation
-        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.3.14
+        uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.3.15
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
@@ -479,7 +479,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -696,7 +696,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -838,7 +838,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -848,14 +848,14 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
           # Release builds must not restore from (poisonable) runtime caches
           package-manager-cache: false
 
       - name: Download VSIX artifact
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
@@ -879,7 +879,7 @@ jobs:
       # so we don't attempt to republish the same version.
       - name: Check current marketplace version
         id: check-version
-        uses: jessehouwing/azdo-marketplace/query-version@v6.3.14
+        uses: jessehouwing/azdo-marketplace/query-version@v6.3.15
         with:
           auth-type: oidc
           publisher-id: ${{ env.PUBLISHER_ID }}
@@ -899,7 +899,7 @@ jobs:
       - name: Publish production extension
         id: publish
         if: steps.check-version.outputs.current-version != needs.prepare-release.outputs.version
-        uses: jessehouwing/azdo-marketplace/publish@v6.3.14
+        uses: jessehouwing/azdo-marketplace/publish@v6.3.15
         with:
           auth-type: oidc
           use: vsix
@@ -907,7 +907,7 @@ jobs:
           no-wait-validation: true
 
       - name: Wait for validation
-        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.3.14
+        uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.3.15
         with:
           auth-type: oidc
           vsix-file: ${{ steps.publish.outputs.vsix-file || format('{0}/vsix/{1}', runner.temp, needs.prepare-release.outputs.vsix-file-name) }}
@@ -935,7 +935,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -945,7 +945,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download VSIX artifact
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           name: vsix
           path: ${{ runner.temp }}/vsix
@@ -1069,7 +1069,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -1128,7 +1128,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
@@ -1176,7 +1176,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.21.1
+        uses: step-security/harden-runner@v2.22.1
         with:
           egress-policy: audit
 
