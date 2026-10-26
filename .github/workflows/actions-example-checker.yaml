@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2.22.1
+        uses: step-security/harden-runner@v2.22.2
         with:
           egress-policy: audit
 
@@ -50,7 +50,7 @@ jobs:
           echo "Using latest version tag: $latest"
           echo "tag=$latest" >> "$GITHUB_OUTPUT"
 
-      - uses: jessehouwing/actions-example-checker@v0.0.11
+      - uses: jessehouwing/actions-example-checker@v0.0.12
         with:
           version: |
             ${{ steps.version.outputs.tag }}
