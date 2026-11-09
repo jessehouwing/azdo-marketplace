@@ -68,9 +68,9 @@
     "yazl": "^3.3.1"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.66.0",
-    "@rollup/rollup-win32-x64-gnu": "^4.66.0",
-    "@rollup/rollup-win32-x64-msvc": "^4.66.0"
+    "@rollup/rollup-linux-x64-gnu": "^4.67.5",
+    "@rollup/rollup-win32-x64-gnu": "^4.67.5",
+    "@rollup/rollup-win32-x64-msvc": "^4.67.5"
   },
   "overrides": {
     "msalv1": {
