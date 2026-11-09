@@ -7,47 +7,47 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/dependency-review-action@v5.0.0'
         - 'jessehouwing/actions-dependency-submission@v2.0.2'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/actions-example-checker.yaml':
         - 'actions/checkout@v7.0.1'
         - 'jessehouwing/actions-example-checker@v0.0.12'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/actions-semver-checker.yml':
         - 'jessehouwing/actions-semver-checker@v2.1.1'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/check-dist.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v7.0.2'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'codecov/codecov-action@v7.1.1'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/codeql.yml':
         - 'actions/checkout@v7.0.1'
-        - 'github/codeql-action@v4.39.1'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'github/codeql-action@v4.39.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/copilot-setup-steps.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'actions/setup-python@v7.1.0'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/linter.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/pre-commit.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'actions/setup-python@v7.1.0'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/release-test-github-actions.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'azure/login@v3.1.0'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/release.yml':
         - 'actions/attest-build-provenance@v4.2.2'
         - 'actions/checkout@v7.0.1'
@@ -58,23 +58,23 @@ workflows:
         - 'azure/login@v3.1.0'
         - 'jessehouwing/actions-example-checker@v0.0.12'
         - 'jessehouwing/actions-semver-checker@v2.1.1'
-        - 'jessehouwing/azdo-marketplace@v6.3.16'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'jessehouwing/azdo-marketplace@v6.3.17'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/scorecard.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
-        - 'github/codeql-action@v4.39.1'
+        - 'github/codeql-action@v4.39.3'
         - 'ossf/scorecard-action@v2.5.0'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/unit-tests.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/zizmor.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
-        - 'github/codeql-action@v4.39.1'
-        - 'step-security/harden-runner@v2.22.3'
+        - 'github/codeql-action@v4.39.3'
+        - 'step-security/harden-runner@v2.22.4'
 dependencies:
     'actions/attest-build-provenance@v4.2.2':
         ref: 'v4.2.2'
@@ -135,9 +135,9 @@ dependencies:
         repo_id: 200299178
         uses:
             - 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd'
-    'github/codeql-action@v4.39.1':
-        ref: 'v4.39.1'
-        commit: 'sha1-9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
+    'github/codeql-action@v4.39.3':
+        ref: 'v4.39.3'
+        commit: 'sha1-33d7b85da1a04171e211befe2c739303b9a4c066'
         owner_id: 9919
         repo_id: 259445878
     'jessehouwing/actions-dependency-submission@v2.0.2':
@@ -155,9 +155,9 @@ dependencies:
         commit: 'sha1-550e3a35452defcedbdc51aca36487c3bfee0696'
         owner_id: 4173387
         repo_id: 684124547
-    'jessehouwing/azdo-marketplace@v6.3.16':
-        ref: 'v6.3.16'
-        commit: 'sha1-1c6d0b1857ded127f882c0d26f22b4bd103afd2a'
+    'jessehouwing/azdo-marketplace@v6.3.17':
+        ref: 'v6.3.17'
+        commit: 'sha1-e9b6e7193d09e69e8992e6977bf0de4c8a66680b'
         owner_id: 4173387
         repo_id: 1158033287
     'ossf/scorecard-action@v2.5.0':
@@ -165,8 +165,8 @@ dependencies:
         commit: 'sha1-fa7117db83c52d787ae5a89f350999701505d78e'
         owner_id: 67707773
         repo_id: 421101922
-    'step-security/harden-runner@v2.22.3':
-        ref: 'v2.22.3'
-        commit: 'sha1-46b06cea07f9e64621fdf066ba77ac6915163d43'
+    'step-security/harden-runner@v2.22.4':
+        ref: 'v2.22.4'
+        commit: 'sha1-1d88384fd173af6ecb012dfd0264a306b711241a'
         owner_id: 88700172
         repo_id: 422287306
