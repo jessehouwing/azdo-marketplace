@@ -1,9 +1,11 @@
 import * as core from '@actions/core';
 import {
   AuthCredentials,
+  downloadVsix,
   installExtension,
   normalizeAccountToServiceUrl,
   packageExtension,
+  patchExtension,
   publishExtension,
   queryVersion,
   resolveVsixFile,
@@ -96,20 +98,21 @@ async function run(): Promise<void> {
     const tfxVersion = platform.getInput('tfx-version') || 'built-in';
 
     // Validate binaries based on tfx version mode
-    if (tfxVersion === 'path') {
+    if (operation !== 'patch' && tfxVersion === 'path') {
       // User wants to use tfx from PATH
       await validateTfxAvailable(platform);
-    } else if (tfxVersion !== 'built-in') {
+    } else if (operation !== 'patch' && tfxVersion !== 'built-in') {
       // Version spec mode - need npm to download
       await validateNpmAvailable(platform);
     }
 
-    const tfxManager = new TfxManager({ tfxVersion: tfxVersion, platform });
+    const tfxManager =
+      operation === 'patch' ? undefined : new TfxManager({ tfxVersion: tfxVersion, platform });
 
     // Get authentication if needed (not required for package; conditional for query-version)
     let auth: AuthCredentials | undefined;
     const needsAuth = (() => {
-      if (operation === 'package') {
+      if (operation === 'package' || operation === 'patch') {
         return false;
       }
       if (operation === 'query-version') {
@@ -170,6 +173,14 @@ async function run(): Promise<void> {
 
     // Route to appropriate command
     switch (operation) {
+      case 'patch':
+        await runPatch(platform);
+        break;
+
+      case 'download-vsix':
+        await runDownloadVsix(platform, tfxManager, auth);
+        break;
+
       case 'package':
         await runPackage(platform, tfxManager);
         break;
@@ -220,6 +231,49 @@ async function run(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
   }
+}
+
+async function runPatch(platform: GitHubAdapter): Promise<void> {
+  const pricing = platform.getInput('extension-pricing');
+  const result = await patchExtension(
+    {
+      vsixFile: await resolveVsixFile(platform.getInput('vsix-file', true), platform),
+      outputPath: platform.getInput('output-path') || undefined,
+      publisherId: platform.getInput('publisher-id'),
+      extensionId: platform.getInput('extension-id'),
+      extensionVersion: platform.getInput('extension-version'),
+      extensionName: platform.getInput('extension-name'),
+      extensionVisibility: platform.getInput('extension-visibility') as
+        'private' | 'public' | 'private_preview' | 'public_preview' | undefined,
+      extensionPricing:
+        pricing && pricing !== 'default' ? (pricing as 'free' | 'paid' | 'trial') : undefined,
+      updateTasksVersion: getUpdateTasksVersionMode(platform),
+      updateTasksId: platform.getBoolInput('update-tasks-id'),
+    },
+    platform
+  );
+  platform.setOutput('vsix-file', result.vsixFile);
+  platform.setOutput('vsix-file-name', basename(result.vsixFile));
+}
+
+async function runDownloadVsix(
+  platform: GitHubAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
+  const result = await downloadVsix(
+    {
+      publisherId: platform.getInput('publisher-id', true),
+      extensionId: platform.getInput('extension-id', true),
+      version: platform.getInput('version') || 'latest',
+      outputPath: platform.getInput('output-path') || undefined,
+    },
+    auth,
+    tfxManager,
+    platform
+  );
+  platform.setOutput('vsix-file', result.vsixFile);
+  platform.setOutput('vsix-file-name', basename(result.vsixFile));
 }
 
 function getUpdateTasksVersionMode(

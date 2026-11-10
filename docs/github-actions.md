@@ -17,6 +17,8 @@ This repository ships a **unified JavaScript action** and **composite command wr
 ## Supported operations (unified action)
 
 - `package`
+- `patch`
+- `download-vsix`
 - `publish`
 - `unpublish`
 - `share`
@@ -82,6 +84,31 @@ This repository ships a **unified JavaScript action** and **composite command wr
   - `output-path`
   - `bypass-validation`, `update-tasks-version`, `update-tasks-id`
   - auth/tooling inputs
+
+### `patch`
+
+Edits an existing VSIX without authentication, npm, or tfx-cli.
+
+- Required: `vsix-file` (a path or glob matching exactly one file).
+- Optional: `output-path`, `publisher-id`, `extension-id`, `extension-version`,
+  `extension-name`, `extension-visibility`, `extension-pricing`,
+  `update-tasks-version`, `update-tasks-id`.
+- Outputs: `vsix-file`, `vsix-file-name`.
+- Identical source bytes and options produce identical patched bytes.
+
+### `download-vsix`
+
+Downloads a published VSIX without patching or re-packaging its bytes.
+
+- Required: `publisher-id`, `extension-id`, usual authentication inputs.
+- Optional: `version` (default `latest`), `output-path`, `service-url`, `tfx-version`.
+- Outputs: `vsix-file`, `vsix-file-name`.
+- `version` selects a published version; `extension-version` is an editing input, not a download selector.
+- Missing versions/assets and invalid VSIX responses fail the operation.
+
+Both operations also have composite wrappers: `jessehouwing/azdo-marketplace/patch@v6`
+and `jessehouwing/azdo-marketplace/download-vsix@v6`.
+See [VSIX provenance examples](./vsix-provenance.md) for patch → attest → publish and verified retries.
 
 ### `publish`
 
@@ -216,8 +243,8 @@ When `working-directory` is omitted, manifest discovery falls back to the curren
 
 ## Unified action outputs
 
-- `vsix-file` (package/publish)
-- `vsix-file-name` (package/publish)
+- `vsix-file` (package/patch/publish/download-vsix)
+- `vsix-file-name` (package/patch/publish/download-vsix)
 - `metadata` (show)
 - `proposed-version` (query-version) — highest version from all sources
 - `current-version` (query-version) — resolved version before increment (from the winning `version-source`)

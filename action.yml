@@ -9,11 +9,13 @@ inputs:
     description: |-
       **Operation to perform:**
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Default: none
 
       - `package`: Create .vsix package file from manifest
+      - `patch`: Deterministically edit a VSIX without authentication or publishing
+      - `download-vsix`: Download a published VSIX version from the marketplace
       - `publish`: Publish extension to Visual Studio Marketplace
       - `unpublish`: Remove extension from marketplace
       - `share`: Share private extension with organizations
@@ -28,7 +30,7 @@ inputs:
     description: |-
       Authentication type: 'pat', 'basic', or 'oidc'
 
-      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Available for: download-vsix, install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
       Default: pat
 
@@ -60,7 +62,7 @@ inputs:
     description: |-
       Token for marketplace authentication
 
-      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Available for: download-vsix, install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
       Default: none
 
@@ -74,7 +76,7 @@ inputs:
     description: |-
       Username for basic authentication
 
-      Available for: install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Available for: download-vsix, install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
       Default: none
 
@@ -87,7 +89,7 @@ inputs:
     description: |-
       Azure DevOps service URL (optional)
 
-      Available for: publish, query-version, share, show, unpublish, unshare, wait-for-validation.
+      Available for: download-vsix, publish, query-version, share, show, unpublish, unshare, wait-for-validation.
       Required for: none.
       Default: none
 
@@ -109,7 +111,7 @@ inputs:
     description: |-
       **Version of tfx-cli to use:**
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Available for: download-vsix, install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
       Default: built-in
 
@@ -124,12 +126,12 @@ inputs:
     description: |-
       **Publisher ID** that owns the extension.
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: show.
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
       Default: none
 
       - Must match publisher in manifest (or override it)
-      - Required for command: show.
+      - Required for command: download-vsix, show.
       - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
         falls back to value from manifest-file or vsix-file when not specified.
       - Alphanumeric with hyphens, dots, underscores only
@@ -140,13 +142,13 @@ inputs:
     description: |-
       **Extension ID** - unique identifier within the publisher namespace.
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: show.
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
       Default: none
 
       - Must match ID in manifest (or override it)
       - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
-      - Required for command: show.
+      - Required for command: download-vsix, show.
       - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
         falls back to value from manifest-file or vsix-file when not specified.
       - Alphanumeric with hyphens, dots, underscores only
@@ -229,7 +231,7 @@ inputs:
     description: |-
       **Override extension version** specified in manifest.
 
-      Available for: package, publish, wait-for-validation.
+      Available for: package, patch, publish, wait-for-validation.
       Required for: none.
       Default: none
 
@@ -238,11 +240,22 @@ inputs:
 
       **Examples:** `1.2.3`, `1.2.3.4`, `1.0.$``{{ github.run_number }}`
     required: false
+  version:
+    description: |-
+      **Published version to download**, or `latest`.
+
+      Available for: download-vsix.
+      Required for: none.
+      Default: latest
+
+      Selects an existing Marketplace version; unlike `extension-version`, this does not rewrite the VSIX.
+    required: false
+    default: latest
   extension-name:
     description: |-
       **Override extension display name** shown in marketplace.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: none
 
@@ -255,7 +268,7 @@ inputs:
     description: |-
       **Override extension visibility** in marketplace.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: none
 
@@ -284,7 +297,7 @@ inputs:
     description: |-
       **Override extension pricing model**.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: default
 
@@ -297,13 +310,14 @@ inputs:
     default: default
   output-path:
     description: |-
-      **Output directory** for generated/final .vsix file.
+      **Output directory** for generated/downloaded .vsix file.
 
-      Available for: package, publish.
+      Available for: download-vsix, package, patch, publish.
       Required for: none.
       Default: none
 
-      - Defaults to current directory if not specified
+      - For package, patch, and download-vsix, defaults to current directory
+      - Patch replaces the input only when its output path and generated filename match
       - Directory will be created if it doesn't exist
       - Actual filename is based on publisher.extensionId-version.vsix
 
@@ -343,7 +357,7 @@ inputs:
     description: |-
       **How to update task versions** to match extension version.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: none
 
@@ -359,7 +373,7 @@ inputs:
     description: |-
       **Generate new deterministic task IDs** for all tasks.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: false
 
@@ -484,12 +498,14 @@ inputs:
     required: false
   vsix-file:
     description: |-
-      **Path to .vsix file** for auto-extracting task versions.
+      **Path or glob to an existing .vsix file** for patching, publishing, or identity/task discovery.
 
-      Available for: install, publish, query-version, share, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: none.
+      Available for: install, patch, publish, query-version, share, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: patch.
       Default: none
 
+      - Required for patch; glob patterns must resolve to exactly one file
+      - Required for publish when `use: vsix`
       - Reads extension identity (publisher-id and extension-id) when not specified
       - For wait-for-installation: extracts task.json files from VSIX package
       - Most convenient when verifying immediately after packaging
@@ -529,7 +545,7 @@ inputs:
 outputs:
   vsix-file:
     description: |
-      **Path to generated .vsix file** (package operation only).
+      **Path to generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
 
       **Example usage:**
       ```yaml
@@ -542,7 +558,7 @@ outputs:
       ```
   vsix-file-name:
     description: |
-      **Filename of generated .vsix file** (package/publish operations).
+      **Filename of generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
 
       **Example usage:**
       ```yaml

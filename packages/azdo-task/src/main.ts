@@ -1,8 +1,10 @@
 import {
   AuthCredentials,
+  downloadVsix,
   installExtension,
   normalizeAccountToServiceUrl,
   packageExtension,
+  patchExtension,
   publishExtension,
   queryVersion,
   resolveVsixFile,
@@ -30,6 +32,8 @@ import { AzdoAdapter } from './azdo-adapter.js';
 
 function normalizeOperation(operation: string): string {
   switch (operation.trim()) {
+    case 'download-vsix':
+      return 'downloadVsix';
     case 'query-version':
       return 'queryVersion';
     case 'wait-for-validation':
@@ -120,20 +124,21 @@ async function run(): Promise<void> {
     const tfxVersion = platform.getInput('tfxVersion') || 'built-in';
 
     // Validate binaries based on tfx version mode
-    if (tfxVersion === 'path') {
+    if (operation !== 'patch' && tfxVersion === 'path') {
       // User wants to use tfx from PATH
       await validateTfxAvailable(platform);
-    } else if (tfxVersion !== 'built-in') {
+    } else if (operation !== 'patch' && tfxVersion !== 'built-in') {
       // Version spec mode - need npm to download
       await validateNpmAvailable(platform);
     }
 
-    const tfxManager = new TfxManager({ tfxVersion: tfxVersion, platform });
+    const tfxManager =
+      operation === 'patch' ? undefined : new TfxManager({ tfxVersion: tfxVersion, platform });
 
     // Get authentication if needed (not required for package; conditional for queryVersion)
     let auth: AuthCredentials | undefined;
     const needsAuth = (() => {
-      if (operation === 'package') {
+      if (operation === 'package' || operation === 'patch') {
         return false;
       }
       if (operation === 'queryVersion') {
@@ -185,6 +190,14 @@ async function run(): Promise<void> {
 
     // Route to appropriate command
     switch (operation) {
+      case 'patch':
+        await runPatch(platform);
+        break;
+
+      case 'downloadVsix':
+        await runDownloadVsix(platform, tfxManager, auth);
+        break;
+
       case 'package':
         await runPackage(platform, tfxManager);
         break;
@@ -236,6 +249,49 @@ async function run(): Promise<void> {
     tl.error(message);
     tl.setResult(tl.TaskResult.Failed, message);
   }
+}
+
+async function runPatch(platform: AzdoAdapter): Promise<void> {
+  const pricing = platform.getInput('extensionPricing');
+  const result = await patchExtension(
+    {
+      vsixFile: await resolveVsixFile(platform.getPathInput('vsixFile', true), platform),
+      outputPath: platform.getPathInput('outputPath') || undefined,
+      publisherId: platform.getInput('publisherId'),
+      extensionId: platform.getInput('extensionId'),
+      extensionVersion: platform.getInput('extensionVersion'),
+      extensionName: platform.getInput('extensionName'),
+      extensionVisibility: platform.getInput('extensionVisibility') as
+        'private' | 'public' | 'private_preview' | 'public_preview' | undefined,
+      extensionPricing:
+        pricing && pricing !== 'default' ? (pricing as 'free' | 'paid' | 'trial') : undefined,
+      updateTasksVersion: getUpdateTasksVersionMode(platform),
+      updateTasksId: platform.getBoolInput('updateTasksId'),
+    },
+    platform
+  );
+  platform.setOutput('vsixFile', result.vsixFile);
+  platform.setOutput('vsixFileName', basename(result.vsixFile));
+}
+
+async function runDownloadVsix(
+  platform: AzdoAdapter,
+  tfxManager: TfxManager,
+  auth: AuthCredentials
+): Promise<void> {
+  const result = await downloadVsix(
+    {
+      publisherId: platform.getInput('publisherId', true),
+      extensionId: platform.getInput('extensionId', true),
+      version: platform.getInput('version') || 'latest',
+      outputPath: platform.getPathInput('outputPath') || undefined,
+    },
+    auth,
+    tfxManager,
+    platform
+  );
+  platform.setOutput('vsixFile', result.vsixFile);
+  platform.setOutput('vsixFileName', basename(result.vsixFile));
 }
 
 function getUpdateTasksVersionMode(

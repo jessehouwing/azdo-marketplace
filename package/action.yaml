@@ -9,7 +9,7 @@ inputs:
     description: |-
       **Version of tfx-cli to use:**
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Available for: download-vsix, install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
       Required for: none.
       Default: built-in
 
@@ -24,12 +24,12 @@ inputs:
     description: |-
       **Publisher ID** that owns the extension.
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: show.
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
       Default: none
 
       - Must match publisher in manifest (or override it)
-      - Required for command: show.
+      - Required for command: download-vsix, show.
       - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
         falls back to value from manifest-file or vsix-file when not specified.
       - Alphanumeric with hyphens, dots, underscores only
@@ -40,13 +40,13 @@ inputs:
     description: |-
       **Extension ID** - unique identifier within the publisher namespace.
 
-      Available for: install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
-      Required for: show.
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
       Default: none
 
       - Must match ID in manifest (or override it)
       - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
-      - Required for command: show.
+      - Required for command: download-vsix, show.
       - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
         falls back to value from manifest-file or vsix-file when not specified.
       - Alphanumeric with hyphens, dots, underscores only
@@ -116,7 +116,7 @@ inputs:
     description: |-
       **Override extension version** specified in manifest.
 
-      Available for: package, publish, wait-for-validation.
+      Available for: package, patch, publish, wait-for-validation.
       Required for: none.
       Default: none
 
@@ -129,7 +129,7 @@ inputs:
     description: |-
       **Override extension display name** shown in marketplace.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: none
 
@@ -142,7 +142,7 @@ inputs:
     description: |-
       **Override extension visibility** in marketplace.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: none
 
@@ -171,7 +171,7 @@ inputs:
     description: |-
       **Override extension pricing model**.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: default
 
@@ -184,13 +184,14 @@ inputs:
     default: default
   output-path:
     description: |-
-      **Output directory** for generated/final .vsix file.
+      **Output directory** for generated/downloaded .vsix file.
 
-      Available for: package, publish.
+      Available for: download-vsix, package, patch, publish.
       Required for: none.
       Default: none
 
-      - Defaults to current directory if not specified
+      - For package, patch, and download-vsix, defaults to current directory
+      - Patch replaces the input only when its output path and generated filename match
       - Directory will be created if it doesn't exist
       - Actual filename is based on publisher.extensionId-version.vsix
 
@@ -215,7 +216,7 @@ inputs:
     description: |-
       **How to update task versions** to match extension version.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: none
 
@@ -231,7 +232,7 @@ inputs:
     description: |-
       **Generate new deterministic task IDs** for all tasks.
 
-      Available for: package, publish.
+      Available for: package, patch, publish.
       Required for: none.
       Default: false
 
@@ -246,7 +247,7 @@ inputs:
 outputs:
   vsix-file:
     description: |
-      **Path to generated .vsix file** (package operation only).
+      **Path to generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
 
       **Example usage:**
       ```yaml
@@ -260,7 +261,7 @@ outputs:
     value: ${{ steps.package.outputs.vsix-file }}
   vsix-file-name:
     description: |
-      **Filename of generated .vsix file** (package/publish operations).
+      **Filename of generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
 
       **Example usage:**
       ```yaml

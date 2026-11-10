@@ -1,0 +1,29 @@
+inputs:
+  vsix-file:
+    type: string
+  output-path:
+    type: string
+  publisher-id:
+    type: string
+  extension-id:
+    type: string
+  extension-version:
+    type: string
+  extension-name:
+    type: string
+  extension-visibility:
+    type: choice
+    options: [private, public, private_preview, public_preview]
+  extension-pricing:
+    type: choice
+    options: [default, free, paid]
+  update-tasks-version:
+    type: choice
+    options: [none, major, minor, patch]
+  update-tasks-id:
+    type: boolean
+outputs:
+  vsix-file:
+    type: string
+  vsix-file-name:
+    type: string

@@ -14,6 +14,7 @@ type ActionOutput = {
 };
 
 type ActionStep = {
+  uses?: string;
   with?: Record<string, unknown>;
 };
 
@@ -36,6 +37,8 @@ const repositoryRoot = resolve(currentDirectory, '../../../../');
 
 const mainActionPath = resolve(repositoryRoot, 'action.yml');
 const compositeActionTable = [
+  { operation: 'patch', relativePath: 'patch/action.yaml' },
+  { operation: 'download-vsix', relativePath: 'download-vsix/action.yaml' },
   { operation: 'install', relativePath: 'install/action.yaml' },
   { operation: 'package', relativePath: 'package/action.yaml' },
   { operation: 'publish', relativePath: 'publish/action.yaml' },
@@ -75,6 +78,12 @@ describe('Composite action wrapper contract', () => {
   describe.each(compositeActionTable)(
     '$operation composite action ($relativePath)',
     ({ operation, relativePath, absolutePath }) => {
+      if (operation === 'patch' || operation === 'download-vsix') {
+        it('runs the root action from the same commit', () => {
+          expect(loadActionDefinition(absolutePath).runs?.steps?.[0]?.uses).toBe('$/');
+        });
+      }
+
       it('declares a one-to-one contract between inputs and forwarded with-values', () => {
         const compositeAction = loadActionDefinition(absolutePath);
         const compositeInputs = compositeAction.inputs ?? {};

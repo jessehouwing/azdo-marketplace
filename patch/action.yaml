@@ -1,0 +1,205 @@
+name: Patch Azure DevOps Extension
+description: Deterministically edit a VSIX without authentication or publishing
+author: Jesse Houwing
+branding:
+  icon: edit
+  color: blue
+inputs:
+  vsix-file:
+    description: |-
+      **Path or glob to an existing .vsix file** for patching, publishing, or identity/task discovery.
+
+      Available for: install, patch, publish, query-version, share, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: patch.
+      Default: none
+
+      - Required for patch; glob patterns must resolve to exactly one file
+      - Required for publish when `use: vsix`
+      - Reads extension identity (publisher-id and extension-id) when not specified
+      - For wait-for-installation: extracts task.json files from VSIX package
+      - Most convenient when verifying immediately after packaging
+
+      **Note:** Use this OR expected-tasks/manifest-file, not multiple
+    required: true
+  output-path:
+    description: |-
+      **Output directory** for generated/downloaded .vsix file.
+
+      Available for: download-vsix, package, patch, publish.
+      Required for: none.
+      Default: none
+
+      - For package, patch, and download-vsix, defaults to current directory
+      - Patch replaces the input only when its output path and generated filename match
+      - Directory will be created if it doesn't exist
+      - Actual filename is based on publisher.extensionId-version.vsix
+
+      **Output:** Full path stored in `vsix-file` output
+    required: false
+  publisher-id:
+    description: |-
+      **Publisher ID** that owns the extension.
+
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
+      Default: none
+
+      - Must match publisher in manifest (or override it)
+      - Required for command: download-vsix, show.
+      - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
+        falls back to value from manifest-file or vsix-file when not specified.
+      - Alphanumeric with hyphens, dots, underscores only
+
+      **Example:** `mycompany` or `my-publisher-id`
+    required: false
+  extension-id:
+    description: |-
+      **Extension ID** - unique identifier within the publisher namespace.
+
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
+      Default: none
+
+      - Must match ID in manifest (or override it)
+      - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
+      - Required for command: download-vsix, show.
+      - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
+        falls back to value from manifest-file or vsix-file when not specified.
+      - Alphanumeric with hyphens, dots, underscores only
+
+      **Example:** `my-extension` or `azure-devops-tasks`
+    required: false
+  extension-version:
+    description: |-
+      **Override extension version** specified in manifest.
+
+      Available for: package, patch, publish, wait-for-validation.
+      Required for: none.
+      Default: none
+
+      - Must follow semantic versioning: `major.minor.patch` or `major.minor.patch.revision`
+      - Useful for CI/CD pipelines to inject build numbers
+
+      **Examples:** `1.2.3`, `1.2.3.4`, `1.0.$``{{ github.run_number }}`
+    required: false
+  extension-name:
+    description: |-
+      **Override extension display name** shown in marketplace.
+
+      Available for: package, patch, publish.
+      Required for: none.
+      Default: none
+
+      - Does not affect the extension ID
+      - Useful for creating branded variants (e.g., "My Extension (Dev)")
+
+      **Example:** `My Extension - Development`
+    required: false
+  extension-visibility:
+    description: |-
+      **Override extension visibility** in marketplace.
+
+      Available for: package, patch, publish.
+      Required for: none.
+      Default: none
+
+      - `private`: Only visible to organizations you share it with
+      - `public`: Visible to everyone in the marketplace
+      - `private_preview`: Private extension in preview mode
+      - `public_preview`: Public extension in preview mode
+
+      **Note:** Private extensions must be explicitly shared with organizations
+    required: false
+  extension-pricing:
+    description: |-
+      **Override extension pricing model**.
+
+      Available for: package, patch, publish.
+      Required for: none.
+      Default: default
+
+      - `default`: Use pricing from manifest
+      - `free`: Extension is free to use
+      - `paid`: Extension requires payment
+
+      **Note:** Paid extensions require additional marketplace publisher verification
+    required: false
+    default: default
+  update-tasks-version:
+    description: |-
+      **How to update task versions** to match extension version.
+
+      Available for: package, patch, publish.
+      Required for: none.
+      Default: none
+
+      - `none`: Do not update task versions
+      - `major`: Replace major, minor, patch
+      - `minor`: Replace minor, patch
+      - `patch`: Replace patch only
+
+      **Default:** `none`
+    required: false
+    default: none
+  update-tasks-id:
+    description: |-
+      **Generate new deterministic task IDs** for all tasks.
+
+      Available for: package, patch, publish.
+      Required for: none.
+      Default: false
+
+      - Creates UUID v5 IDs based on publisher + extension + task name
+      - Use when creating extension variants (dev, test versions)
+
+      **Warning:** Changing task IDs creates new tasks - existing pipelines won't auto-update
+
+      **Default:** `false`
+    required: false
+    default: 'false'
+outputs:
+  vsix-file:
+    description: |
+      **Path to generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
+
+      **Example usage:**
+      ```yaml
+      - uses: jessehouwing/azdo-marketplace@v6
+        id: package
+        with:
+          operation: package
+
+      - run: echo "VSIX at $``{{ steps.package.outputs.vsix-file }}"
+      ```
+    value: ${{ steps.patch.outputs.vsix-file }}
+  vsix-file-name:
+    description: |
+      **Filename of generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
+
+      **Example usage:**
+      ```yaml
+      - uses: jessehouwing/azdo-marketplace@v6
+        id: package
+        with:
+          operation: package
+
+      - run: echo "VSIX file name $``{{ steps.package.outputs.vsix-file-name }}"
+      ```
+    value: ${{ steps.patch.outputs.vsix-file-name }}
+runs:
+  using: composite
+  steps:
+    - id: patch
+      uses: $/
+      with:
+        operation: patch
+        vsix-file: ${{ inputs.vsix-file }}
+        output-path: ${{ inputs.output-path }}
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        extension-version: ${{ inputs.extension-version }}
+        extension-name: ${{ inputs.extension-name }}
+        extension-visibility: ${{ inputs.extension-visibility }}
+        extension-pricing: ${{ inputs.extension-pricing }}
+        update-tasks-version: ${{ inputs.update-tasks-version }}
+        update-tasks-id: ${{ inputs.update-tasks-id }}

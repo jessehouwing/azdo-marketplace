@@ -5,6 +5,8 @@ This repository hosts GitHub Actions and Azure Pipelines tasks to package, publi
 ## Available commands
 
 - **Package**: Package an Azure DevOps extension into a `.vsix` file.
+- **Patch**: Deterministically edit a prebuilt VSIX without authentication or publishing.
+- **Download VSIX**: Download a published version (`latest` by default) from Marketplace.
 - **Publish**: Optionally package and publish an extension to the Visual Studio Marketplace.
 - **Unpublish**: Remove an extension from the Visual Studio Marketplace.
 - **Share**: Share an extension with an Azure DevOps organization.
@@ -21,6 +23,7 @@ This repository hosts GitHub Actions and Azure Pipelines tasks to package, publi
 - [Using v6 in Azure Pipelines](./docs/azure-pipelines.md)
 - [Using v6 in GitHub Actions](./docs/github-actions.md)
 - [Authentication and OIDC](./docs/authentication-and-oidc.md)
+- [Patch, download, and verify VSIX provenance](./docs/vsix-provenance.md)
 - [Design and architecture](./docs/design-and-architecture.md)
 - [Contributing guide](./docs/contributing.md)
 - [Migrate Azure Pipelines from v5 to v6](./docs/migrate-azure-pipelines-v5-to-v6.md)
@@ -37,6 +40,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 - **Unshare**: `Marketplace (publish)`
 - **Install**: `Extensions (read and manage)`, `Marketplace (acquire)`
 - **Show**: `Marketplace (read)`
+- **Download VSIX**: `Marketplace (read)`
 - **Query version**: `Marketplace (read)`
 - **Wait for validation**: `Marketplace (read)`
 - **Wait for installation**: `Extensions (read and manage)`, `Agent Pools (read)`
@@ -76,7 +80,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 
 #### General
 
-- `operation`: Selects which command to run (`package`, `publish`, `install`, `share`, `unshare`, `unpublish`, `show`, `query-version`, `wait-for-validation`, `wait-for-installation`).
+- `operation`: Selects which command to run (`package`, `patch`, `download-vsix`, `publish`, `install`, `share`, `unshare`, `unpublish`, `show`, `query-version`, `wait-for-validation`, `wait-for-installation`).
 
 #### Connection & Authentication
 
@@ -88,8 +92,9 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 
 #### Extension Identity
 
-- `extension-id`: Sets or overrides the extension identifier inside the publisher namespace (required for `show`, optional for `install`/`share`/`unshare`/`unpublish`/`wait-for-validation`/`query-version` when inferred from manifest or VSIX inputs).
-- `publisher-id`: Sets or overrides the extension publisher identifier (required for `show`, optional for `install`/`share`/`unshare`/`unpublish`/`wait-for-validation`/`query-version` when inferred from manifest or VSIX inputs).
+- `extension-id`: Sets or overrides the extension identifier inside the publisher namespace (required for `show` and `download-vsix`, optional for identity fallback operations).
+- `publisher-id`: Sets or overrides the extension publisher identifier (required for `show` and `download-vsix`, optional for identity fallback operations).
+- `version`: Selects the published version for `download-vsix` (default `latest`); does not override the archive's extension version.
 
 #### Input Sources
 
@@ -98,15 +103,15 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 - `manifest-file-js`: Points to a JS manifest module for `tfx --manifest-js`.
 - `overrides-file`: Points to an overrides JSON file merged into manifest packaging/publishing.
 - `use`: Chooses publish input source (`manifest` or `vsix`).
-- `vsix-file`: Points to a pre-built VSIX file when publishing from VSIX source.
+- `vsix-file`: Points to a pre-built VSIX file for `patch` or publishing from VSIX source; globs must match exactly one file.
 - `vsix-file`: Provides a VSIX file for identity/task discovery in install/share/unshare/validation flows.
 
 #### Packaging Options
 
 - `bypass-validation`: Skips package-time validation checks.
-- `extension-name`: Overrides extension display name during package/publish.
+- `extension-name`: Overrides extension display name during package/patch/publish.
 - `extension-pricing`: Overrides pricing behavior (`default`, `free`, `paid`).
-- `extension-version`: Overrides extension version during package/publish/validation flows.
+- `extension-version`: Overrides extension version during package/patch/publish/validation flows.
 - `extension-visibility`: Overrides marketplace visibility (`private`, `public`, preview variants).
 - `localization-root`: Points to localization resources for package/publish.
 - `no-wait-validation`: Skips waiting for marketplace validation after publish.

@@ -27,6 +27,8 @@ inputs:
     type: choice
     options:
       - package
+      - patch
+      - download-vsix
       - publish
       - unpublish
       - share
@@ -61,6 +63,9 @@ inputs:
 
   extension-id:
     type: identifier
+
+  version:
+    type: string
 
   manifest-file:
     type: string

@@ -21,6 +21,11 @@ export interface ShowOptions {
  * Extension metadata from marketplace
  */
 export interface ExtensionMetadata {
+  /** Versions and public assets returned by the marketplace, newest first. */
+  versions?: Array<{
+    version: string;
+    files?: Array<{ assetType: string; source: string }>;
+  }>;
   /** Extension ID */
   id: string;
   /** Publisher ID */

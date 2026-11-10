@@ -52,8 +52,9 @@ import require$$1$7, { Buffer as Buffer$1 } from 'buffer';
 import require$$1$6 from 'zlib';
 import * as require$$5 from 'stream';
 import require$$5__default, { Writable } from 'stream';
+import { mkdir as mkdir$2, mkdtemp, rename as rename$1, rm as rm$1, writeFile as writeFile$2 } from 'node:fs/promises';
+import { resolve, join as join$1, basename as basename$1 } from 'node:path';
 import require$$0$6 from 'url';
-import { basename as basename$1 } from 'node:path';
 
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -42645,6 +42646,8 @@ var yazl = /*@__PURE__*/getDefaultExportFromCjs(yazlExports);
  *
  * Chain: Reader → ManifestEditor → Writer
  */
+// Fixed ZIP timestamps make identical edits reproducible across runs and time zones.
+const ZIP_ENTRY_OPTIONS = { mtime: new Date(1980, 0, 1), forceDosTimestamp: true };
 const xmlParser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: '@_',
@@ -42818,7 +42821,7 @@ class VsixWriter {
             }
             else if (mod.type === 'modify' && mod.content) {
                 // Add modified file
-                this.zipFile.addBuffer(mod.content, path);
+                this.zipFile.addBuffer(mod.content, path, ZIP_ENTRY_OPTIONS);
                 addedFiles.add(path);
             }
         }
@@ -42850,7 +42853,7 @@ class VsixWriter {
                 addedFiles.add(path);
             }
             else if (mod.type === 'modify' && mod.content) {
-                this.zipFile.addBuffer(mod.content, path);
+                this.zipFile.addBuffer(mod.content, path, ZIP_ENTRY_OPTIONS);
                 addedFiles.add(path);
             }
         }
@@ -42882,7 +42885,7 @@ class VsixWriter {
         const manifest = await reader.readExtensionManifest();
         Object.assign(manifest, jsonMods);
         const manifestJson = JSON.stringify(manifest, null, 2);
-        this.zipFile.addBuffer(Buffer$1.from(manifestJson, 'utf-8'), manifestPath);
+        this.zipFile.addBuffer(Buffer$1.from(manifestJson, 'utf-8'), manifestPath, ZIP_ENTRY_OPTIONS);
         addedFiles.add(manifestPath);
         // Update extension.vsixmanifest XML metadata when present
         if (hasVsixXmlManifest) {
@@ -42913,7 +42916,7 @@ class VsixWriter {
                 const xmlBuffer = await reader.readFile('extension.vsixmanifest');
                 const xml = xmlBuffer.toString('utf-8');
                 const updatedXml = applyVsixManifestXmlMetadata(xml, xmlMods);
-                this.zipFile.addBuffer(Buffer$1.from(updatedXml, 'utf-8'), 'extension.vsixmanifest');
+                this.zipFile.addBuffer(Buffer$1.from(updatedXml, 'utf-8'), 'extension.vsixmanifest', ZIP_ENTRY_OPTIONS);
                 addedFiles.add('extension.vsixmanifest');
             }
         }
@@ -42927,7 +42930,7 @@ class VsixWriter {
                     Object.assign(taskManifest.manifest, mods);
                     const taskJson = JSON.stringify(taskManifest.manifest, null, 2);
                     const taskPath = `${taskManifest.path}/task.json`;
-                    this.zipFile.addBuffer(Buffer$1.from(taskJson, 'utf-8'), taskPath);
+                    this.zipFile.addBuffer(Buffer$1.from(taskJson, 'utf-8'), taskPath, ZIP_ENTRY_OPTIONS);
                     addedFiles.add(taskPath);
                 }
             }
@@ -42945,14 +42948,8 @@ class VsixWriter {
             if (!addedFiles.has(file.path)) {
                 // File hasn't been modified - copy it efficiently
                 // Note: yazl will copy the compressed data directly if we use the right method
-                try {
-                    const content = await reader.readFile(file.path);
-                    this.zipFile.addBuffer(content, file.path);
-                }
-                catch (err) {
-                    // If we can't read it, skip it (might be a directory or corrupt entry)
-                    console.warn(`Warning: Could not copy file ${file.path}: ${err.message}`);
-                }
+                const content = await reader.readFile(file.path);
+                this.zipFile.addBuffer(content, file.path, ZIP_ENTRY_OPTIONS);
             }
         }
     }
@@ -43797,6 +43794,160 @@ async function publishExtension(options, auth, tfx, platform) {
     }
 }
 
+/** Patch a VSIX, leaving the source untouched until the output is complete. */
+async function patchExtension(options, platform) {
+    const reader = await VsixReader.open(options.vsixFile);
+    try {
+        const metadata = await reader.getMetadata();
+        const publisher = options.publisherId || metadata.publisher;
+        const extensionId = options.extensionId || metadata.extensionId;
+        const version = options.extensionVersion || metadata.version;
+        validatePublisherId(publisher);
+        validateExtensionId(extensionId);
+        validateVersion(version);
+        const editor = ManifestEditor.fromReader(reader);
+        await editor.applyOptions(options);
+        const outputPath = resolve(options.outputPath || '.');
+        await mkdir$2(outputPath, { recursive: true });
+        const staging = await mkdtemp(join$1(outputPath, '.patch-'));
+        const vsixFile = join$1(outputPath, `${publisher}.${extensionId}-${version}.vsix`);
+        const writer = VsixWriter.fromEditor(editor);
+        try {
+            const stagedFile = join$1(staging, 'patched.vsix');
+            await writer.writeToFile(stagedFile);
+            // Close the input before replacing it (required on Windows).
+            await reader.close();
+            await rename$1(stagedFile, vsixFile);
+        }
+        finally {
+            await writer.close();
+            await rm$1(staging, { recursive: true, force: true });
+        }
+        platform.info(`Patched VSIX: ${vsixFile}`);
+        return { vsixFile };
+    }
+    finally {
+        await reader.close();
+    }
+}
+
+/**
+ * Show command - Displays extension metadata from marketplace
+ */
+/**
+ * Show extension metadata from marketplace
+ * @param options Show options
+ * @param auth Authentication credentials
+ * @param tfx TfxManager instance
+ * @param platform Platform adapter
+ * @returns Show result with extension metadata
+ */
+async function showExtension(options, auth, tfx, platform) {
+    platform.info(`Querying extension ${options.publisherId}.${options.extensionId}...`);
+    const extensionId = options.extensionId;
+    // Build tfx arguments
+    const args = new ArgBuilder()
+        .arg(['extension', 'show'])
+        .flag('--json')
+        .flag('--no-color')
+        .option('--publisher', options.publisherId)
+        .option('--extension-id', extensionId);
+    // Authentication
+    args.option('--service-url', auth.serviceUrl);
+    if (auth.authType === 'pat') {
+        args.option('--auth-type', 'pat');
+        args.option('--token', auth.token);
+        platform.setSecret(auth.token);
+    }
+    else if (auth.authType === 'basic') {
+        args.option('--auth-type', 'basic');
+        args.option('--username', auth.username);
+        args.option('--password', auth.password);
+        platform.setSecret(auth.password);
+    }
+    // Execute tfx
+    const result = await tfx.execute(args.build(), { captureJson: true });
+    if (result.exitCode !== 0) {
+        const details = (result.stderr || result.stdout || '').trim();
+        platform.error(`tfx exited with code ${result.exitCode}`);
+        if (details) {
+            platform.debug(`tfx extension show details: ${details}`);
+        }
+        throw new Error(`tfx extension show failed with exit code ${result.exitCode}${details ? `: ${details}` : ''}`);
+    }
+    // Parse JSON result
+    const json = result.json;
+    if (!json) {
+        throw new Error('tfx did not return expected JSON output');
+    }
+    const metadata = {
+        id: json.extensionId || json.id || extensionId,
+        publisher: json.publisher || options.publisherId,
+        version: json.version || json.versions?.[0]?.version || '',
+        name: json.extensionName || json.displayName || json.name,
+        description: json.shortDescription || json.description,
+        categories: json.categories,
+        tags: json.tags,
+        ...json, // Include all other fields
+    };
+    platform.info(`Extension: ${metadata.name || metadata.id} v${metadata.version}`);
+    if (metadata.description) {
+        platform.info(`Description: ${metadata.description}`);
+    }
+    return {
+        metadata,
+        exitCode: result.exitCode,
+    };
+}
+
+/** Download the public VSIX asset without forwarding marketplace credentials. */
+async function downloadVsix(options, auth, tfx, platform) {
+    validatePublisherId(options.publisherId);
+    validateExtensionId(options.extensionId);
+    if (options.version && options.version !== 'latest') {
+        validateVersion(options.version);
+    }
+    const { metadata } = await showExtension(options, auth, tfx, platform);
+    const versions = metadata.versions || [];
+    const selected = !options.version || options.version === 'latest'
+        ? versions[0]
+        : versions.find((entry) => entry.version === options.version);
+    if (!selected) {
+        throw new Error(`Marketplace version '${options.version || 'latest'}' not found for ${options.publisherId}.${options.extensionId}`);
+    }
+    validateVersion(selected.version);
+    const asset = selected.files?.find((file) => file.assetType === 'Microsoft.VisualStudio.Services.VSIXPackage');
+    if (!asset?.source) {
+        throw new Error(`VSIXPackage asset missing for marketplace version '${selected.version}'`);
+    }
+    const url = new URL(asset.source);
+    if (url.protocol !== 'https:') {
+        throw new Error('Marketplace VSIX asset URL must use HTTPS');
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`VSIX download failed: HTTP ${response.status} ${response.statusText}`);
+    }
+    const content = Buffer.from(await response.arrayBuffer());
+    if (content.length < 4 || !content.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 3, 4]))) {
+        throw new Error('Downloaded marketplace asset is not a VSIX ZIP (invalid magic bytes)');
+    }
+    const outputPath = resolve(options.outputPath || '.');
+    await mkdir$2(outputPath, { recursive: true });
+    const staging = await mkdtemp(join$1(outputPath, '.download-vsix-'));
+    const vsixFile = join$1(outputPath, `${options.publisherId}.${options.extensionId}-${selected.version}.vsix`);
+    try {
+        const stagedFile = join$1(staging, 'download.vsix');
+        await writeFile$2(stagedFile, content);
+        await rename$1(stagedFile, vsixFile);
+    }
+    finally {
+        await rm$1(staging, { recursive: true, force: true });
+    }
+    platform.info(`Downloaded VSIX: ${vsixFile}`);
+    return { vsixFile };
+}
+
 /**
  * Unpublish command - Removes an extension from the marketplace
  */
@@ -44076,75 +44227,6 @@ async function installExtension(options, auth, tfx, platform) {
         accountResults,
         allSuccess,
         exitCode: overallExitCode,
-    };
-}
-
-/**
- * Show command - Displays extension metadata from marketplace
- */
-/**
- * Show extension metadata from marketplace
- * @param options Show options
- * @param auth Authentication credentials
- * @param tfx TfxManager instance
- * @param platform Platform adapter
- * @returns Show result with extension metadata
- */
-async function showExtension(options, auth, tfx, platform) {
-    platform.info(`Querying extension ${options.publisherId}.${options.extensionId}...`);
-    const extensionId = options.extensionId;
-    // Build tfx arguments
-    const args = new ArgBuilder()
-        .arg(['extension', 'show'])
-        .flag('--json')
-        .flag('--no-color')
-        .option('--publisher', options.publisherId)
-        .option('--extension-id', extensionId);
-    // Authentication
-    args.option('--service-url', auth.serviceUrl);
-    if (auth.authType === 'pat') {
-        args.option('--auth-type', 'pat');
-        args.option('--token', auth.token);
-        platform.setSecret(auth.token);
-    }
-    else if (auth.authType === 'basic') {
-        args.option('--auth-type', 'basic');
-        args.option('--username', auth.username);
-        args.option('--password', auth.password);
-        platform.setSecret(auth.password);
-    }
-    // Execute tfx
-    const result = await tfx.execute(args.build(), { captureJson: true });
-    if (result.exitCode !== 0) {
-        const details = (result.stderr || result.stdout || '').trim();
-        platform.error(`tfx exited with code ${result.exitCode}`);
-        if (details) {
-            platform.debug(`tfx extension show details: ${details}`);
-        }
-        throw new Error(`tfx extension show failed with exit code ${result.exitCode}${details ? `: ${details}` : ''}`);
-    }
-    // Parse JSON result
-    const json = result.json;
-    if (!json) {
-        throw new Error('tfx did not return expected JSON output');
-    }
-    const metadata = {
-        id: json.extensionId || json.id || extensionId,
-        publisher: json.publisher || options.publisherId,
-        version: json.version || json.versions?.[0]?.version || '',
-        name: json.extensionName || json.displayName || json.name,
-        description: json.shortDescription || json.description,
-        categories: json.categories,
-        tags: json.tags,
-        ...json, // Include all other fields
-    };
-    platform.info(`Extension: ${metadata.name || metadata.id} v${metadata.version}`);
-    if (metadata.description) {
-        platform.info(`Description: ${metadata.description}`);
-    }
-    return {
-        metadata,
-        exitCode: result.exitCode,
     };
 }
 
@@ -127115,19 +127197,19 @@ async function run() {
         // Create TfxManager
         const tfxVersion = platform.getInput('tfx-version') || 'built-in';
         // Validate binaries based on tfx version mode
-        if (tfxVersion === 'path') {
+        if (operation !== 'patch' && tfxVersion === 'path') {
             // User wants to use tfx from PATH
             await validateTfxAvailable(platform);
         }
-        else if (tfxVersion !== 'built-in') {
+        else if (operation !== 'patch' && tfxVersion !== 'built-in') {
             // Version spec mode - need npm to download
             await validateNpmAvailable(platform);
         }
-        const tfxManager = new TfxManager({ tfxVersion: tfxVersion, platform });
+        const tfxManager = operation === 'patch' ? undefined : new TfxManager({ tfxVersion: tfxVersion, platform });
         // Get authentication if needed (not required for package; conditional for query-version)
         let auth;
         const needsAuth = (() => {
-            if (operation === 'package') {
+            if (operation === 'package' || operation === 'patch') {
                 return false;
             }
             if (operation === 'query-version') {
@@ -127177,6 +127259,12 @@ async function run() {
         }
         // Route to appropriate command
         switch (operation) {
+            case 'patch':
+                await runPatch(platform);
+                break;
+            case 'download-vsix':
+                await runDownloadVsix(platform, tfxManager, auth);
+                break;
             case 'package':
                 await runPackage(platform, tfxManager);
                 break;
@@ -127217,6 +127305,33 @@ async function run() {
         const message = error instanceof Error ? error.message : String(error);
         setFailed(message);
     }
+}
+async function runPatch(platform) {
+    const pricing = platform.getInput('extension-pricing');
+    const result = await patchExtension({
+        vsixFile: await resolveVsixFile(platform.getInput('vsix-file', true), platform),
+        outputPath: platform.getInput('output-path') || undefined,
+        publisherId: platform.getInput('publisher-id'),
+        extensionId: platform.getInput('extension-id'),
+        extensionVersion: platform.getInput('extension-version'),
+        extensionName: platform.getInput('extension-name'),
+        extensionVisibility: platform.getInput('extension-visibility'),
+        extensionPricing: pricing && pricing !== 'default' ? pricing : undefined,
+        updateTasksVersion: getUpdateTasksVersionMode(platform),
+        updateTasksId: platform.getBoolInput('update-tasks-id'),
+    }, platform);
+    platform.setOutput('vsix-file', result.vsixFile);
+    platform.setOutput('vsix-file-name', basename$1(result.vsixFile));
+}
+async function runDownloadVsix(platform, tfxManager, auth) {
+    const result = await downloadVsix({
+        publisherId: platform.getInput('publisher-id', true),
+        extensionId: platform.getInput('extension-id', true),
+        version: platform.getInput('version') || 'latest',
+        outputPath: platform.getInput('output-path') || undefined,
+    }, auth, tfxManager, platform);
+    platform.setOutput('vsix-file', result.vsixFile);
+    platform.setOutput('vsix-file-name', basename$1(result.vsixFile));
 }
 function getUpdateTasksVersionMode(platform) {
     const value = platform.getInput('update-tasks-version');
