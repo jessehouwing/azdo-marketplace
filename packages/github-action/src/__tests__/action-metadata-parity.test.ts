@@ -26,6 +26,8 @@ const repositoryRoot = resolve(currentDirectory, '../../../../');
 
 const mainActionPath = resolve(repositoryRoot, 'action.yml');
 const compositeActionTable = [
+  { operation: 'patch', relativePath: 'patch/action.yaml' },
+  { operation: 'download-vsix', relativePath: 'download-vsix/action.yaml' },
   { operation: 'install', relativePath: 'install/action.yaml' },
   { operation: 'package', relativePath: 'package/action.yaml' },
   { operation: 'publish', relativePath: 'publish/action.yaml' },

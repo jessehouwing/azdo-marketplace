@@ -1,0 +1,207 @@
+name: Download Azure DevOps Extension
+description: Download a published VSIX from the Visual Studio Marketplace
+author: Jesse Houwing
+branding:
+  icon: download
+  color: blue
+inputs:
+  publisher-id:
+    description: |-
+      **Publisher ID** that owns the extension.
+
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
+      Default: none
+
+      - Must match publisher in manifest (or override it)
+      - Required for command: download-vsix, show.
+      - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
+        falls back to value from manifest-file or vsix-file when not specified.
+      - Alphanumeric with hyphens, dots, underscores only
+
+      **Example:** `mycompany` or `my-publisher-id`
+    required: true
+  extension-id:
+    description: |-
+      **Extension ID** - unique identifier within the publisher namespace.
+
+      Available for: download-vsix, install, package, patch, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: download-vsix, show.
+      Default: none
+
+      - Must match ID in manifest (or override it)
+      - Combined with Publisher ID forms full identifier: `publisherId.extensionId`
+      - Required for command: download-vsix, show.
+      - Optional for install/share/unpublish/unshare/wait-for-validation/query-version:
+        falls back to value from manifest-file or vsix-file when not specified.
+      - Alphanumeric with hyphens, dots, underscores only
+
+      **Example:** `my-extension` or `azure-devops-tasks`
+    required: true
+  version:
+    description: |-
+      **Published version to download**, or `latest`.
+
+      Available for: download-vsix.
+      Required for: none.
+      Default: latest
+
+      Selects an existing Marketplace version; unlike `extension-version`, this does not rewrite the VSIX.
+    required: false
+    default: latest
+  output-path:
+    description: |-
+      **Output directory** for generated/downloaded .vsix file.
+
+      Available for: download-vsix, package, patch, publish.
+      Required for: none.
+      Default: none
+
+      - For package, patch, and download-vsix, defaults to current directory
+      - Patch replaces the input only when its output path and generated filename match
+      - Directory will be created if it doesn't exist
+      - Actual filename is based on publisher.extensionId-version.vsix
+
+      **Output:** Full path stored in `vsix-file` output
+    required: false
+  auth-type:
+    description: |-
+      Authentication type: 'pat', 'basic', or 'oidc'
+
+      Available for: download-vsix, install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: pat
+
+      - pat: Use Personal Access Token (recommended for most users)
+      - basic: Use username/token authentication (for on-premises Azure DevOps Server)
+      - oidc: Use Azure OIDC via azure/login action (requires setup, see below)
+
+      PAT Setup:
+      Provide a Personal Access Token via the 'token' input
+
+      Basic Auth Setup:
+      Provide username and token via 'username' and 'token' inputs
+
+      OIDC Setup:
+      Run azure/login action BEFORE this action:
+
+      - uses: azure/login@v2
+        with:
+          client-id: $``{{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: $``{{ secrets.AZURE_TENANT_ID }}
+          subscription-id: $``{{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      Then use auth-type: oidc (no token needed)
+
+      See: https://jessehouwing.net/authenticate-connect-mggraph-using-oidc-in-github-actions/
+    required: false
+    default: pat
+  token:
+    description: |-
+      Token for marketplace authentication
+
+      Available for: download-vsix, install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
+      Required when auth-type is 'pat' or 'basic'
+      For basic auth, provide the username in `username` and the secret in `token`
+
+      Required scopes: Marketplace (Publish)
+      Create a PAT at: https://dev.azure.com/_usersSettings/tokens
+    required: false
+  username:
+    description: |-
+      Username for basic authentication
+
+      Available for: download-vsix, install, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: none
+
+      Required when auth-type is 'basic'
+      Not needed for other auth types
+
+      Use for on-premises TFS or Azure DevOps Server deployments
+    required: false
+  service-url:
+    description: |-
+      Azure DevOps service URL (optional)
+
+      Available for: download-vsix, publish, query-version, share, show, unpublish, unshare, wait-for-validation.
+      Required for: none.
+      Default: none
+
+      - Defaults to marketplace URL for cloud operations
+      - Recommended cloud format: `https://dev.azure.com/<organization>`
+      - Azure DevOps Server/TFS URLs are also supported
+      - Specify custom URL for on-premises Azure DevOps Server
+      - Must be HTTPS and valid Azure DevOps domain
+
+      Examples:
+      - https://marketplace.visualstudio.com (default)
+      - https://dev.azure.com/myorg
+      - https://myserver.com/Collection
+      - https://myserver.com/tfs/Collection
+
+      Optional for: publish, share, unshare, show, query-version, wait-for-validation
+    required: false
+  tfx-version:
+    description: |-
+      **Version of tfx-cli to use:**
+
+      Available for: download-vsix, install, package, publish, query-version, share, show, unpublish, unshare, wait-for-installation, wait-for-validation.
+      Required for: none.
+      Default: built-in
+
+      - `built-in` (default): Use bundled tfx-cli JS entrypoint
+      - `path`: Use tfx-cli from system PATH (provided by your environment)
+      - Version spec: Download specific version from npm (e.g., `^0.17`, `0.17.0`, `latest`)
+
+      **Examples:** `built-in`, `path`, `^0.17`, `latest`
+    required: false
+    default: built-in
+outputs:
+  vsix-file:
+    description: |
+      **Path to generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
+
+      **Example usage:**
+      ```yaml
+      - uses: jessehouwing/azdo-marketplace@v6
+        id: package
+        with:
+          operation: package
+
+      - run: echo "VSIX at $``{{ steps.package.outputs.vsix-file }}"
+      ```
+    value: ${{ steps.download.outputs.vsix-file }}
+  vsix-file-name:
+    description: |
+      **Filename of generated/downloaded .vsix file** (package, patch, publish, download-vsix operations).
+
+      **Example usage:**
+      ```yaml
+      - uses: jessehouwing/azdo-marketplace@v6
+        id: package
+        with:
+          operation: package
+
+      - run: echo "VSIX file name $``{{ steps.package.outputs.vsix-file-name }}"
+      ```
+    value: ${{ steps.download.outputs.vsix-file-name }}
+runs:
+  using: composite
+  steps:
+    - id: download
+      uses: $/
+      with:
+        operation: download-vsix
+        publisher-id: ${{ inputs.publisher-id }}
+        extension-id: ${{ inputs.extension-id }}
+        version: ${{ inputs.version }}
+        output-path: ${{ inputs.output-path }}
+        auth-type: ${{ inputs.auth-type }}
+        token: ${{ inputs.token }}
+        username: ${{ inputs.username }}
+        service-url: ${{ inputs.service-url }}
+        tfx-version: ${{ inputs.tfx-version }}

@@ -139,12 +139,13 @@ export class ManifestEditor {
     }
 
     // Apply task updates
-    if (
-      options.updateTasksVersion &&
-      options.updateTasksVersion !== 'none' &&
-      options.extensionVersion
-    ) {
-      await this.updateAllTaskVersions(options.extensionVersion, options.updateTasksVersion);
+    if (options.updateTasksVersion && options.updateTasksVersion !== 'none') {
+      const extensionVersion =
+        this.manifestModifications.version || (await this.reader.getMetadata()).version;
+      if (!extensionVersion) {
+        throw new Error('Extension version is required to update task versions');
+      }
+      await this.updateAllTaskVersions(extensionVersion, options.updateTasksVersion);
     }
 
     if (options.updateTasksId) {
@@ -425,13 +426,16 @@ export class ManifestEditor {
 
   /**
    * Update all tasks' IDs in the extension using v5 namespacing
-   * Reads extension manifest for publisher/ID and all tasks from reader
+   * Reads source metadata for publisher/ID and all tasks from reader
    * @returns Promise<this> for async chaining
    */
   async updateAllTaskIds(): Promise<this> {
-    const manifest = await this.reader.readExtensionManifest();
-    const publisherId = this.manifestModifications.publisher || manifest.publisher;
-    const extensionId = this.manifestModifications.id || manifest.id;
+    const metadata = await this.reader.getMetadata();
+    const publisherId = this.manifestModifications.publisher || metadata.publisher;
+    const extensionId = this.manifestModifications.id || metadata.extensionId;
+    if (!publisherId || !extensionId) {
+      throw new Error('Publisher ID and extension ID are required to update task IDs');
+    }
 
     const tasks = await this.reader.getTasksInfo();
 

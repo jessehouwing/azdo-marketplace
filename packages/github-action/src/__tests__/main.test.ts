@@ -7,6 +7,9 @@ const githubAdapterCtorMock = jest.fn();
 
 const tfxManagerCtorMock = jest.fn();
 const packageExtensionMock = jest.fn();
+const patchExtensionMock = jest.fn();
+const downloadVsixMock = jest.fn();
+const resolveVsixFileMock = jest.fn(async (pattern: string | undefined) => pattern);
 const publishExtensionMock = jest.fn();
 const unpublishExtensionMock = jest.fn();
 const shareExtensionMock = jest.fn();
@@ -48,6 +51,8 @@ jest.unstable_mockModule('@extension-tasks/core', () => ({
   },
   TfxManager: tfxManagerCtorMock,
   packageExtension: packageExtensionMock,
+  patchExtension: patchExtensionMock,
+  downloadVsix: downloadVsixMock,
   publishExtension: publishExtensionMock,
   unpublishExtension: unpublishExtensionMock,
   shareExtension: shareExtensionMock,
@@ -67,7 +72,7 @@ jest.unstable_mockModule('@extension-tasks/core', () => ({
   validateTfxAvailable: validateTfxAvailableMock,
   validateAzureCliAvailable: validateAzureCliAvailableMock,
   versionSourceNeedsMarketplace: versionSourceNeedsMarketplaceMock,
-  resolveVsixFile: jest.fn(async (pattern: string | undefined) => pattern),
+  resolveVsixFile: resolveVsixFileMock,
 }));
 
 type PlatformConfig = {
@@ -140,8 +145,116 @@ describe('GitHub Action main entrypoint', () => {
     }));
     packageExtensionMock.mockImplementation(async () => ({ vsixFile: '/tmp/ext.vsix' }));
     publishExtensionMock.mockImplementation(async () => ({}));
+    patchExtensionMock.mockImplementation(async () => ({ vsixFile: 'patched.vsix' }));
+    downloadVsixMock.mockImplementation(async () => ({ vsixFile: 'downloaded.vsix' }));
+    resolveVsixFileMock.mockImplementation(async (pattern: string | undefined) => pattern);
     installExtensionMock.mockImplementation(async () => ({ allSuccess: true }));
     waitForInstallationMock.mockImplementation(async () => ({ success: true }));
+  });
+
+  it.each(['path', '^0.17.0'])('patches without auth or tfx tooling (%s)', async (tfxVersion) => {
+    resolveVsixFileMock.mockImplementation(async () => 'source.vsix');
+    const platform = createPlatformMock({
+      inputs: {
+        operation: 'patch',
+        'tfx-version': tfxVersion,
+        'vsix-file': 'artifacts/*.vsix',
+        'output-path': 'patched',
+        'publisher-id': 'publisher',
+        'extension-id': 'preview',
+        'extension-version': '1.2.3',
+        'extension-name': 'Preview',
+        'extension-visibility': 'private',
+        'extension-pricing': 'free',
+        'update-tasks-version': 'minor',
+      },
+      boolInputs: { 'update-tasks-id': true },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(resolveVsixFileMock).toHaveBeenCalledWith('artifacts/*.vsix', platform);
+    expect(patchExtensionMock).toHaveBeenCalledWith(
+      {
+        vsixFile: 'source.vsix',
+        outputPath: 'patched',
+        publisherId: 'publisher',
+        extensionId: 'preview',
+        extensionVersion: '1.2.3',
+        extensionName: 'Preview',
+        extensionVisibility: 'private',
+        extensionPricing: 'free',
+        updateTasksVersion: 'minor',
+        updateTasksId: true,
+      },
+      platform
+    );
+    expect(getAuthMock).not.toHaveBeenCalled();
+    expect(tfxManagerCtorMock).not.toHaveBeenCalled();
+    expect(validateTfxAvailableMock).not.toHaveBeenCalled();
+    expect(validateNpmAvailableMock).not.toHaveBeenCalled();
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', 'patched.vsix');
+    expect(platform.setOutput).toHaveBeenCalledWith('vsix-file-name', 'patched.vsix');
+    expect(setFailedMock).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, '2.3.4'])(
+    'downloads the selected published version (%s)',
+    async (version) => {
+      const platform = createPlatformMock({
+        inputs: {
+          operation: 'download-vsix',
+          'publisher-id': 'publisher',
+          'extension-id': 'extension',
+          'extension-version': '9.9.9',
+          version,
+          'output-path': 'download',
+          'auth-type': 'pat',
+          token: 'token',
+        },
+      });
+      githubAdapterCtorMock.mockReturnValue(platform);
+
+      await importMainAndFlush();
+
+      expect(getAuthMock).toHaveBeenCalled();
+      expect(downloadVsixMock).toHaveBeenCalledWith(
+        {
+          publisherId: 'publisher',
+          extensionId: 'extension',
+          version: version || 'latest',
+          outputPath: 'download',
+        },
+        expect.objectContaining({ token: 'token' }),
+        expect.anything(),
+        platform
+      );
+      expect(platform.getInput).toHaveBeenCalledWith('publisher-id', true);
+      expect(platform.getInput).toHaveBeenCalledWith('extension-id', true);
+      expect(platform.setOutput).toHaveBeenCalledWith('vsix-file', 'downloaded.vsix');
+      expect(platform.setOutput).toHaveBeenCalledWith('vsix-file-name', 'downloaded.vsix');
+      expect(publishExtensionMock).not.toHaveBeenCalled();
+      expect(patchExtensionMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(['patch', 'download-vsix'])('reports %s failures', async (operation) => {
+    patchExtensionMock.mockImplementation(async () => {
+      throw new Error('VSIX failure');
+    });
+    downloadVsixMock.mockImplementation(async () => {
+      throw new Error('VSIX failure');
+    });
+    const platform = createPlatformMock({
+      inputs: { operation, 'vsix-file': 'source.vsix' },
+    });
+    githubAdapterCtorMock.mockReturnValue(platform);
+
+    await importMainAndFlush();
+
+    expect(setFailedMock).toHaveBeenCalledWith('VSIX failure');
+    expect(platform.setResult).not.toHaveBeenCalledWith('Succeeded', expect.anything());
   });
 
   it('executes package operation successfully', async () => {

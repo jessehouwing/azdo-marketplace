@@ -31,6 +31,9 @@ import type { ExtensionManifest, TaskManifest } from './manifest-reader.js';
 
 type XmlObject = Record<string, unknown>;
 
+// Fixed ZIP timestamps make identical edits reproducible across runs and time zones.
+const ZIP_ENTRY_OPTIONS = { mtime: new Date(1980, 0, 1), forceDosTimestamp: true };
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
@@ -249,7 +252,7 @@ export class VsixWriter {
         addedFiles.add(path);
       } else if (mod.type === 'modify' && mod.content) {
         // Add modified file
-        this.zipFile.addBuffer(mod.content, path);
+        this.zipFile.addBuffer(mod.content, path, ZIP_ENTRY_OPTIONS);
         addedFiles.add(path);
       }
     }
@@ -293,7 +296,7 @@ export class VsixWriter {
       if (mod.type === 'remove') {
         addedFiles.add(path);
       } else if (mod.type === 'modify' && mod.content) {
-        this.zipFile.addBuffer(mod.content, path);
+        this.zipFile.addBuffer(mod.content, path, ZIP_ENTRY_OPTIONS);
         addedFiles.add(path);
       }
     }
@@ -338,7 +341,7 @@ export class VsixWriter {
     Object.assign(manifest, jsonMods);
 
     const manifestJson = JSON.stringify(manifest, null, 2);
-    this.zipFile.addBuffer(Buffer.from(manifestJson, 'utf-8'), manifestPath);
+    this.zipFile.addBuffer(Buffer.from(manifestJson, 'utf-8'), manifestPath, ZIP_ENTRY_OPTIONS);
     addedFiles.add(manifestPath);
 
     // Update extension.vsixmanifest XML metadata when present
@@ -373,7 +376,11 @@ export class VsixWriter {
         const xmlBuffer = await reader.readFile('extension.vsixmanifest');
         const xml = xmlBuffer.toString('utf-8');
         const updatedXml = applyVsixManifestXmlMetadata(xml, xmlMods);
-        this.zipFile.addBuffer(Buffer.from(updatedXml, 'utf-8'), 'extension.vsixmanifest');
+        this.zipFile.addBuffer(
+          Buffer.from(updatedXml, 'utf-8'),
+          'extension.vsixmanifest',
+          ZIP_ENTRY_OPTIONS
+        );
         addedFiles.add('extension.vsixmanifest');
       }
     }
@@ -389,7 +396,7 @@ export class VsixWriter {
           Object.assign(taskManifest.manifest, mods);
           const taskJson = JSON.stringify(taskManifest.manifest, null, 2);
           const taskPath = `${taskManifest.path}/task.json`;
-          this.zipFile.addBuffer(Buffer.from(taskJson, 'utf-8'), taskPath);
+          this.zipFile.addBuffer(Buffer.from(taskJson, 'utf-8'), taskPath, ZIP_ENTRY_OPTIONS);
           addedFiles.add(taskPath);
         }
       }
@@ -409,13 +416,8 @@ export class VsixWriter {
       if (!addedFiles.has(file.path)) {
         // File hasn't been modified - copy it efficiently
         // Note: yazl will copy the compressed data directly if we use the right method
-        try {
-          const content = await reader.readFile(file.path);
-          this.zipFile.addBuffer(content, file.path);
-        } catch (err) {
-          // If we can't read it, skip it (might be a directory or corrupt entry)
-          console.warn(`Warning: Could not copy file ${file.path}: ${(err as Error).message}`);
-        }
+        const content = await reader.readFile(file.path);
+        this.zipFile.addBuffer(content, file.path, ZIP_ENTRY_OPTIONS);
       }
     }
   }

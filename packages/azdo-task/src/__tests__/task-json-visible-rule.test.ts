@@ -5,6 +5,7 @@ import { resolve } from 'path';
 type TaskInput = {
   name?: string;
   visibleRule?: string;
+  defaultValue?: string;
 };
 
 type TaskManifest = {
@@ -48,4 +49,77 @@ describe('task.json visibleRule syntax', () => {
       expect(violations).toEqual([]);
     }
   );
+});
+
+describe('new operation input visibility', () => {
+  it.each([
+    {
+      operation: 'patch',
+      visible: [
+        'vsixFile',
+        'outputPath',
+        'publisherId',
+        'extensionId',
+        'extensionVersion',
+        'extensionName',
+        'extensionVisibility',
+        'extensionPricing',
+        'updateTasksVersion',
+        'updateTasksId',
+      ],
+      hidden: ['use', 'connectionType', 'connectionNamePAT', 'version', 'tfxVersion'],
+    },
+    {
+      operation: 'downloadVsix',
+      visible: [
+        'publisherId',
+        'extensionId',
+        'version',
+        'outputPath',
+        'connectionType',
+        'connectionNamePAT',
+        'tfxVersion',
+      ],
+      hidden: ['use', 'vsixFile', 'extensionVersion', 'updateTasksId'],
+    },
+  ])('exposes usable inputs for $operation', async ({ operation, visible, hidden }) => {
+    const manifest = JSON.parse(await readFile(taskManifestPaths[0], 'utf-8')) as TaskManifest;
+    const inputs = new Map((manifest.inputs ?? []).map((input) => [input.name, input]));
+    const values: Record<string, string> = { operation, connectionType: 'PAT', use: 'manifest' };
+
+    function isVisible(name: string): boolean {
+      const input = inputs.get(name);
+      if (!input) {
+        throw new Error(`Unknown input ${name}`);
+      }
+      if (!input.visibleRule) {
+        return true;
+      }
+
+      const clauses = input.visibleRule.split(/\s*(\|\||&&)\s*/);
+      const conditions = clauses.filter((clause) => clause !== '||' && clause !== '&&');
+      const matches = conditions.map((clause) => {
+        const match = /^(\w+)\s*(!=|=)\s*(\S+)$/.exec(clause);
+        if (!match) {
+          throw new Error(`Unsupported visibleRule clause: ${clause}`);
+        }
+        return match;
+      });
+      if (matches.some(([, dependency]) => !isVisible(dependency))) {
+        return false;
+      }
+      const evaluate = ([, dependency, operator, expected]: RegExpExecArray): boolean => {
+        const actual = values[dependency] ?? inputs.get(dependency)?.defaultValue ?? '';
+        return operator === '=' ? actual === expected : actual !== expected;
+      };
+      return clauses.includes('||') ? matches.some(evaluate) : matches.every(evaluate);
+    }
+
+    for (const name of visible) {
+      expect({ name, visible: isVisible(name) }).toEqual({ name, visible: true });
+    }
+    for (const name of hidden) {
+      expect({ name, visible: isVisible(name) }).toEqual({ name, visible: false });
+    }
+  });
 });

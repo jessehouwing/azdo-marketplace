@@ -14,11 +14,14 @@ This repository ships a **single unified Azure Pipelines task** with operation r
     operation: package
 ```
 
-Most non-package operations require a service connection (`connectionType` + corresponding connection input).
+Package and patch do not require a service connection. Most other operations require
+`connectionType` + the corresponding connection input.
 
 ## Supported operations
 
 - `package`
+- `patch`
+- `downloadVsix` (also accepts `download-vsix` in YAML)
 - `publish`
 - `unpublish`
 - `share`
@@ -83,6 +86,28 @@ Creates a VSIX from manifest files.
   - `bypassValidation`
   - `updateTasksVersion`, `updateTasksVersionType`, `updateTasksId`
   - `tfxVersion`
+
+### `patch`
+
+Deterministically edits an existing VSIX without authentication, npm, or tfx-cli.
+
+- Required: `vsixFile` (a path or glob matching exactly one file).
+- Optional: `outputPath`, `publisherId`, `extensionId`, `extensionVersion`,
+  `extensionName`, `extensionVisibility`, `extensionPricing`,
+  `updateTasksVersion`, `updateTasksId`.
+- Outputs: `vsixFile`, `vsixFileName`.
+
+### `downloadVsix`
+
+Downloads the published Marketplace VSIX without modifying it.
+
+- Required: `publisherId`, `extensionId`, `connectionType` + matching connection input.
+- Optional: `version` (default `latest`), `outputPath`, `tfxVersion`.
+- Outputs: `vsixFile`, `vsixFileName`.
+- `version` selects the published version; it is separate from the editing input `extensionVersion`.
+- PAT authentication requires `Marketplace (read)`.
+
+See [VSIX provenance examples](./vsix-provenance.md) for both operations and attestation guidance.
 
 ### `publish`
 

@@ -5,7 +5,7 @@
  * - package.json files (root + workspace packages)
  * - vss-extension.json
  * - Azure Pipelines task.json files (Major/Minor/Patch)
- * - Composite action.yaml files (uses: jessehouwing/azdo-marketplace@...)
+ * - Versioned examples in composite action.yaml files (preserving internal $/ references)
  * - Documentation and examples (GitHub Actions @vX.Y.Z, Azure Pipelines @major)
  * - Root action.yml output description examples
  *
@@ -75,11 +75,11 @@ for (const p of taskJsonPaths) {
 }
 
 // 4. Update composite action.yaml files
-// These reference jessehouwing/azdo-marketplace@main (or any ref) in both:
-//   - runs.steps[].uses (the actual action reference)
-//   - description examples (documentation)
+// Rewrite versioned description examples, leaving runs.steps[].uses: $/ unchanged.
 const actionDirs = [
   'package',
+  'patch',
+  'download-vsix',
   'publish',
   'unpublish',
   'share',
@@ -120,6 +120,7 @@ const docFiles = [
   'README.md',
   'docs/README.md',
   'docs/github-actions.md',
+  'docs/vsix-provenance.md',
   'docs/azure-pipelines.md',
   'docs/authentication-and-oidc.md',
   'docs/migrate-azure-pipelines-v5-to-github-actions.md',

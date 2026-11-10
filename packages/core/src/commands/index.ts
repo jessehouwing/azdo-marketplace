@@ -4,6 +4,8 @@
 
 export * from './package.js';
 export * from './publish.js';
+export * from './patch.js';
+export * from './download-vsix.js';
 export * from './unpublish.js';
 export * from './share.js';
 export * from './unshare.js';

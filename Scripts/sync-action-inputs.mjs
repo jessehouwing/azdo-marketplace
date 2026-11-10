@@ -12,8 +12,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, '..');
 
 const compositeActions = [
+  'download-vsix/action.yaml',
   'install/action.yaml',
   'package/action.yaml',
+  'patch/action.yaml',
   'publish/action.yaml',
   'query-version/action.yaml',
   'share/action.yaml',
