@@ -7,6 +7,10 @@ import path from 'path';
 import { Writable } from 'stream';
 import { JsonOutputStream } from './json-output-stream.js';
 import type { IPlatformAdapter } from './platform.js';
+import { isTransientServiceUnavailable } from './service-error.js';
+
+const TRANSIENT_MAX_ATTEMPTS = 3;
+const TRANSIENT_BASE_DELAY_MS = 5000;
 
 class TextCaptureStream extends Writable {
   public content = '';
@@ -441,8 +445,18 @@ export class TfxManager {
   }
 
   private emitFailureErrorLines(stdout: string, stderr: string): void {
+    const combined = `${stdout}\n${stderr}`;
+    if (isTransientServiceUnavailable(combined)) {
+      const ref = /Ref A:\s*([0-9A-F]+)/i.exec(combined)?.[1];
+      this.platform.error(
+        `Azure DevOps Marketplace reported the service is unavailable (transient outage)` +
+          `${ref ? ` [Ref A: ${ref}]` : ''}. Re-run the job later.`
+      );
+      return;
+    }
+
     const seen = new Set<string>();
-    const allLines = `${stdout}\n${stderr}`.replace(/\r\n/g, '\n').split('\n');
+    const allLines = combined.replace(/\r\n/g, '\n').split('\n');
 
     for (const line of allLines) {
       const trimmed = line.trim();
@@ -470,6 +484,30 @@ export class TfxManager {
    * @returns Result with exit code and output
    */
   async execute(args: string[], options?: TfxExecOptions): Promise<TfxResult> {
+    const maxAttempts = TRANSIENT_MAX_ATTEMPTS;
+    for (let attempt = 1; ; attempt++) {
+      const result = await this.executeOnce(args, options, attempt >= maxAttempts);
+      if (result.exitCode === 0 || attempt >= maxAttempts) {
+        return result;
+      }
+      if (!isTransientServiceUnavailable(`${result.stdout}\n${result.stderr}`)) {
+        this.emitFailureErrorLines(result.stdout, result.stderr);
+        return result;
+      }
+      const delayMs = TRANSIENT_BASE_DELAY_MS * 2 ** (attempt - 1);
+      this.platform.warning(
+        `Azure DevOps Marketplace reported the service is temporarily unavailable. ` +
+          `Retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts})...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  private async executeOnce(
+    args: string[],
+    options: TfxExecOptions | undefined,
+    emitFailure: boolean
+  ): Promise<TfxResult> {
     const tfxPath = await this.resolve();
 
     // Add JSON output flags if requested
@@ -530,7 +568,7 @@ export class TfxManager {
       : stdoutStream.content;
     const stderr = stderrStream.content;
 
-    if (exitCode !== 0) {
+    if (exitCode !== 0 && emitFailure) {
       this.emitFailureErrorLines(stdout, stderr);
     }
 
