@@ -176,6 +176,30 @@ describe('TfxManager', () => {
       expect(platform.execCalls[0].args).toEqual(['extension', 'create']);
     });
 
+    it('should retry when the marketplace reports a transient outage', async () => {
+      jest.useFakeTimers();
+      try {
+        const outage = "<h2>Sorry! Our services aren't available right now.</h2>";
+        const execSpy = jest
+          .spyOn(platform, 'exec')
+          .mockImplementationOnce(async (_tool, _args, options) => {
+            options?.errStream?.write(`error: ${outage}\n`);
+            return 1;
+          })
+          .mockImplementation(async () => 0);
+
+        const manager = new TfxManager({ tfxVersion: 'path', platform });
+        const promise = manager.execute(['extension', 'share']);
+        await jest.runAllTimersAsync();
+        const result = await promise;
+
+        expect(result.exitCode).toBe(0);
+        expect(execSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it('should execute built-in JS entrypoint via node', async () => {
       const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'tfx-built-in-js-exec-'));
       const entryFile = path.join(sandbox, 'dist', 'main.js');

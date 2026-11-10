@@ -153,6 +153,11 @@ function errorFromText(message: string): Error | undefined {
   return undefined;
 }
 
+/** Detects the Azure DevOps "Sorry! Our services aren't available right now." outage page. */
+export function isTransientServiceUnavailable(output: string): boolean {
+  return /Our services aren't available right now|Service Unavailable/i.test(output);
+}
+
 export function classifyServiceError(value: unknown): Error | undefined {
   if (value instanceof TerminalServiceError) {
     return value;

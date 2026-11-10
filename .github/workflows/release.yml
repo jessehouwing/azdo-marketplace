@@ -404,9 +404,70 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
 
+      # Detects a retry after the exact version was already published (e.g. a
+      # previous run's publish succeeded but a later step failed or timed out),
+      # so we don't attempt to republish the same version.
+      - name: Check current preview marketplace version
+        id: check-version
+        uses: jessehouwing/azdo-marketplace/query-version@v6.3.17
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}-pre
+          version-source: |
+            marketplace
+            0.0.0
+          marketplace-version-action: None
+
+      - name: Skip publish (version already deployed)
+        if: steps.check-version.outputs.current-version == needs.prepare-release.outputs.version
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: Write-Host "Version $env:RELEASE_VERSION is already published, skipping publish and re-checking validation."
+        shell: pwsh
+
+      # The publish step patches the VSIX (extension id, visibility, task ids), so the
+      # downloaded artifact can't be used for the follow-up steps. Fetch the VSIX that
+      # was actually published instead.
+      - name: Get published preview extension metadata
+        id: show-published
+        if: steps.check-version.outputs.current-version == needs.prepare-release.outputs.version
+        uses: jessehouwing/azdo-marketplace/show@v6.3.17
+        with:
+          auth-type: oidc
+          publisher-id: ${{ env.PUBLISHER_ID_DEV }}
+          extension-id: ${{ env.EXTENSION_ID }}-pre
+
+      - name: Download published preview VSIX
+        id: download-published
+        if: steps.check-version.outputs.current-version == needs.prepare-release.outputs.version
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+          PUBLISHER: ${{ env.PUBLISHER_ID_DEV }}
+          EXTENSION: ${{ env.EXTENSION_ID }}-pre
+          METADATA: ${{ steps.show-published.outputs.metadata }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $metadata = $env:METADATA | ConvertFrom-Json -Depth 100
+          $version = $metadata.versions | Where-Object { $_.version -eq $env:RELEASE_VERSION } | Select-Object -First 1
+          $uri = $version.files |
+            Where-Object { $_.assetType -eq 'Microsoft.VisualStudio.Services.VSIXPackage' } |
+            Select-Object -ExpandProperty source -First 1
+          if (-not $uri) { throw "No VSIX package found for version $env:RELEASE_VERSION." }
+          $dir = Join-Path $env:RUNNER_TEMP 'published-vsix'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $file = Join-Path $dir "$env:PUBLISHER.$env:EXTENSION-$env:RELEASE_VERSION.vsix"
+          # The asset URL is a CDN/blob URL that rejects Bearer tokens, so download it unauthenticated.
+          Invoke-WebRequest -Uri $uri -OutFile $file
+          $magic = [IO.File]::ReadAllBytes($file)[0..1]
+          if ($magic[0] -ne 0x50 -or $magic[1] -ne 0x4B) { throw "Downloaded file is not a VSIX (zip) package." }
+          "vsix-file=$file" >> $env:GITHUB_OUTPUT
+
       - name: Publish preview extension
         uses: jessehouwing/azdo-marketplace/publish@v6.3.17
         id: publish
+        if: steps.check-version.outputs.current-version != needs.prepare-release.outputs.version
         with:
           auth-type: oidc
           use: vsix
@@ -421,14 +482,14 @@ jobs:
         uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.3.17
         with:
           auth-type: oidc
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file || steps.download-published.outputs.vsix-file }}
           timeout-minutes: '30'
 
       - name: Share extension
         uses: jessehouwing/azdo-marketplace/share@v6.3.17
         with:
           auth-type: oidc
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file || steps.download-published.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing
 
@@ -436,7 +497,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/install@v6.3.17
         with:
           auth-type: oidc
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file || steps.download-published.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing
 
@@ -444,7 +505,7 @@ jobs:
         uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.3.17
         with:
           auth-type: oidc
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.publish.outputs.vsix-file || steps.download-published.outputs.vsix-file }}
           timeout-minutes: '30'
           accounts: |
             https://dev.azure.com/jessehouwing
