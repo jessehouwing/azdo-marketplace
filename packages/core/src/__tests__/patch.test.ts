@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
@@ -6,11 +6,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import yazl from 'yazl';
+import { v5 as uuidv5 } from 'uuid';
 import { patchExtension } from '../commands/patch.js';
+import { publishExtension } from '../commands/publish.js';
+import { TfxManager } from '../tfx-manager.js';
 import { VsixReader } from '../vsix-reader.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
-describe('patchExtension', () => {
+describe('VSIX patching', () => {
   let directory: string;
   let input: string;
   const platform = new MockPlatformAdapter();
@@ -41,7 +44,7 @@ describe('patchExtension', () => {
         JSON.stringify({
           id: 'b310bcce-c30d-45cd-a01f-5e69b674a156',
           name: 'Task',
-          version: { Major: 1, Minor: 2, Patch: 3 },
+          version: { Major: 1, Minor: 0, Patch: 0 },
         })
       ),
       'Task/task.json'
@@ -53,7 +56,65 @@ describe('patchExtension', () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await rm(directory, { recursive: true, force: true });
+  });
+
+  describe.each(['patch', 'publish'])('%s task metadata fallbacks', (command) => {
+    it.each([
+      { publisherId: undefined, extensionId: undefined },
+      { publisherId: 'new-publisher', extensionId: undefined },
+      { publisherId: undefined, extensionId: 'new-extension' },
+    ])('resolves XML identity with overrides %j and uses the source version', async (identity) => {
+      const options = {
+        vsixFile: input,
+        outputPath: join(directory, 'output'),
+        ...identity,
+        updateTasksId: true,
+        updateTasksVersion: 'major' as const,
+      };
+      let vsixFile: string;
+      if (command === 'patch') {
+        ({ vsixFile } = await patchExtension(options, platform));
+      } else {
+        jest.spyOn(platform, 'getTempDir').mockReturnValue(directory);
+        const tfx = new TfxManager({ tfxVersion: 'built-in', platform });
+        jest.spyOn(tfx, 'execute').mockResolvedValue({
+          exitCode: 0,
+          stdout: '',
+          stderr: '',
+          json: { published: true },
+        });
+        ({ vsixFile } = await publishExtension(
+          { ...options, publishSource: 'vsix' },
+          {
+            authType: 'pat',
+            token: 'test-token',
+            serviceUrl: 'https://marketplace.visualstudio.com',
+          },
+          tfx,
+          platform
+        ));
+      }
+      const reader = await VsixReader.open(vsixFile);
+      try {
+        const task = await reader.readTaskManifest('Task');
+        const namespace = uuidv5('https://marketplace.visualstudio.com/vsts', uuidv5.URL);
+        const expectedId = uuidv5(
+          `${identity.publisherId || 'publisher'}.${identity.extensionId || 'extension'}.Task`,
+          namespace
+        );
+        expect(task.id).toBe(expectedId);
+        expect(task.version).toEqual({ Major: 1, Minor: 2, Patch: 3 });
+        expect(await reader.getMetadata()).toMatchObject({
+          publisher: identity.publisherId || 'publisher',
+          extensionId: identity.extensionId || 'extension',
+          version: '1.2.3',
+        });
+      } finally {
+        await reader.close();
+      }
+    });
   });
 
   it('patches identity, XML visibility, pricing and task manifests while preserving payload and input', async () => {

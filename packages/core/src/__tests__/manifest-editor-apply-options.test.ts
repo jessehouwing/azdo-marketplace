@@ -4,7 +4,7 @@
  * Tests the unified options application that eliminates code duplication
  */
 
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { createWriteStream, mkdirSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -294,19 +294,33 @@ describe('ManifestEditor.applyOptions()', () => {
     await reader.close();
   });
 
-  it('should skip task version update if no extension version provided', async () => {
+  it('should use the source extension version if no override is provided', async () => {
     const reader = await VsixReader.open(testVsixFile);
     const editor = ManifestEditor.fromReader(reader);
 
     await editor.applyOptions({
       updateTasksVersion: 'major',
-      // No extensionVersion provided
     });
 
     const taskMods = editor.getTaskManifestModifications();
-    expect(taskMods.size).toBe(0);
+    expect(taskMods.get('TestTask')?.version).toEqual({ Major: 1, Minor: 0, Patch: 0 });
 
     await reader.close();
+  });
+
+  it.each([
+    { options: { updateTasksVersion: 'major' as const }, error: 'Extension version is required' },
+    { options: { updateTasksId: true }, error: 'Publisher ID and extension ID are required' },
+  ])('fails clearly for missing source metadata: $error', async ({ options, error }) => {
+    const reader = await VsixReader.open(testVsixFile);
+    jest
+      .spyOn(reader, 'getMetadata')
+      .mockResolvedValue({ publisher: '', extensionId: '', version: '' });
+    try {
+      await expect(ManifestEditor.fromReader(reader).applyOptions(options)).rejects.toThrow(error);
+    } finally {
+      await reader.close();
+    }
   });
 
   it('should return editor for chaining', async () => {
