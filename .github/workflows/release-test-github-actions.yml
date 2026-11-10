@@ -3,7 +3,7 @@
 name: Test GitHub Actions
 run-name: Test GitHub Actions v${{ inputs.version || inputs.ref || github.ref_name || github.ref }} (${{ inputs.os || 'ubuntu-latest' }}, ${{ inputs.auth-type || 'pat' }})
 
-# Triggered by the release workflow to validate the root GitHub Action
+# Triggered by the release workflow to validate the root GitHub Action and wrappers
 # against a small sample extension using PAT and OIDC auth types.
 #
 # Required secrets:
@@ -134,6 +134,17 @@ jobs:
           update-tasks-id: true
           manifest-file: vss-extension.json
 
+      # --- Patch (VSIX mode, without authentication or identity overrides) ---
+      - id: patch
+        name: Patch packaged VSIX
+        uses: $/patch
+        with:
+          vsix-file: ${{ steps.package-manifest.outputs.vsix-file }}
+          output-path: ${{ runner.temp }}/patched-vsix
+          extension-name: Release Test Ping (Patched)
+          update-tasks-version: major
+          update-tasks-id: true
+
       # --- Publish (vsix mode) ---
       - name: Publish from VSIX
         uses: $/
@@ -143,7 +154,7 @@ jobs:
           auth-type: ${{ inputs.auth-type }}
           token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           use: vsix
-          vsix-file: ${{ steps.package-manifest.outputs.vsix-file }}
+          vsix-file: ${{ steps.patch.outputs.vsix-file }}
           no-wait-validation: true
 
       # --- Wait for validation ---
@@ -154,6 +165,44 @@ jobs:
           auth-type: ${{ inputs.auth-type }}
           token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
           vsix-file: ${{ steps.publish.outputs.vsix-file }}
+
+      # --- Download the exact published bytes ---
+      - id: download
+        name: Download published VSIX
+        uses: $/download-vsix
+        with:
+          auth-type: ${{ inputs.auth-type }}
+          token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
+          publisher-id: ${{ env.PUBLISHER_ID }}
+          extension-id: ${{ env.EXTENSION_ID }}
+          version: ${{ steps.query.outputs.proposed-version }}
+          output-path: ${{ runner.temp }}/downloaded-vsix
+
+      - name: Verify VSIX round trip and outputs
+        env:
+          PATCHED_VSIX: ${{ steps.patch.outputs.vsix-file }}
+          PATCHED_VSIX_NAME: ${{ steps.patch.outputs.vsix-file-name }}
+          DOWNLOADED_VSIX: ${{ steps.download.outputs.vsix-file }}
+          DOWNLOADED_VSIX_NAME: ${{ steps.download.outputs.vsix-file-name }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:PATCHED_VSIX_NAME -ne [IO.Path]::GetFileName($env:PATCHED_VSIX)) {
+            throw 'Patch filename output does not match the patched VSIX path'
+          }
+          if ($env:DOWNLOADED_VSIX_NAME -ne [IO.Path]::GetFileName($env:DOWNLOADED_VSIX)) {
+            throw 'Download filename output does not match the downloaded VSIX path'
+          }
+          if ($env:DOWNLOADED_VSIX_NAME -ne $env:PATCHED_VSIX_NAME) {
+            throw 'Downloaded VSIX filename does not match the patched package'
+          }
+          $expected = (Get-FileHash -LiteralPath $env:PATCHED_VSIX -Algorithm SHA256).Hash
+          $actual = (Get-FileHash -LiteralPath $env:DOWNLOADED_VSIX -Algorithm SHA256).Hash
+          if ($actual -ne $expected) {
+            throw 'Downloaded VSIX bytes differ from the patched package that was published'
+          }
+          Write-Host "VSIX round trip verified: SHA-256 $actual"
+
       # --- Show extension ---
       - name: Show extension metadata
         uses: $/
@@ -171,7 +220,7 @@ jobs:
           operation: share
           auth-type: ${{ inputs.auth-type }}
           token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.download.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -182,7 +231,7 @@ jobs:
           operation: install
           auth-type: ${{ inputs.auth-type }}
           token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.download.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -193,7 +242,7 @@ jobs:
           operation: wait-for-installation
           auth-type: ${{ inputs.auth-type }}
           token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.download.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
 
@@ -204,6 +253,6 @@ jobs:
           operation: unshare
           auth-type: ${{ inputs.auth-type }}
           token: ${{ inputs.auth-type == 'pat' && steps.azure-devops-token.outputs.token || '' }}
-          vsix-file: ${{ steps.publish.outputs.vsix-file }}
+          vsix-file: ${{ steps.download.outputs.vsix-file }}
           accounts: |
             https://dev.azure.com/jessehouwing-dev
