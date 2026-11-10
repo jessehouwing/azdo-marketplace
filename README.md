@@ -50,7 +50,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 ## GitHub Marketplace sample (main action)
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.4.0
   id: publish
   with:
     operation: publish
@@ -67,7 +67,7 @@ When creating a PAT for pipeline automation, include at least the following scop
 ### Manifests in a subfolder
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: package
     working-directory: tests/sample-extension
@@ -159,7 +159,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### package
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.4.0
   id: package
   with:
     publisher-id: my-publisher
@@ -174,7 +174,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### publish
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher
@@ -186,7 +186,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### install
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/install@v6
+- uses: jessehouwing/azdo-marketplace/install@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: extension
@@ -197,7 +197,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### share
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/share@v6
+- uses: jessehouwing/azdo-marketplace/share@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: extension
@@ -208,7 +208,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### unshare
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unshare@v6
+- uses: jessehouwing/azdo-marketplace/unshare@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: extension
@@ -219,7 +219,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### unpublish
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/unpublish@v6
+- uses: jessehouwing/azdo-marketplace/unpublish@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: extension
@@ -229,7 +229,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### show
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/show@v6
+- uses: jessehouwing/azdo-marketplace/show@v6.4.0
   id: show
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
@@ -242,7 +242,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### query-version
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/query-version@v6
+- uses: jessehouwing/azdo-marketplace/query-version@v6.4.0
   id: query
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
@@ -258,7 +258,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### wait-for-validation
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-validation@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     working-directory: extension
@@ -268,7 +268,7 @@ For manifest-based operations, `manifest-file` patterns are resolved from `worki
 ### wait-for-installation
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6
+- uses: jessehouwing/azdo-marketplace/wait-for-installation@v6.4.0
   with:
     token: ${{ secrets.MARKETPLACE_TOKEN }}
     publisher-id: my-publisher

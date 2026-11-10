@@ -43,7 +43,7 @@ Grant `contents: read`, `id-token: write`, and `attestations: write` in the work
 Starting with a downloaded build artifact:
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/patch@v6
+- uses: jessehouwing/azdo-marketplace/patch@v6.4.0
   id: patch
   with:
     vsix-file: artifacts/*.vsix
@@ -56,7 +56,7 @@ Starting with a downloaded build artifact:
   with:
     subject-path: ${{ steps.patch.outputs.vsix-file }}
 
-- uses: jessehouwing/azdo-marketplace/publish@v6
+- uses: jessehouwing/azdo-marketplace/publish@v6.4.0
   with:
     use: vsix
     vsix-file: ${{ steps.patch.outputs.vsix-file }}
@@ -73,7 +73,7 @@ Run this branch only when the exact preview version is already published.
 Pin `version` to that release rather than trusting a moving `latest` version.
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/download-vsix@v6
+- uses: jessehouwing/azdo-marketplace/download-vsix@v6.4.0
   id: download
   with:
     publisher-id: my-publisher

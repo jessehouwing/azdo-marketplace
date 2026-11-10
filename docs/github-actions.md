@@ -2,14 +2,14 @@
 
 This repository ships a **unified JavaScript action** and **composite command wrappers**.
 
-- Unified action: `jessehouwing/azdo-marketplace@v6`
+- Unified action: `jessehouwing/azdo-marketplace@v6.4.0`
 - Main definition: `action.yml`
 - Entry point: `packages/github-action/src/main.ts`
 
 ## Minimal usage
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: package
 ```
@@ -106,8 +106,8 @@ Downloads a published VSIX without patching or re-packaging its bytes.
 - `version` selects a published version; `extension-version` is an editing input, not a download selector.
 - Missing versions/assets and invalid VSIX responses fail the operation.
 
-Both operations also have composite wrappers: `jessehouwing/azdo-marketplace/patch@v6`
-and `jessehouwing/azdo-marketplace/download-vsix@v6`.
+Both operations also have composite wrappers: `jessehouwing/azdo-marketplace/patch@v6.4.0`
+and `jessehouwing/azdo-marketplace/download-vsix@v6.4.0`.
 See [VSIX provenance examples](./vsix-provenance.md) for patch → attest → publish and verified retries.
 
 ### `publish`
@@ -232,7 +232,7 @@ The `id` (task UUID from `task.json`) is optional but strongly recommended. When
 Use `working-directory` when your extension manifest lives in a subfolder and you want `manifest-file` patterns to stay relative to that folder.
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace@v6
+- uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: package
     working-directory: tests/sample-extension
@@ -285,7 +285,7 @@ require GitHub Actions runner 2.336.0 or newer (including self-hosted runners).
 ### Example using a composite action
 
 ```yaml
-- uses: jessehouwing/azdo-marketplace/package@v6
+- uses: jessehouwing/azdo-marketplace/package@v6.4.0
   id: package
 
 - run: echo "VSIX: ${{ steps.package.outputs.vsix-file }}"
@@ -309,11 +309,11 @@ steps:
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
   - id: package
-    uses: jessehouwing/azdo-marketplace@v6
+    uses: jessehouwing/azdo-marketplace@v6.4.0
     with:
       operation: package
 
-  - uses: jessehouwing/azdo-marketplace@v6
+  - uses: jessehouwing/azdo-marketplace@v6.4.0
     with:
       operation: publish
       auth-type: oidc
@@ -327,7 +327,7 @@ steps:
 
 ```yaml
 - id: version
-  uses: jessehouwing/azdo-marketplace@v6
+  uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: query-version
     auth-type: pat
@@ -339,7 +339,7 @@ steps:
 
 ```yaml
 - id: version
-  uses: jessehouwing/azdo-marketplace@v6
+  uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: query-version
     auth-type: pat
@@ -354,7 +354,7 @@ steps:
 
 ```yaml
 - id: version
-  uses: jessehouwing/azdo-marketplace@v6
+  uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: query-version
     version-source: manifest
@@ -364,7 +364,7 @@ steps:
 
 ```yaml
 - id: version
-  uses: jessehouwing/azdo-marketplace@v6
+  uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: query-version
     version-source: |
@@ -375,7 +375,7 @@ steps:
 
 ```yaml
 - id: version
-  uses: jessehouwing/azdo-marketplace@v6
+  uses: jessehouwing/azdo-marketplace@v6.4.0
   with:
     operation: query-version
     auth-type: pat
