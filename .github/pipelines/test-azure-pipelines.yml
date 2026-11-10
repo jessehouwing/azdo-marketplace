@@ -162,6 +162,18 @@ stages:
               manifestFile: vss-extension.json
               workingDirectory: tests/sample-extension
 
+          # --- Patch without authentication or identity overrides ---
+          - task: azdo-marketplace@6
+            name: patch
+            displayName: Patch packaged VSIX
+            inputs:
+              operation: patch
+              vsixFile: $(packageManifest.vsixFile)
+              outputPath: $(Build.ArtifactStagingDirectory)/patched-vsix
+              extensionName: Release Test Ping (Patched)
+              updateTasksVersion: major
+              updateTasksId: true
+
           # --- Publish from VSIX ---
           - task: azdo-marketplace@6
             displayName: Publish from VSIX
@@ -172,7 +184,7 @@ stages:
               connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
               use: vsix
-              vsixFile: $(packageManifest.vsixFile)
+              vsixFile: $(patch.vsixFile)
               noWaitValidation: true
 
           # --- Wait for validation ---
@@ -185,6 +197,44 @@ stages:
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
               vsixFile: $(publish.vsixFile)
 
+          # --- Download the exact published bytes ---
+          - task: azdo-marketplace@6
+            name: download
+            displayName: Download published VSIX
+            inputs:
+              operation: downloadVsix
+              connectionType: ${{ parameters.connectionType }}
+              connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
+              connectionNameAzureRm: ${{ parameters.azureRmConnection }}
+              publisherId: ${{ parameters.publisherId }}
+              extensionId: ${{ parameters.extensionId }}
+              version: $(queryVersion.proposedVersion)
+              outputPath: $(Build.ArtifactStagingDirectory)/downloaded-vsix
+
+          - pwsh: |
+              $ErrorActionPreference = 'Stop'
+              if ($env:PATCHED_VSIX_NAME -ne [IO.Path]::GetFileName($env:PATCHED_VSIX)) {
+                throw 'Patch filename output does not match the patched VSIX path'
+              }
+              if ($env:DOWNLOADED_VSIX_NAME -ne [IO.Path]::GetFileName($env:DOWNLOADED_VSIX)) {
+                throw 'Download filename output does not match the downloaded VSIX path'
+              }
+              if ($env:DOWNLOADED_VSIX_NAME -ne $env:PATCHED_VSIX_NAME) {
+                throw 'Downloaded VSIX filename does not match the patched package'
+              }
+              $expected = (Get-FileHash -LiteralPath $env:PATCHED_VSIX -Algorithm SHA256).Hash
+              $actual = (Get-FileHash -LiteralPath $env:DOWNLOADED_VSIX -Algorithm SHA256).Hash
+              if ($actual -ne $expected) {
+                throw 'Downloaded VSIX bytes differ from the patched package that was published'
+              }
+              Write-Host "VSIX round trip verified: SHA-256 $actual"
+            displayName: Verify VSIX round trip and outputs
+            env:
+              PATCHED_VSIX: $(patch.vsixFile)
+              PATCHED_VSIX_NAME: $(patch.vsixFileName)
+              DOWNLOADED_VSIX: $(download.vsixFile)
+              DOWNLOADED_VSIX_NAME: $(download.vsixFileName)
+
           # --- Share ---
           - task: azdo-marketplace@6
             displayName: Share extension
@@ -193,7 +243,7 @@ stages:
               connectionType: ${{ parameters.connectionType }}
               connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-              vsixFile: $(publish.vsixFile)
+              vsixFile: $(download.vsixFile)
               accounts: ${{ parameters.organizationUrl }}
 
           # --- Install ---
@@ -204,7 +254,7 @@ stages:
               connectionType: ${{ parameters.connectionType }}
               connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-              vsixFile: $(publish.vsixFile)
+              vsixFile: $(download.vsixFile)
               accounts: ${{ parameters.organizationUrl }}
 
           # --- Wait for installation ---
@@ -217,7 +267,7 @@ stages:
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
               publisherId: ${{ parameters.publisherId }}
               extensionId: ${{ parameters.extensionId }}
-              vsixFile: $(publish.vsixFile)
+              vsixFile: $(download.vsixFile)
               accounts: ${{ parameters.organizationUrl }}
 
           # --- Unshare ---
@@ -228,5 +278,5 @@ stages:
               connectionType: ${{ parameters.connectionType }}
               connectionNamePAT: ${{ parameters.marketplaceServiceConnectionName }}
               connectionNameAzureRm: ${{ parameters.azureRmConnection }}
-              vsixFile: $(publish.vsixFile)
+              vsixFile: $(download.vsixFile)
               accounts: ${{ parameters.organizationUrl }}
