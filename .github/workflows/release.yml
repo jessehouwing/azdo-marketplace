@@ -399,7 +399,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
 
-      - name: Check current marketplace version
+      # Detects a retry after the exact version was already published (e.g. a
+      # previous run's publish succeeded but a later step failed or timed out),
+      # so we don't attempt to republish the same version.
+      - name: Check current preview marketplace version
         id: check-version
         uses: jessehouwing/azdo-marketplace/query-version@v6.3.17
         with:

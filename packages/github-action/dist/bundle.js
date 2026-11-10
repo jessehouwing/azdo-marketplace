@@ -33312,9 +33312,151 @@ function normalizeAccountsToServiceUrls(values) {
     return values.map((value) => normalizeAccountToServiceUrl(value));
 }
 
+class TerminalServiceError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'TerminalServiceError';
+    }
+}
+function collectErrorMessages(value) {
+    if (value === undefined || value === null) {
+        return [];
+    }
+    if (typeof value === 'string') {
+        return [value];
+    }
+    if (value instanceof Error) {
+        return [value.message, ...collectErrorMessages(value.cause)];
+    }
+    if (Array.isArray(value)) {
+        return value.flatMap((entry) => collectErrorMessages(entry));
+    }
+    if (typeof value === 'object') {
+        const record = value;
+        const messages = [];
+        if (typeof record.typeKey === 'string' ||
+            typeof record.typeName === 'string' ||
+            typeof record.eventId === 'number' ||
+            typeof record.eventId === 'string') {
+            messages.push(JSON.stringify(record));
+        }
+        for (const key of ['message', 'body', 'responseBody', 'result']) {
+            messages.push(...collectErrorMessages(record[key]));
+        }
+        for (const key of ['statusCode', 'status']) {
+            const status = record[key];
+            if (typeof status === 'number' || typeof status === 'string') {
+                messages.push(String(status));
+            }
+        }
+        return messages;
+    }
+    return [String(value)];
+}
+function parseEmbeddedJson(message) {
+    const normalizedMessage = message.replace(/\uFEFF/g, '');
+    let jsonStart = normalizedMessage.indexOf('{');
+    while (jsonStart !== -1) {
+        let depth = 0;
+        let inString = false;
+        let escaped = false;
+        for (let index = jsonStart; index < normalizedMessage.length; index++) {
+            const char = normalizedMessage[index];
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (char === '\\') {
+                escaped = true;
+                continue;
+            }
+            if (char === '"') {
+                inString = !inString;
+                continue;
+            }
+            if (inString) {
+                continue;
+            }
+            if (char === '{') {
+                depth++;
+            }
+            else if (char === '}') {
+                depth--;
+                if (depth === 0) {
+                    try {
+                        return JSON.parse(normalizedMessage.slice(jsonStart, index + 1));
+                    }
+                    catch {
+                        break;
+                    }
+                }
+            }
+        }
+        jsonStart = normalizedMessage.indexOf('{', jsonStart + 1);
+    }
+    return undefined;
+}
+function errorFromText(message) {
+    const tfError = /\b(TF\d{4,}:.*)/i.exec(message);
+    if (tfError) {
+        return new TerminalServiceError(tfError[1].trim());
+    }
+    const httpStatusError = /\b(?:(?:received response|http)\s+(401|403)\b|Failed request:\s*\((401|403)\))/i.exec(message);
+    if (httpStatusError) {
+        return new TerminalServiceError(message.trim());
+    }
+    if (/\bFailed to find api location for area:\s+\w+\s+id:\s+[0-9a-f-]+/i.test(message)) {
+        return new TerminalServiceError(message.trim());
+    }
+    if (/\berror:\s+Error:\s+Extension not published\./i.test(message)) {
+        return new TerminalServiceError(message.trim());
+    }
+    if (/\berror:\s+Error:\s+Could not find extension version\s+\d+(?:\.\d+){0,3}\b/i.test(message)) {
+        return new TerminalServiceError(message.trim());
+    }
+    const payload = parseEmbeddedJson(message);
+    if (payload &&
+        (typeof payload.typeKey === 'string' ||
+            typeof payload.typeName === 'string' ||
+            typeof payload.eventId === 'number' ||
+            typeof payload.eventId === 'string')) {
+        return new TerminalServiceError(typeof payload.message === 'string' && payload.message.trim().length > 0
+            ? payload.message
+            : String(payload.typeKey ?? payload.typeName ?? payload.eventId));
+    }
+    return undefined;
+}
+/** Detects the Azure DevOps "Sorry! Our services aren't available right now." outage page. */
+function isTransientServiceUnavailable(output) {
+    return /Our services aren't available right now|Service Unavailable/i.test(output);
+}
+function classifyServiceError(value) {
+    if (value instanceof TerminalServiceError) {
+        return value;
+    }
+    const messages = collectErrorMessages(value).filter((message) => message.trim().length > 0);
+    for (const message of messages) {
+        const serviceError = errorFromText(message);
+        if (serviceError) {
+            return serviceError;
+        }
+    }
+    if (messages.some((message) => /^(401|403)$/.test(message.trim()))) {
+        const status = messages.find((message) => /^(401|403)$/.test(message.trim()))?.trim();
+        const details = messages
+            .filter((message) => message.trim() !== status)
+            .join(' ')
+            .trim();
+        return new TerminalServiceError([status, details].filter(Boolean).join(' '));
+    }
+    return undefined;
+}
+
 /**
  * TfxManager - Manages tfx-cli installation, caching, and execution
  */
+const TRANSIENT_MAX_ATTEMPTS = 3;
+const TRANSIENT_BASE_DELAY_MS = 5000;
 class TextCaptureStream extends Writable {
     lineWriter;
     content = '';
@@ -33627,8 +33769,15 @@ class TfxManager {
         });
     }
     emitFailureErrorLines(stdout, stderr) {
+        const combined = `${stdout}\n${stderr}`;
+        if (isTransientServiceUnavailable(combined)) {
+            const ref = /Ref A:\s*([0-9A-F]+)/i.exec(combined)?.[1];
+            this.platform.error(`Azure DevOps Marketplace reported the service is unavailable (transient outage)` +
+                `${ref ? ` [Ref A: ${ref}]` : ''}. Re-run the job later.`);
+            return;
+        }
         const seen = new Set();
-        const allLines = `${stdout}\n${stderr}`.replace(/\r\n/g, '\n').split('\n');
+        const allLines = combined.replace(/\r\n/g, '\n').split('\n');
         for (const line of allLines) {
             const trimmed = line.trim();
             if (!trimmed) {
@@ -33651,6 +33800,23 @@ class TfxManager {
      * @returns Result with exit code and output
      */
     async execute(args, options) {
+        const maxAttempts = TRANSIENT_MAX_ATTEMPTS;
+        for (let attempt = 1;; attempt++) {
+            const result = await this.executeOnce(args, options, attempt >= maxAttempts);
+            if (result.exitCode === 0 || attempt >= maxAttempts) {
+                return result;
+            }
+            if (!isTransientServiceUnavailable(`${result.stdout}\n${result.stderr}`)) {
+                this.emitFailureErrorLines(result.stdout, result.stderr);
+                return result;
+            }
+            const delayMs = TRANSIENT_BASE_DELAY_MS * 2 ** (attempt - 1);
+            this.platform.warning(`Azure DevOps Marketplace reported the service is temporarily unavailable. ` +
+                `Retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts})...`);
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+    async executeOnce(args, options, emitFailure) {
         const tfxPath = await this.resolve();
         // Add JSON output flags if requested
         const finalArgs = [...args];
@@ -33702,7 +33868,7 @@ class TfxManager {
             ? `${jsonStream.messages.join('')}${jsonStream.jsonString}`
             : stdoutStream.content;
         const stderr = stderrStream.content;
-        if (exitCode !== 0) {
+        if (exitCode !== 0 && emitFailure) {
             this.emitFailureErrorLines(stdout, stderr);
         }
         if (this.platform.isDebugEnabled()) {
@@ -44495,142 +44661,6 @@ async function queryVersion(options, auth, tfx, platform) {
         version: winner.version,
         source: winner.source,
     };
-}
-
-class TerminalServiceError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'TerminalServiceError';
-    }
-}
-function collectErrorMessages(value) {
-    if (value === undefined || value === null) {
-        return [];
-    }
-    if (typeof value === 'string') {
-        return [value];
-    }
-    if (value instanceof Error) {
-        return [value.message, ...collectErrorMessages(value.cause)];
-    }
-    if (Array.isArray(value)) {
-        return value.flatMap((entry) => collectErrorMessages(entry));
-    }
-    if (typeof value === 'object') {
-        const record = value;
-        const messages = [];
-        if (typeof record.typeKey === 'string' ||
-            typeof record.typeName === 'string' ||
-            typeof record.eventId === 'number' ||
-            typeof record.eventId === 'string') {
-            messages.push(JSON.stringify(record));
-        }
-        for (const key of ['message', 'body', 'responseBody', 'result']) {
-            messages.push(...collectErrorMessages(record[key]));
-        }
-        for (const key of ['statusCode', 'status']) {
-            const status = record[key];
-            if (typeof status === 'number' || typeof status === 'string') {
-                messages.push(String(status));
-            }
-        }
-        return messages;
-    }
-    return [String(value)];
-}
-function parseEmbeddedJson(message) {
-    const normalizedMessage = message.replace(/\uFEFF/g, '');
-    let jsonStart = normalizedMessage.indexOf('{');
-    while (jsonStart !== -1) {
-        let depth = 0;
-        let inString = false;
-        let escaped = false;
-        for (let index = jsonStart; index < normalizedMessage.length; index++) {
-            const char = normalizedMessage[index];
-            if (escaped) {
-                escaped = false;
-                continue;
-            }
-            if (char === '\\') {
-                escaped = true;
-                continue;
-            }
-            if (char === '"') {
-                inString = !inString;
-                continue;
-            }
-            if (inString) {
-                continue;
-            }
-            if (char === '{') {
-                depth++;
-            }
-            else if (char === '}') {
-                depth--;
-                if (depth === 0) {
-                    try {
-                        return JSON.parse(normalizedMessage.slice(jsonStart, index + 1));
-                    }
-                    catch {
-                        break;
-                    }
-                }
-            }
-        }
-        jsonStart = normalizedMessage.indexOf('{', jsonStart + 1);
-    }
-    return undefined;
-}
-function errorFromText(message) {
-    const tfError = /\b(TF\d{4,}:.*)/i.exec(message);
-    if (tfError) {
-        return new TerminalServiceError(tfError[1].trim());
-    }
-    const httpStatusError = /\b(?:(?:received response|http)\s+(401|403)\b|Failed request:\s*\((401|403)\))/i.exec(message);
-    if (httpStatusError) {
-        return new TerminalServiceError(message.trim());
-    }
-    if (/\bFailed to find api location for area:\s+\w+\s+id:\s+[0-9a-f-]+/i.test(message)) {
-        return new TerminalServiceError(message.trim());
-    }
-    if (/\berror:\s+Error:\s+Extension not published\./i.test(message)) {
-        return new TerminalServiceError(message.trim());
-    }
-    if (/\berror:\s+Error:\s+Could not find extension version\s+\d+(?:\.\d+){0,3}\b/i.test(message)) {
-        return new TerminalServiceError(message.trim());
-    }
-    const payload = parseEmbeddedJson(message);
-    if (payload &&
-        (typeof payload.typeKey === 'string' ||
-            typeof payload.typeName === 'string' ||
-            typeof payload.eventId === 'number' ||
-            typeof payload.eventId === 'string')) {
-        return new TerminalServiceError(typeof payload.message === 'string' && payload.message.trim().length > 0
-            ? payload.message
-            : String(payload.typeKey ?? payload.typeName ?? payload.eventId));
-    }
-    return undefined;
-}
-function classifyServiceError(value) {
-    if (value instanceof TerminalServiceError) {
-        return value;
-    }
-    const messages = collectErrorMessages(value).filter((message) => message.trim().length > 0);
-    for (const message of messages) {
-        const serviceError = errorFromText(message);
-        if (serviceError) {
-            return serviceError;
-        }
-    }
-    if (messages.some((message) => /^(401|403)$/.test(message.trim()))) {
-        const status = messages.find((message) => /^(401|403)$/.test(message.trim()))?.trim();
-        const details = messages
-            .filter((message) => message.trim() !== status)
-            .join(' ')
-            .trim();
-        return new TerminalServiceError([status, details].filter(Boolean).join(' '));
-    }
-    return undefined;
 }
 
 /**
