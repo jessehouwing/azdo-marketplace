@@ -78,11 +78,9 @@ describe('Composite action wrapper contract', () => {
   describe.each(compositeActionTable)(
     '$operation composite action ($relativePath)',
     ({ operation, relativePath, absolutePath }) => {
-      if (operation === 'patch' || operation === 'download-vsix') {
-        it('runs the root action from the same commit', () => {
-          expect(loadActionDefinition(absolutePath).runs?.steps?.[0]?.uses).toBe('$/');
-        });
-      }
+      it('runs the root action from the same commit', () => {
+        expect(loadActionDefinition(absolutePath).runs?.steps?.[0]?.uses).toBe('$/');
+      });
 
       it('declares a one-to-one contract between inputs and forwarded with-values', () => {
         const compositeAction = loadActionDefinition(absolutePath);

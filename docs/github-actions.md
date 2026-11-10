@@ -277,6 +277,11 @@ The repo provides command-focused composite wrappers that internally call the un
 
 Use these when you prefer a dedicated command surface over setting `operation` manually.
 
+All wrappers use `$/` internally, so the unified action comes from the same commit
+as the wrapper rather than floating on `@main` or `@v6`. This preserves callers'
+version or commit pins without requiring a checkout. Self-repository references
+require GitHub Actions runner 2.336.0 or newer (including self-hosted runners).
+
 ### Example using a composite action
 
 ```yaml

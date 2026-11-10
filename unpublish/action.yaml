@@ -189,7 +189,7 @@ runs:
   using: composite
   steps:
     - id: unpublish
-      uses: jessehouwing/azdo-marketplace@main
+      uses: $/
       with:
         operation: unpublish
         auth-type: ${{ inputs.auth-type }}
