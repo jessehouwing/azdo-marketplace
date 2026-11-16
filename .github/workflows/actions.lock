@@ -58,7 +58,7 @@ workflows:
         - 'azure/login@v3.1.0'
         - 'jessehouwing/actions-example-checker@v0.0.12'
         - 'jessehouwing/actions-semver-checker@v2.1.1'
-        - 'jessehouwing/azdo-marketplace@v6.3.17'
+        - 'jessehouwing/azdo-marketplace@v6.4.0'
         - 'step-security/harden-runner@v2.22.4'
     '.github/workflows/scorecard.yml':
         - 'actions/checkout@v7.0.1'
@@ -155,9 +155,9 @@ dependencies:
         commit: 'sha1-550e3a35452defcedbdc51aca36487c3bfee0696'
         owner_id: 4173387
         repo_id: 684124547
-    'jessehouwing/azdo-marketplace@v6.3.17':
-        ref: 'v6.3.17'
-        commit: 'sha1-e9b6e7193d09e69e8992e6977bf0de4c8a66680b'
+    'jessehouwing/azdo-marketplace@v6.4.0':
+        ref: 'v6.4.0'
+        commit: 'sha1-7bb1f7d4913cae07b6115d54fbcc71e8661556e7'
         owner_id: 4173387
         repo_id: 1158033287
     'ossf/scorecard-action@v2.5.0':
