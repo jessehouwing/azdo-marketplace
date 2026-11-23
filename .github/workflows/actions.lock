@@ -25,10 +25,6 @@ workflows:
         - 'actions/setup-node@v7.1.0'
         - 'codecov/codecov-action@v7.1.1'
         - 'step-security/harden-runner@v2.23.0'
-    '.github/workflows/codeql.yml':
-        - 'actions/checkout@v7.0.1'
-        - 'github/codeql-action@v4.39.3'
-        - 'step-security/harden-runner@v2.23.0'
     '.github/workflows/copilot-setup-steps.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
