@@ -1,5 +1,6 @@
 import { TaskResult } from '@extension-tasks/core';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import * as taskInternal from 'azure-pipelines-task-lib/internal.js';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -68,6 +69,20 @@ describe('AzdoAdapter', () => {
 
     expect(typeof adapter.getBoolInput('myFlag', false)).toBe('boolean');
     expect(Array.isArray(adapter.getDelimitedInput('items', ',', false))).toBe(true);
+  });
+
+  it('uses task library boolean parsing and validates delimited values', () => {
+    taskInternal._vault.storeSecret('INPUT_ADAPTERBOOL', ' true ');
+    taskInternal._vault.storeSecret('INPUT_ADAPTERLIST', ' a, b ,,c ');
+    try {
+      expect(adapter.getBoolInput('adapterBool', true)).toBe(false);
+      expect(adapter.getDelimitedInput('adapterList', ',', true)).toEqual(['a', 'b', 'c']);
+      taskInternal._vault.storeSecret('INPUT_ADAPTERLIST', 'valid,unsafe\0value');
+      expect(() => adapter.getDelimitedInput('adapterList', ',', true)).toThrow(/null character/);
+    } finally {
+      taskInternal._vault.storeSecret('INPUT_ADAPTERBOOL', '');
+      taskInternal._vault.storeSecret('INPUT_ADAPTERLIST', '');
+    }
   });
 
   it('writes output variables and secrets', () => {

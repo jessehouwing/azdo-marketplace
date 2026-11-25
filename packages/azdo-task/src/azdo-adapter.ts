@@ -60,17 +60,14 @@ export class AzdoAdapter implements IPlatformAdapter {
   }
 
   getBoolInput(name: string, required?: boolean): boolean {
-    return (this.getInput(name, required) ?? '').toUpperCase() === 'TRUE';
+    return tl.getBoolInput(name, required);
   }
 
   getDelimitedInput(name: string, delimiter: string, required?: boolean): string[] {
-    const value = this.getInput(name, required);
-    return value
-      ? value
-          .split(delimiter)
-          .map((part) => part.trim())
-          .filter(Boolean)
-      : [];
+    return tl
+      .getDelimitedInput(name, delimiter, required)
+      .map((value) => normalizeInput(value, name))
+      .filter((value): value is string => value !== undefined);
   }
 
   // ===== Output =====
