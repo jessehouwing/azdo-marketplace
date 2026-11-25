@@ -127146,8 +127146,14 @@ class GitHubAdapter {
     }
     async exec(tool, args, options) {
         validateCommandArguments(tool, args);
+        const toolToResolve = !path__default.isAbsolute(tool) &&
+            (tool.includes('/') || (process.platform === 'win32' && tool.includes('\\')))
+            ? path__default.resolve(process.cwd(), options?.cwd || process.cwd(), tool)
+            : tool;
+        const resolvedTool = await which(toolToResolve, true);
+        validateCommandArguments(resolvedTool, args);
         let stderr = '';
-        const toolCommand = tool.includes(' ') ? `"${tool}"` : tool;
+        const toolCommand = resolvedTool.includes(' ') ? `"${resolvedTool}"` : resolvedTool;
         const listeners = {
             stdout: (data) => {
                 const str = data.toString();

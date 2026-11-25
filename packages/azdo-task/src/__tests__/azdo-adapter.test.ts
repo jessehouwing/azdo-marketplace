@@ -143,6 +143,27 @@ describe('AzdoAdapter', () => {
     await expect(adapter.exec('npm.cmd', ['%PATH%'])).rejects.toThrow('unsafe shell characters');
   });
 
+  it('validates extensionless commands after resolving them on PATH', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'azdo-resolve-'));
+    const marker = join(dir, 'executed.txt');
+    const originalPath = process.env.PATH;
+    try {
+      await fs.writeFile(join(dir, 'test-resolved.cmd'), `@echo executed > "${marker}"`);
+      process.env.PATH = `${dir};${originalPath ?? ''}`;
+      await expect(adapter.exec('test-resolved', ['%PATH%'])).rejects.toThrow(
+        'unsafe shell characters'
+      );
+      await expect(fs.access(marker)).rejects.toThrow();
+      expect(await adapter.exec('test-resolved', ['safe'], { silent: true })).toBe(0);
+      expect(await fs.readFile(marker, 'utf8')).toContain('executed');
+    } finally {
+      if (originalPath === undefined) delete process.env.PATH;
+      else process.env.PATH = originalPath;
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('passes quoted Windows batch arguments without changing them', async () => {
     if (process.platform !== 'win32') return;
     const dir = await fs.mkdtemp(join(tmpdir(), 'azdo-cmd-'));

@@ -127,7 +127,9 @@ export class AzdoAdapter implements IPlatformAdapter {
     validateCommandArguments(tool, args);
     await this.ensureExecutable(tool);
 
-    const toolRunner = tl.tool(tool);
+    const resolvedTool = tl.which(tool, true);
+    validateCommandArguments(resolvedTool, args);
+    const toolRunner = tl.tool(resolvedTool);
     toolRunner.arg(args);
 
     const execOptions: tr.IExecOptions = {

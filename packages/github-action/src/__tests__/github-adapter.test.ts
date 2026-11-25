@@ -78,6 +78,45 @@ describe('GitHubAdapter', () => {
     await expect(adapter.exec('npm.cmd', ['%PATH%'])).rejects.toThrow('unsafe shell characters');
   });
 
+  it('validates extensionless commands after resolving them on PATH', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'github-resolve-'));
+    const marker = join(dir, 'executed.txt');
+    const originalPath = process.env.PATH;
+    try {
+      await fs.writeFile(join(dir, 'test-resolved.cmd'), `@echo executed > "${marker}"`);
+      process.env.PATH = `${dir};${originalPath ?? ''}`;
+      await expect(adapter.exec('test-resolved', ['%PATH%'])).rejects.toThrow(
+        'unsafe shell characters'
+      );
+      await expect(fs.access(marker)).rejects.toThrow();
+      expect(await adapter.exec('test-resolved', ['safe'], { silent: true })).toBe(0);
+      expect(await fs.readFile(marker, 'utf8')).toContain('executed');
+    } finally {
+      restoreEnvVar('PATH', originalPath);
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves relative commands against the execution working directory', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'github-cwd-'));
+    const marker = join(dir, 'executed.txt');
+    try {
+      await fs.mkdir(join(dir, 'tools'));
+      await fs.writeFile(join(dir, 'tools', 'test-cwd.cmd'), `@echo executed > "${marker}"`);
+      await expect(adapter.exec('.\\tools\\test-cwd', ['%PATH%'], { cwd: dir })).rejects.toThrow(
+        'unsafe shell characters'
+      );
+      expect(await adapter.exec('.\\tools\\test-cwd', ['safe'], { cwd: dir, silent: true })).toBe(
+        0
+      );
+      expect(await fs.readFile(marker, 'utf8')).toContain('executed');
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('passes quoted Windows batch arguments without changing them', async () => {
     if (process.platform !== 'win32') return;
     const dir = await fs.mkdtemp(join(tmpdir(), 'github-cmd-'));

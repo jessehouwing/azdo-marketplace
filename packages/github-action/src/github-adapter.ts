@@ -106,8 +106,15 @@ export class GitHubAdapter implements IPlatformAdapter {
 
   async exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
     validateCommandArguments(tool, args);
+    const toolToResolve =
+      !path.isAbsolute(tool) &&
+      (tool.includes('/') || (process.platform === 'win32' && tool.includes('\\')))
+        ? path.resolve(process.cwd(), options?.cwd || process.cwd(), tool)
+        : tool;
+    const resolvedTool = await io.which(toolToResolve, true);
+    validateCommandArguments(resolvedTool, args);
     let stderr = '';
-    const toolCommand = tool.includes(' ') ? `"${tool}"` : tool;
+    const toolCommand = resolvedTool.includes(' ') ? `"${resolvedTool}"` : resolvedTool;
 
     const listeners = {
       stdout: (data: Buffer) => {
