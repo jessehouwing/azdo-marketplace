@@ -3,7 +3,13 @@ import * as exec from '@actions/exec';
 import * as glob from '@actions/glob';
 import * as io from '@actions/io';
 import * as tc from '@actions/tool-cache';
-import { ExecOptions, IPlatformAdapter, TaskResult } from '@extension-tasks/core';
+import {
+  ExecOptions,
+  IPlatformAdapter,
+  normalizeInput,
+  TaskResult,
+  validateCommandArguments,
+} from '@extension-tasks/core';
 import { promises as fs } from 'fs';
 import * as os from 'os';
 import path from 'path';
@@ -17,7 +23,7 @@ export class GitHubAdapter implements IPlatformAdapter {
 
   getInput(name: string, required?: boolean): string | undefined {
     const value = core.getInput(name, { required: required || false });
-    return value || undefined;
+    return normalizeInput(value, name, required);
   }
 
   getBoolInput(name: string, required?: boolean): boolean {
@@ -99,8 +105,16 @@ export class GitHubAdapter implements IPlatformAdapter {
   }
 
   async exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
+    validateCommandArguments(tool, args);
+    const toolToResolve =
+      !path.isAbsolute(tool) &&
+      (tool.includes('/') || (process.platform === 'win32' && tool.includes('\\')))
+        ? path.resolve(process.cwd(), options?.cwd || process.cwd(), tool)
+        : tool;
+    const resolvedTool = await io.which(toolToResolve, true);
+    validateCommandArguments(resolvedTool, args);
     let stderr = '';
-    const toolCommand = tool.includes(' ') ? `"${tool}"` : tool;
+    const toolCommand = resolvedTool.includes(' ') ? `"${resolvedTool}"` : resolvedTool;
 
     const listeners = {
       stdout: (data: Buffer) => {

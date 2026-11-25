@@ -94,7 +94,7 @@ function createPlatformMock(config: PlatformConfig = {}) {
   const fileExistsValues = config.fileExists ?? {};
 
   return {
-    getInput: jest.fn((name: string) => inputValues[name]),
+    getInput: jest.fn((name: string, _required?: boolean) => inputValues[name]),
     getPathInput: jest.fn((name: string) => inputValues[name]),
     getBoolInput: jest.fn((name: string) => boolValues[name] ?? false),
     getDelimitedInput: jest.fn((name: string, delimiter: string) => {
@@ -943,6 +943,94 @@ describe('Azure DevOps main entrypoint', () => {
       platform
     );
   });
+
+  it.each([
+    ['unpublish', unpublishExtensionMock],
+    ['share', shareExtensionMock],
+    ['unshare', unshareExtensionMock],
+    ['install', installExtensionMock],
+    ['waitForValidation', waitForValidationMock],
+  ])('allows missing identity for %s with either source', async (operation, command) => {
+    for (const source of ['vsix', 'manifest']) {
+      jest.clearAllMocks();
+      waitForValidationMock.mockImplementation(async () => ({ status: 'success' }));
+      const values: Record<string, string | undefined> = {
+        operation,
+        connectionType: 'PAT',
+        connectionNamePAT: 'svc-connection',
+        vsixFile: source === 'vsix' ? 'extension.vsix' : undefined,
+      };
+      const platform = createPlatformMock({
+        inputs: values,
+        delimitedInputs: {
+          'manifestFile|\n': source === 'manifest' ? ['vss-extension.json'] : [],
+          'accounts|\n': ['org'],
+          'accounts|;': ['org'],
+        },
+      });
+      platform.getInput.mockImplementation((name: string, required?: boolean) => {
+        const value = values[name];
+        if (required && !value) throw new Error(`Input required: ${name}`);
+        return value;
+      });
+      azdoAdapterCtorMock.mockReturnValue(platform);
+
+      await importMainAndFlush();
+
+      expect(tlErrorMock).not.toHaveBeenCalled();
+      expect(validatePublisherIdMock).not.toHaveBeenCalled();
+      expect(validateExtensionIdMock).not.toHaveBeenCalled();
+      expect(platform.getInput).not.toHaveBeenCalledWith('publisherId', true);
+      expect(platform.getInput).not.toHaveBeenCalledWith('extensionId', true);
+      expect(command).toHaveBeenCalledWith(
+        expect.objectContaining({
+          publisherId: undefined,
+          extensionId: undefined,
+          vsixFile: source === 'vsix' ? 'extension.vsix' : undefined,
+          manifestGlobs: source === 'manifest' ? ['vss-extension.json'] : [],
+        }),
+        expect.anything(),
+        expect.anything(),
+        platform
+      );
+    }
+  });
+
+  it.each(['vsix', 'manifest'])(
+    'allows missing identity for waitForInstallation from %s',
+    async (source) => {
+      const platform = createPlatformMock({
+        inputs: {
+          operation: 'waitForInstallation',
+          connectionType: 'PAT',
+          connectionNamePAT: 'svc-connection',
+          use: source,
+          vsixFile: source === 'vsix' ? 'extension.vsix' : undefined,
+        },
+        delimitedInputs: {
+          'manifestFile|\n': ['vss-extension.json'],
+          'accounts|\n': ['org'],
+          'accounts|;': ['org'],
+        },
+      });
+      azdoAdapterCtorMock.mockReturnValue(platform);
+      await importMainAndFlush();
+
+      expect(tlErrorMock).not.toHaveBeenCalled();
+      expect(platform.getInput).not.toHaveBeenCalledWith('publisherId', true);
+      expect(platform.getInput).not.toHaveBeenCalledWith('extensionId', true);
+      expect(waitForInstallationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          publisherId: undefined,
+          extensionId: undefined,
+          vsixFile: source === 'vsix' ? 'extension.vsix' : undefined,
+          manifestFiles: source === 'manifest' ? ['vss-extension.json'] : undefined,
+        }),
+        expect.anything(),
+        platform
+      );
+    }
+  );
 
   it('fails waitForValidation when status is not success', async () => {
     waitForValidationMock.mockImplementation(async () => ({ status: 'failed' }));

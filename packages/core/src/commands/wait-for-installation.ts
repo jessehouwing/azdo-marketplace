@@ -174,7 +174,11 @@ export async function waitForInstallation(
   auth: AuthCredentials,
   platform: IPlatformAdapter
 ): Promise<WaitForInstallationResult> {
-  const identity = await resolveExtensionIdentity(options, platform, 'wait-for-installation');
+  const identity = await resolveExtensionIdentity(
+    { ...options, manifestGlobs: options.manifestFiles },
+    platform,
+    'wait-for-installation'
+  );
   const accountUrls = normalizeAccountsToServiceUrls(options.accounts);
 
   const timeoutMs = (options.timeoutMinutes ?? 10) * 60_000;

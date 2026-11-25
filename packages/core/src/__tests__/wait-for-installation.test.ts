@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import type { AuthCredentials } from '../auth.js';
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
@@ -313,6 +316,41 @@ describe('waitForInstallation', () => {
     expect(
       platform.debugMessages.some((m) => m.includes('explicit-publisher.vsix-extension'))
     ).toBe(true);
+  });
+
+  it('resolves both identity fields from a manifest when omitted', async () => {
+    const rootFolder = await mkdtemp(join(tmpdir(), 'wait-install-identity-'));
+    try {
+      await writeFile(
+        join(rootFolder, 'vss-extension.json'),
+        JSON.stringify({
+          publisher: 'manifest-publisher',
+          id: 'manifest-extension',
+          version: '1.0.0',
+        })
+      );
+      getTaskDefinitionsMock.mockResolvedValue([
+        { name: 'Task1', id: 'task-1', version: { major: 1, minor: 0, patch: 0 } },
+      ]);
+
+      const result = await waitForInstallation(
+        {
+          accounts: ['https://dev.azure.com/org1'],
+          rootFolder,
+          manifestFiles: ['vss-extension.json'],
+          expectedTasks: [{ name: 'Task1', versions: ['1.0.0'] }],
+        },
+        auth,
+        platform
+      );
+
+      expect(result.success).toBe(true);
+      expect(platform.debugMessages).toContain(
+        'Verifying installation of manifest-publisher.manifest-extension in 1 account(s)'
+      );
+    } finally {
+      await rm(rootFolder, { recursive: true, force: true });
+    }
   });
 
   it('fails when identity is missing and no vsixFile is provided', async () => {

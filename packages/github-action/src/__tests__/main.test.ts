@@ -89,7 +89,7 @@ function createPlatformMock(config: PlatformConfig = {}) {
   const fileExistsValues = config.fileExists ?? {};
 
   return {
-    getInput: jest.fn((name: string) => inputValues[name]),
+    getInput: jest.fn((name: string, _required?: boolean) => inputValues[name]),
     getBoolInput: jest.fn((name: string) => boolValues[name] ?? false),
     getDelimitedInput: jest.fn((name: string, delimiter: string) => {
       return delimitedValues[`${name}|${delimiter}`] ?? [];
@@ -670,6 +670,95 @@ describe('GitHub Action main entrypoint', () => {
       platform
     );
   });
+
+  it.each([
+    ['unpublish', unpublishExtensionMock],
+    ['share', shareExtensionMock],
+    ['unshare', unshareExtensionMock],
+    ['install', installExtensionMock],
+    ['wait-for-validation', waitForValidationMock],
+  ])('allows missing identity for %s with either source', async (operation, command) => {
+    for (const source of ['vsix', 'manifest']) {
+      jest.clearAllMocks();
+      waitForValidationMock.mockImplementation(async () => ({ status: 'success' }));
+      const platform = createPlatformMock({
+        inputs: {
+          operation,
+          'auth-type': 'pat',
+          'vsix-file': source === 'vsix' ? 'extension.vsix' : undefined,
+        },
+        delimitedInputs: {
+          'manifest-file|\n': source === 'manifest' ? ['vss-extension.json'] : [],
+          'accounts|\n': ['org'],
+          'accounts|;': ['org'],
+        },
+      });
+      platform.getInput.mockImplementation((name: string, required?: boolean) => {
+        const values: Record<string, string | undefined> = {
+          operation,
+          'auth-type': 'pat',
+          'vsix-file': source === 'vsix' ? 'extension.vsix' : undefined,
+        };
+        const value = values[name];
+        if (required && !value) throw new Error(`Input required: ${name}`);
+        return value;
+      });
+      githubAdapterCtorMock.mockReturnValue(platform);
+
+      await importMainAndFlush();
+
+      expect(setFailedMock).not.toHaveBeenCalled();
+      expect(validatePublisherIdMock).not.toHaveBeenCalled();
+      expect(validateExtensionIdMock).not.toHaveBeenCalled();
+      expect(platform.getInput).not.toHaveBeenCalledWith('publisher-id', true);
+      expect(platform.getInput).not.toHaveBeenCalledWith('extension-id', true);
+      expect(command).toHaveBeenCalledWith(
+        expect.objectContaining({
+          publisherId: undefined,
+          extensionId: undefined,
+          vsixFile: source === 'vsix' ? 'extension.vsix' : undefined,
+          manifestGlobs: source === 'manifest' ? ['vss-extension.json'] : [],
+        }),
+        expect.anything(),
+        expect.anything(),
+        platform
+      );
+    }
+  });
+
+  it.each(['vsix', 'manifest'])(
+    'allows missing identity for wait-for-installation from %s',
+    async (source) => {
+      const platform = createPlatformMock({
+        inputs: {
+          operation: 'wait-for-installation',
+          'auth-type': 'pat',
+          'vsix-file': source === 'vsix' ? 'extension.vsix' : undefined,
+        },
+        delimitedInputs: {
+          'manifest-file|\n': source === 'manifest' ? ['vss-extension.json'] : [],
+          'accounts|\n': ['org'],
+          'accounts|;': ['org'],
+        },
+      });
+      githubAdapterCtorMock.mockReturnValue(platform);
+      await importMainAndFlush();
+
+      expect(setFailedMock).not.toHaveBeenCalled();
+      expect(platform.getInput).not.toHaveBeenCalledWith('publisher-id', true);
+      expect(platform.getInput).not.toHaveBeenCalledWith('extension-id', true);
+      expect(waitForInstallationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          publisherId: undefined,
+          extensionId: undefined,
+          vsixFile: source === 'vsix' ? 'extension.vsix' : undefined,
+          manifestFiles: source === 'manifest' ? ['vss-extension.json'] : [],
+        }),
+        expect.anything(),
+        platform
+      );
+    }
+  );
 
   it('executes query-version and sets outputs', async () => {
     queryVersionMock.mockImplementation(async () => ({

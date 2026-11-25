@@ -66,11 +66,79 @@ describe('GitHubAdapter', () => {
   });
 
   it('reads string input values', () => {
-    process.env.INPUT_NAME = 'abc';
+    process.env.INPUT_NAME = '  abc  ';
 
     const result = adapter.getInput('name', true);
 
     expect(result).toBe('abc');
+  });
+
+  it('rejects unsafe Windows batch arguments before launching the command', async () => {
+    if (process.platform !== 'win32') return;
+    await expect(adapter.exec('npm.cmd', ['%PATH%'])).rejects.toThrow('unsafe shell characters');
+  });
+
+  it('validates extensionless commands after resolving them on PATH', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'github-resolve-'));
+    const marker = join(dir, 'executed.txt');
+    const originalPath = process.env.PATH;
+    try {
+      await fs.writeFile(join(dir, 'test-resolved.cmd'), `@echo executed > "${marker}"`);
+      process.env.PATH = `${dir};${originalPath ?? ''}`;
+      await expect(adapter.exec('test-resolved', ['%PATH%'])).rejects.toThrow(
+        'unsafe shell characters'
+      );
+      await expect(fs.access(marker)).rejects.toThrow();
+      expect(await adapter.exec('test-resolved', ['safe'], { silent: true })).toBe(0);
+      expect(await fs.readFile(marker, 'utf8')).toContain('executed');
+    } finally {
+      restoreEnvVar('PATH', originalPath);
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves relative commands against the execution working directory', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'github-cwd-'));
+    const marker = join(dir, 'executed.txt');
+    try {
+      await fs.mkdir(join(dir, 'tools'));
+      await fs.writeFile(join(dir, 'tools', 'test-cwd.cmd'), `@echo executed > "${marker}"`);
+      await expect(adapter.exec('.\\tools\\test-cwd', ['%PATH%'], { cwd: dir })).rejects.toThrow(
+        'unsafe shell characters'
+      );
+      expect(await adapter.exec('.\\tools\\test-cwd', ['safe'], { cwd: dir, silent: true })).toBe(
+        0
+      );
+      expect(await fs.readFile(marker, 'utf8')).toContain('executed');
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('passes quoted Windows batch arguments without changing them', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'github-cmd-'));
+    const script = join(dir, 'args.cmd');
+    let output = '';
+    const outStream = new Writable({
+      write(chunk, _encoding, callback) {
+        output += chunk.toString();
+        callback();
+      },
+    });
+    try {
+      await fs.writeFile(
+        script,
+        `@"${process.execPath}" -e "process.stdout.write(JSON.stringify(process.argv.slice(1)))" %*`
+      );
+      const args = ['path (x86)', '^0.17', 'name & other'];
+      expect(await adapter.exec(script, args, { silent: true, outStream })).toBe(0);
+      expect(JSON.parse(output)).toEqual(args);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('returns false for optional boolean input when not set', () => {

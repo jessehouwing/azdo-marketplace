@@ -1,9 +1,11 @@
 import { jest } from '@jest/globals';
 import {
+  normalizeInput,
   resolveVsixFile,
   validateAccountUrl,
   validateAzureCliAvailable,
   validateBinaryAvailable,
+  validateCommandArguments,
   validateExtensionId,
   validateNodeAvailable,
   validateNpmAvailable,
@@ -14,6 +16,29 @@ import {
 import { MockPlatformAdapter } from './helpers/mock-platform.js';
 
 describe('validation', () => {
+  describe('shared input and command validation', () => {
+    it('trims input and rejects missing required values and null characters', () => {
+      expect(normalizeInput('  hello world  ', 'name')).toBe('hello world');
+      expect(normalizeInput('  ', 'name')).toBeUndefined();
+      expect(() => normalizeInput('  ', 'name', true)).toThrow(/required/);
+      expect(() => normalizeInput('x\0y', 'name')).toThrow(/null character/);
+    });
+
+    it('rejects unsafe batch shell arguments and paths without exposing them', () => {
+      for (const arg of ['%PATH%', 'a" & whoami', 'a\nwhoami', '!PATH!']) {
+        expect(() =>
+          validateCommandArguments('C:\\Program Files (x86)\\npm.cmd', [arg], 'win32')
+        ).toThrow('unsafe shell characters');
+      }
+      expect(() => validateCommandArguments('C:\\%PATH%\\npm.cmd', [], 'win32')).toThrow();
+      expect(() =>
+        validateCommandArguments('npm.cmd', ['path (x86)', '^0.17', 'name & other'], 'win32')
+      ).not.toThrow();
+      expect(() => validateCommandArguments('node.exe', ['a & b'], 'win32')).not.toThrow();
+      expect(() => validateCommandArguments('node', ['a\0b'], 'linux')).toThrow();
+    });
+  });
+
   describe('validateExtensionId', () => {
     it('should accept valid extension IDs', () => {
       expect(() => validateExtensionId('my-extension')).not.toThrow();

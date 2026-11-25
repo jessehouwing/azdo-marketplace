@@ -31,6 +31,8 @@ This repository ships a **unified JavaScript action** and **composite command wr
 
 ## Common inputs
 
+Inputs are trimmed at their edges. CLI option values cannot start with `-`; on Windows, batch command paths and arguments cannot contain `%`, `!`, `"`, or line breaks because `cmd.exe` can interpret them.
+
 ### Authentication
 
 - `auth-type`: `pat` | `basic` | `oidc` (default `pat`)

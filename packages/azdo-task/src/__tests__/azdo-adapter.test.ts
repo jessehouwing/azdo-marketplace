@@ -1,8 +1,10 @@
 import { TaskResult } from '@extension-tasks/core';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import taskInternal from 'azure-pipelines-task-lib/internal.js';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { Writable } from 'stream';
 import { AzdoAdapter } from '../azdo-adapter.js';
 
 describe('AzdoAdapter', () => {
@@ -69,6 +71,20 @@ describe('AzdoAdapter', () => {
     expect(Array.isArray(adapter.getDelimitedInput('items', ',', false))).toBe(true);
   });
 
+  it('uses task library boolean parsing and validates delimited values', () => {
+    taskInternal._vault.storeSecret('INPUT_ADAPTERBOOL', ' true ');
+    taskInternal._vault.storeSecret('INPUT_ADAPTERLIST', ' a, b ,,c ');
+    try {
+      expect(adapter.getBoolInput('adapterBool', true)).toBe(false);
+      expect(adapter.getDelimitedInput('adapterList', ',', true)).toEqual(['a', 'b', 'c']);
+      taskInternal._vault.storeSecret('INPUT_ADAPTERLIST', 'valid,unsafe\0value');
+      expect(() => adapter.getDelimitedInput('adapterList', ',', true)).toThrow(/null character/);
+    } finally {
+      taskInternal._vault.storeSecret('INPUT_ADAPTERBOOL', '');
+      taskInternal._vault.storeSecret('INPUT_ADAPTERLIST', '');
+    }
+  });
+
   it('writes output variables and secrets', () => {
     adapter.setOutput('myOutput', 'value');
     adapter.setSecret('secret-value');
@@ -120,6 +136,56 @@ describe('AzdoAdapter', () => {
     const code = await adapter.exec(process.execPath, ['-e', "process.stdout.write('ok')"]);
 
     expect(code).toBe(0);
+  });
+
+  it('rejects unsafe Windows batch arguments before launching the command', async () => {
+    if (process.platform !== 'win32') return;
+    await expect(adapter.exec('npm.cmd', ['%PATH%'])).rejects.toThrow('unsafe shell characters');
+  });
+
+  it('validates extensionless commands after resolving them on PATH', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'azdo-resolve-'));
+    const marker = join(dir, 'executed.txt');
+    const originalPath = process.env.PATH;
+    try {
+      await fs.writeFile(join(dir, 'test-resolved.cmd'), `@echo executed > "${marker}"`);
+      process.env.PATH = `${dir};${originalPath ?? ''}`;
+      await expect(adapter.exec('test-resolved', ['%PATH%'])).rejects.toThrow(
+        'unsafe shell characters'
+      );
+      await expect(fs.access(marker)).rejects.toThrow();
+      expect(await adapter.exec('test-resolved', ['safe'], { silent: true })).toBe(0);
+      expect(await fs.readFile(marker, 'utf8')).toContain('executed');
+    } finally {
+      if (originalPath === undefined) delete process.env.PATH;
+      else process.env.PATH = originalPath;
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('passes quoted Windows batch arguments without changing them', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'azdo-cmd-'));
+    const script = join(dir, 'args.cmd');
+    let output = '';
+    const outStream = new Writable({
+      write(chunk, _encoding, callback) {
+        output += chunk.toString();
+        callback();
+      },
+    });
+    try {
+      await fs.writeFile(
+        script,
+        `@"${process.execPath}" -e "process.stdout.write(JSON.stringify(process.argv.slice(1)))" %*`
+      );
+      const args = ['path (x86)', '^0.17', 'name & other'];
+      expect(await adapter.exec(script, args, { outStream })).toBe(0);
+      expect(JSON.parse(output.slice(output.lastIndexOf('[')))).toEqual(args);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('exec applies env options when provided', async () => {

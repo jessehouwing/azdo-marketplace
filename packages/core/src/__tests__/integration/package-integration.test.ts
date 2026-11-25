@@ -17,14 +17,13 @@ jest.setTimeout(120_000);
 
 class RealExecPlatformAdapter extends MockPlatformAdapter {
   override async exec(tool: string, args: string[], options?: any): Promise<number> {
+    if (tool !== process.execPath) {
+      throw new Error(
+        'Package integration tests only execute the built-in tfx entrypoint with Node'
+      );
+    }
     try {
-      const command =
-        process.platform === 'win32' && tool.toLowerCase().endsWith('.cmd') ? 'cmd' : tool;
-      const commandArgs =
-        process.platform === 'win32' && tool.toLowerCase().endsWith('.cmd')
-          ? ['/c', tool, ...args]
-          : args;
-      const result = await execFileAsync(command, commandArgs, {
+      const result = await execFileAsync(process.execPath, args, {
         cwd: options?.cwd,
         env: options?.env ? { ...process.env, ...options.env } : process.env,
       });
