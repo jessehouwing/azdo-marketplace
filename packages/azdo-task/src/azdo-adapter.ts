@@ -1,4 +1,10 @@
-import { ExecOptions, IPlatformAdapter, TaskResult } from '@extension-tasks/core';
+import {
+  ExecOptions,
+  IPlatformAdapter,
+  normalizeInput,
+  TaskResult,
+  validateCommandArguments,
+} from '@extension-tasks/core';
 import * as tl from 'azure-pipelines-task-lib/task.js';
 import * as tr from 'azure-pipelines-task-lib/toolrunner.js';
 import * as ttl from 'azure-pipelines-tool-lib/tool.js';
@@ -37,11 +43,11 @@ export class AzdoAdapter implements IPlatformAdapter {
   // ===== Input =====
 
   getInput(name: string, required?: boolean): string | undefined {
-    return tl.getInput(name, required) || undefined;
+    return normalizeInput(tl.getInput(name, required), name, required);
   }
 
   getPathInput(name: string, required?: boolean): string | undefined {
-    const value = tl.getPathInput(name, required, false) || undefined;
+    const value = normalizeInput(tl.getPathInput(name, required, false), name, required);
     if (!value) {
       return undefined;
     }
@@ -54,11 +60,17 @@ export class AzdoAdapter implements IPlatformAdapter {
   }
 
   getBoolInput(name: string, required?: boolean): boolean {
-    return tl.getBoolInput(name, required);
+    return (this.getInput(name, required) ?? '').toUpperCase() === 'TRUE';
   }
 
   getDelimitedInput(name: string, delimiter: string, required?: boolean): string[] {
-    return tl.getDelimitedInput(name, delimiter, required);
+    const value = this.getInput(name, required);
+    return value
+      ? value
+          .split(delimiter)
+          .map((part) => part.trim())
+          .filter(Boolean)
+      : [];
   }
 
   // ===== Output =====
@@ -115,6 +127,7 @@ export class AzdoAdapter implements IPlatformAdapter {
   }
 
   async exec(tool: string, args: string[], options?: ExecOptions): Promise<number> {
+    validateCommandArguments(tool, args);
     await this.ensureExecutable(tool);
 
     const toolRunner = tl.tool(tool);

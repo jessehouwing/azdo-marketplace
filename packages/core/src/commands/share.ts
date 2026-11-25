@@ -80,7 +80,7 @@ export async function shareExtension(
     .flag('--share-with');
 
   // Add each organization
-  normalizedOrganizations.forEach((org) => args.arg(org));
+  normalizedOrganizations.forEach((org) => args.value(org));
 
   // Authentication
   args.option('--service-url', auth.serviceUrl);

@@ -34,6 +34,8 @@ Package and patch do not require a service connection. Most other operations req
 
 ## Common inputs
 
+Inputs are trimmed at their edges. CLI option values cannot start with `-`; on Windows, batch command paths and arguments cannot contain `%`, `!`, `"`, or line breaks because `cmd.exe` can interpret them.
+
 These appear across multiple operations.
 
 ### Authentication

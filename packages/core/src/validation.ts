@@ -5,6 +5,56 @@
 import type { IPlatformAdapter } from './platform.js';
 
 /**
+ * Normalize a platform input without changing whitespace inside its value.
+ */
+export function normalizeInput(
+  value: string | undefined,
+  name: string,
+  required?: boolean
+): string | undefined {
+  const normalized = value?.trim();
+  if (!normalized) {
+    if (required) {
+      throw new Error(`Input '${name}' is required`);
+    }
+    return undefined;
+  }
+  if (normalized.includes('\0')) {
+    throw new Error(`Input '${name}' contains a null character`);
+  }
+  return normalized;
+}
+
+/**
+ * Reject values that tfx could interpret as additional options.
+ */
+export function validateArgumentValue(value: string): void {
+  if (value.startsWith('-') || value.includes('\0')) {
+    throw new Error('CLI argument value cannot start with a hyphen or contain a null character');
+  }
+}
+
+/**
+ * Batch files are interpreted by cmd.exe, which expands variables even in quoted arguments.
+ */
+export function validateCommandArguments(
+  tool: string,
+  args: string[],
+  platform = process.platform
+): void {
+  if (tool.includes('\0') || args.some((arg) => arg.includes('\0'))) {
+    throw new Error('Command path or arguments contain a null character');
+  }
+  if (
+    platform === 'win32' &&
+    /\.(?:cmd|bat)$/i.test(tool) &&
+    [tool, ...args].some((value) => /[%!"\r\n]/.test(value))
+  ) {
+    throw new Error('Windows batch command path or arguments contain unsafe shell characters');
+  }
+}
+
+/**
  * Validates an extension ID
  * @param id Extension ID to validate
  * @throws Error if invalid

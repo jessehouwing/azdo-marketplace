@@ -37,6 +37,20 @@ describe('ArgBuilder', () => {
     expect(builder.build()).toEqual([]);
   });
 
+  it('rejects option-like values without disclosing their contents', () => {
+    expect(() => new ArgBuilder().option('--password', '--secret')).toThrow(
+      'CLI argument value cannot start with a hyphen'
+    );
+    expect(() => new ArgBuilder().value('--bypass-validation')).toThrow();
+    expect(() => new ArgBuilder().option('--root', 'path\0suffix')).toThrow();
+  });
+
+  it('preserves ordinary option and list values', () => {
+    expect(
+      new ArgBuilder().option('--root', 'path with spaces').value('!**/test.json').build()
+    ).toEqual(['--root', 'path with spaces', '!**/test.json']);
+  });
+
   it('should conditionally add arguments', () => {
     const builder = new ArgBuilder();
     builder.argIf(true, 'extension').argIf(false, 'should-not-appear');

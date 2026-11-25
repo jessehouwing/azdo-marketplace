@@ -126,7 +126,7 @@ export async function waitForValidation(
 
     if (options.manifestGlobs && options.manifestGlobs.length > 0) {
       args.flag('--manifest-globs');
-      options.manifestGlobs.forEach((glob) => args.arg(glob));
+      options.manifestGlobs.forEach((glob) => args.value(glob));
     }
 
     // Authentication

@@ -1,3 +1,5 @@
+import { validateArgumentValue } from './validation.js';
+
 /**
  * Fluent argument builder for constructing tfx CLI arguments
  */
@@ -13,6 +15,15 @@ export class ArgBuilder {
     } else {
       this.args.push(values);
     }
+    return this;
+  }
+
+  /**
+   * Add a value to a multi-value option.
+   */
+  value(value: string): this {
+    validateArgumentValue(value);
+    this.args.push(value);
     return this;
   }
 
@@ -49,6 +60,7 @@ export class ArgBuilder {
    */
   option(name: string, value: string | undefined): this {
     if (value !== undefined) {
+      validateArgumentValue(value);
       this.args.push(name, value);
     }
     return this;

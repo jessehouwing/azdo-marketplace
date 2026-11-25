@@ -66,11 +66,40 @@ describe('GitHubAdapter', () => {
   });
 
   it('reads string input values', () => {
-    process.env.INPUT_NAME = 'abc';
+    process.env.INPUT_NAME = '  abc  ';
 
     const result = adapter.getInput('name', true);
 
     expect(result).toBe('abc');
+  });
+
+  it('rejects unsafe Windows batch arguments before launching the command', async () => {
+    if (process.platform !== 'win32') return;
+    await expect(adapter.exec('npm.cmd', ['%PATH%'])).rejects.toThrow('unsafe shell characters');
+  });
+
+  it('passes quoted Windows batch arguments without changing them', async () => {
+    if (process.platform !== 'win32') return;
+    const dir = await fs.mkdtemp(join(tmpdir(), 'github-cmd-'));
+    const script = join(dir, 'args.cmd');
+    let output = '';
+    const outStream = new Writable({
+      write(chunk, _encoding, callback) {
+        output += chunk.toString();
+        callback();
+      },
+    });
+    try {
+      await fs.writeFile(
+        script,
+        `@"${process.execPath}" -e "process.stdout.write(JSON.stringify(process.argv.slice(1)))" %*`
+      );
+      const args = ['path (x86)', '^0.17', 'name & other'];
+      expect(await adapter.exec(script, args, { silent: true, outStream })).toBe(0);
+      expect(JSON.parse(output)).toEqual(args);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('returns false for optional boolean input when not set', () => {
