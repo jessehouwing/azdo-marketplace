@@ -19,15 +19,23 @@ jobs:
       contents: read
 
     steps:
-      - name: Harden the runner (Audit all outbound calls)
+      - name: Harden the runner (Block unlisted outbound calls)
         uses: step-security/harden-runner@v2.23.0
         with:
-          # Hosted Windows supports audit only in v2.23.0:
-          # https://github.com/step-security/harden-runner/blob/v2.23.0/README.md#environment-compatibility-matrix
-          # Audit evidence: login.live.com:443 was svchost.exe during Build and bundle,
-          # not Node or the Azure DevOps request header; no login endpoint allowlist.
+          # Allow-list block mode supports GitHub-hosted Windows:
+          # https://docs.stepsecurity.io/github-actions/harden-runner#platform-capability-matrix
+          # Checkout uses github.com; npm pin/install/build uses registry.npmjs.org.
           # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45966271691?tab=network-events
-          egress-policy: audit
+          # Windows git/schannel needs ocsp.sectigo.com:80 during checkout to check
+          # revocation of github.com's Sectigo certificate.
+          # login.live.com:443 (svchost.exe), settings-win.data.microsoft.com,
+          # fs.microsoft.com, and firefox.exe Mozilla telemetry are OS background
+          # traffic, not our code or X-VSS-ForceMsaPassThrough, and intentionally blocked.
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            registry.npmjs.org:443
+            ocsp.sectigo.com:80
 
       - uses: actions/checkout@v7.0.1
         with:

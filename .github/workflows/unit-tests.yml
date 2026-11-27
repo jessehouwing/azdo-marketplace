@@ -23,21 +23,26 @@ jobs:
       contents: read
 
     steps:
-      - name: Harden the runner
+      - name: Harden the runner (Block unlisted outbound calls)
         uses: step-security/harden-runner@v2.23.0
         with:
-          # Select inputs on a single action: step-level if does not gate its pre-hook.
-          # Hosted Windows/macOS support audit only in v2.23.0:
-          # https://github.com/step-security/harden-runner/blob/v2.23.0/README.md#environment-compatibility-matrix
-          egress-policy: ${{ runner.os == 'Linux' && 'block' || 'audit' }}
-          # Ubuntu audit: checkout (github.com), install/tests (registry.npmjs.org),
+          # Allow-list block mode supports GitHub-hosted Linux, macOS, and Windows:
+          # https://docs.stepsecurity.io/github-actions/harden-runner#platform-capability-matrix
+          egress-policy: block
+          # All three OSes: checkout (github.com), install/tests (registry.npmjs.org),
           # and Node 20 setup (api.github.com, release-assets.githubusercontent.com).
           # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45966271667?tab=network-events
-          # Windows and macOS runner background traffic does not belong in this list:
-          # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45968840671?tab=network-events
-          allowed-endpoints: >-
-            ${{ runner.os == 'Linux' &&
-                'github.com:443 registry.npmjs.org:443 api.github.com:443 release-assets.githubusercontent.com:443' || '' }}
+          # Windows git/schannel needs ocsp.sectigo.com:80 during checkout to check
+          # revocation of github.com's Sectigo certificate.
+          # macOS Apple daemon traffic (configuration.g.aaplimg.com, *.icloud.com,
+          # *.apple.com) and Windows OS traffic (crl.microsoft.com, dns.msftncsi.com)
+          # are background noise and intentionally not allowed.
+          allowed-endpoints: >
+            github.com:443
+            registry.npmjs.org:443
+            api.github.com:443
+            release-assets.githubusercontent.com:443
+            ocsp.sectigo.com:80
 
       - uses: actions/checkout@v7.0.1
         with:
