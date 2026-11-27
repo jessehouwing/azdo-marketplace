@@ -224,7 +224,7 @@ Polls Marketplace validation result.
 
 ### `waitForInstallation`
 
-Verifies tasks are available after install.
+Verifies tasks are available after install. Requests to Azure DevOps during polling suppress interactive sign-in redirects and enable Microsoft account pass-through.
 
 - Required:
   - `operation: waitForInstallation`

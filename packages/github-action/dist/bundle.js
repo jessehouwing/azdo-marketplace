@@ -120089,9 +120089,12 @@ async function waitForInstallation(options, auth, platform) {
                 throw new Error('PAT token is required for waitForInstallation command');
             }
             const handler = WebApiExports.getPersonalAccessTokenHandler(auth.token);
-            // Prevent redirects to the interactive login page when auth fails/expires; surface a proper error instead.
+            // Suppress interactive login redirects and allow Microsoft account pass-through.
             const connection = new WebApiExports.WebApi(accountUrl, handler, {
-                headers: { 'X-TFS-FedAuthRedirect': 'Suppress' },
+                headers: {
+                    'X-TFS-FedAuthRedirect': 'Suppress',
+                    'X-VSS-ForceMsaPassThrough': 'true',
+                },
             });
             const taskAgentApi = await connection.getTaskAgentApi();
             // Poll until tasks appear or timeout
