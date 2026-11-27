@@ -23,9 +23,27 @@ jobs:
       contents: read
 
     steps:
-      - name: Harden the runner (Audit all outbound calls)
+      - name: Harden the runner (Block unlisted Linux outbound calls)
+        if: runner.os == 'Linux'
         uses: step-security/harden-runner@v2.23.0
         with:
+          egress-policy: block
+          # Ubuntu audit: checkout (github.com), install/tests (registry.npmjs.org),
+          # and Node 20 setup (api.github.com, release-assets.githubusercontent.com).
+          # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45966271667?tab=network-events
+          allowed-endpoints: >
+            github.com:443
+            registry.npmjs.org:443
+            api.github.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Harden the runner (Audit Windows/macOS outbound calls)
+        if: runner.os != 'Linux'
+        uses: step-security/harden-runner@v2.23.0
+        with:
+          # Hosted Windows/macOS support audit only in v2.23.0:
+          # https://github.com/step-security/harden-runner/blob/v2.23.0/README.md#environment-compatibility-matrix
+          # Windows/macOS certificate and Apple background traffic stays audit-only.
           egress-policy: audit
 
       - uses: actions/checkout@v7.0.1
