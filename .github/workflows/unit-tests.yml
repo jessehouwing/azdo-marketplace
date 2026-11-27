@@ -23,10 +23,21 @@ jobs:
       contents: read
 
     steps:
-      - name: Harden the runner (Audit all outbound calls)
+      - name: Harden the runner
         uses: step-security/harden-runner@v2.23.0
         with:
-          egress-policy: audit
+          # Select inputs on a single action: step-level if does not gate its pre-hook.
+          # Hosted Windows/macOS support audit only in v2.23.0:
+          # https://github.com/step-security/harden-runner/blob/v2.23.0/README.md#environment-compatibility-matrix
+          egress-policy: ${{ runner.os == 'Linux' && 'block' || 'audit' }}
+          # Ubuntu audit: checkout (github.com), install/tests (registry.npmjs.org),
+          # and Node 20 setup (api.github.com, release-assets.githubusercontent.com).
+          # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45966271667?tab=network-events
+          # Windows and macOS runner background traffic does not belong in this list:
+          # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45968840671?tab=network-events
+          allowed-endpoints: >-
+            ${{ runner.os == 'Linux' &&
+                'github.com:443 registry.npmjs.org:443 api.github.com:443 release-assets.githubusercontent.com:443' || '' }}
 
       - uses: actions/checkout@v7.0.1
         with:

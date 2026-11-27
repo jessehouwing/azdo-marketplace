@@ -206,9 +206,12 @@ export async function waitForInstallation(
       }
 
       const handler = getPersonalAccessTokenHandler(auth.token);
-      // Prevent redirects to the interactive login page when auth fails/expires; surface a proper error instead.
+      // Suppress interactive login redirects and allow Microsoft account pass-through.
       const connection = new WebApi(accountUrl, handler, {
-        headers: { 'X-TFS-FedAuthRedirect': 'Suppress' },
+        headers: {
+          'X-TFS-FedAuthRedirect': 'Suppress',
+          'X-VSS-ForceMsaPassThrough': 'true',
+        },
       });
       const taskAgentApi: ITaskAgentApi = await connection.getTaskAgentApi();
 

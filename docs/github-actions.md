@@ -215,6 +215,8 @@ Resolves the proposed extension version from one or more sources. The highest va
   - `working-directory` when `manifest-file` points to manifests under a subfolder
   - `timeout-minutes`, `polling-interval-seconds`
 
+Requests to Azure DevOps during polling suppress interactive sign-in redirects and enable Microsoft account pass-through.
+
 #### `expected-tasks` format
 
 ```json

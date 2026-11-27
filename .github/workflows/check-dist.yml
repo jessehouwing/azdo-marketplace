@@ -22,6 +22,11 @@ jobs:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@v2.23.0
         with:
+          # Hosted Windows supports audit only in v2.23.0:
+          # https://github.com/step-security/harden-runner/blob/v2.23.0/README.md#environment-compatibility-matrix
+          # Audit evidence: login.live.com:443 was svchost.exe during Build and bundle,
+          # not Node or the Azure DevOps request header; no login endpoint allowlist.
+          # https://app.stepsecurity.io/github/jessehouwing/azdo-marketplace/actions/runs/45966271691?tab=network-events
           egress-policy: audit
 
       - uses: actions/checkout@v7.0.1

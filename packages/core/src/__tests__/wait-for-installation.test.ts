@@ -619,7 +619,12 @@ describe('waitForInstallation', () => {
     expect(webApiCtorMock).toHaveBeenCalledWith(
       'https://dev.azure.com/org1',
       expect.anything(),
-      expect.objectContaining({ headers: { 'X-TFS-FedAuthRedirect': 'Suppress' } })
+      expect.objectContaining({
+        headers: {
+          'X-TFS-FedAuthRedirect': 'Suppress',
+          'X-VSS-ForceMsaPassThrough': 'true',
+        },
+      })
     );
   });
 
@@ -678,7 +683,12 @@ describe('waitForInstallation', () => {
     expect(webApiCtorMock).toHaveBeenCalledWith(
       'https://dev.azure.com/org1',
       expect.anything(),
-      expect.objectContaining({ headers: { 'X-TFS-FedAuthRedirect': 'Suppress' } })
+      expect.objectContaining({
+        headers: {
+          'X-TFS-FedAuthRedirect': 'Suppress',
+          'X-VSS-ForceMsaPassThrough': 'true',
+        },
+      })
     );
   });
 
